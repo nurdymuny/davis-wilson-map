@@ -37,9 +37,9 @@ We compute the Davis-Wilson map Γ(A) = (Φ, r) for lattice gauge configurations
 
 For each gauge configuration A (represented as SU(3) link variables on a lattice):
 
-\`\`\`
+```
 Γ(A) = (Φ(A), r(A))
-\`\`\`
+```
 
 Where:
 - **Φ (continuous cache)**: Wilson loop traces on a geodesic skeleton
@@ -47,7 +47,7 @@ Where:
 
 ## Project Structure
 
-\`\`\`
+```
 davis-wilson-lattice/
 ├── lattice/                  # Core SU(3) lattice QCD library
 │   ├── su3.py                # SU(3) matrix operations (Haar measure)
@@ -64,11 +64,11 @@ davis-wilson-lattice/
 ├── modal_app.py              # Modal cloud deployment
 ├── SPEC.md                   # Detailed technical specification
 └── results/figures/          # Key result visualizations
-\`\`\`
+```
 
 ## Quick Start
 
-\`\`\`bash
+```bash
 # Install dependencies
 pip install -e .
 
@@ -77,7 +77,7 @@ pytest tests/ -v
 
 # Run on Modal cloud (A100 GPU)
 modal run modal_app.py --n-configs 200 --lattice-size 8
-\`\`\`
+```
 
 ## Implementation Details
 
