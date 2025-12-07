@@ -169,3 +169,7 @@ Davis, B. R. (2025). *The Incompressibility of Topological Charge and the Energy
 ## License
 
 MIT
+
+---
+
+<sub>**Patent Notice:** Certain commercial compute applications of this system are protected by U.S. Provisional Patent Application No. 63/933,103 (filed December 7, 2025): *"System and Method for Geometric Verification and Optimization of Gauge Field Configurations via Topological Cache Mapping."*</sub>
