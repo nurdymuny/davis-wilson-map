@@ -56,6 +56,17 @@ We tracked a single configuration from hot (random) start through 300 heatbath s
 
 This visualization shows **the mechanism of mass generation** — we watched the system acquire structure.
 
+### Interactive 3D Visualization 🔄
+
+For a fully interactive view of the thermalization trajectory, open [`results/gap_formation_3d.html`](results/gap_formation_3d.html) — a Plotly 3D scatter that you can rotate, zoom, and animate.
+
+![Gap Formation Animation](results/figures/gap_formation.gif)
+
+**Key metrics:**
+- **195× radius reduction** from hot start to vacuum (PCA-projected trajectory)
+- 51 snapshots over 150 sweeps, 18-dimensional feature fingerprint → 3D via PCA
+- The spiral path shows the system "falling" into the vacuum attractor
+
 ## Overview
 
 This project tests the central prediction of the Davis-Wilson framework:
