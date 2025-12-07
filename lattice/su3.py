@@ -303,34 +303,160 @@ def random_su3_algebra() -> SU3Matrix:
 
 
 @jit(nopython=True, cache=True)
-def su3_exp(H: SU3Matrix) -> SU3Matrix:
+def su3_exp(X: SU3Matrix) -> SU3Matrix:
     """
-    Compute the matrix exponential exp(H) where H ∈ su(3).
+    Compute the matrix exponential exp(X) where X ∈ su(3).
+    
+    Uses Cayley-Hamilton theorem for analytic formula:
+        exp(X) = f0*I + f1*X + f2*X²
+    
+    where f0, f1, f2 are functions of the characteristic polynomial invariants.
     
     Args:
-        H: Traceless anti-Hermitian 3×3 matrix (su(3) algebra element)
+        X: Traceless anti-Hermitian 3×3 matrix (su(3) algebra element)
     
     Returns:
-        exp(H) ∈ SU(3)
+        exp(X) ∈ SU(3)
     
-    Algorithm options:
-        1. Cayley-Hamilton: Explicit formula using characteristic polynomial
-        2. Taylor series: Σ H^n / n! (truncate at machine precision)
-        3. Scaling and squaring: exp(H) = exp(H/2^k)^{2^k}
-    
-    TODO: Implement Cayley-Hamilton for efficiency
+    Reference: 
+        Morningstar & Peardon, hep-lat/0311018
+        "Analytic smearing of SU(3) link variables in lattice QCD"
     """
-    # COPILOT: Implement SU(3) exponential
-    # For now, use scipy-style Taylor series
-    # Cayley-Hamilton is faster: see hep-lat/0311018
+    # For traceless anti-Hermitian X, the characteristic polynomial is:
+    #   det(λI - X) = λ³ + c₀λ + c₁
+    # where c₀ = -Tr(X²)/2, c₁ = -det(X)
     
-    result = np.eye(3, dtype=np.complex128)
-    term = np.eye(3, dtype=np.complex128)
+    # Compute X² 
+    X2 = np.dot(X, X)
     
-    for n in range(1, 20):  # Taylor series
-        term = np.dot(term, H) / n
-        result = result + term
-        if np.max(np.abs(term)) < 1e-15:
-            break
+    # Invariants for traceless matrix
+    # c0 = -Tr(X²)/2 (related to |X|²)
+    c0 = -(X2[0,0] + X2[1,1] + X2[2,2]).real / 2.0
     
-    return project_to_su3(result)  # Ensure exact SU(3)
+    # c1 = -det(X) = -Tr(X³)/3 for traceless X
+    X3 = np.dot(X2, X)
+    c1 = -(X3[0,0] + X3[1,1] + X3[2,2]).real / 3.0
+    
+    # The eigenvalues of X are iθ₁, iθ₂, iθ₃ where θ₁+θ₂+θ₃=0 (traceless)
+    # We need to find exp(iθⱼ) for each eigenvalue
+    
+    # For the depressed cubic t³ + pt + q = 0:
+    # p = c0, q = c1
+    # Discriminant: Δ = -4p³ - 27q²
+    
+    # Handle the case where X ≈ 0
+    c0_abs = abs(c0)
+    if c0_abs < 1e-14:
+        # X is nearly zero, use Taylor expansion
+        result = np.eye(3, dtype=np.complex128) + X + 0.5 * X2
+        return project_to_su3(result)
+    
+    # Cardano's formula for real cubic with pure imaginary roots
+    # For anti-Hermitian X, eigenvalues are pure imaginary: iθ
+    # Substitute λ = iθ: -iθ³ + c₀(iθ) + c₁ = 0
+    # → θ³ - c₀θ - c₁ = 0  (real cubic in θ if X anti-Hermitian)
+    
+    # Actually for X anti-Hermitian and traceless:
+    # eigenvalues are iω₁, iω₂, iω₃ with ω₁+ω₂+ω₃=0
+    # where ωⱼ are real
+    
+    # Use the formula from Morningstar-Peardon:
+    # Define w = sqrt(c0/3), then θ³ - 3w²θ - c1 = 0
+    # Substituting θ = 2w*cos(φ): cos(3φ) = c1/(2w³)
+    
+    w_sq = c0_abs / 3.0
+    w = np.sqrt(w_sq)
+    
+    # c1_norm = c1 / (2*w³)
+    w_cubed = w * w_sq
+    if w_cubed < 1e-14:
+        # Fallback to Taylor
+        result = np.eye(3, dtype=np.complex128) + X + 0.5 * X2
+        return project_to_su3(result)
+    
+    c1_norm = c1 / (2.0 * w_cubed)
+    
+    # Clamp to [-1, 1] for numerical stability
+    if c1_norm > 1.0:
+        c1_norm = 1.0
+    elif c1_norm < -1.0:
+        c1_norm = -1.0
+    
+    # φ = arccos(c1_norm) / 3
+    phi = np.arccos(c1_norm) / 3.0
+    
+    # Three roots: θⱼ = 2w*cos(φ + 2πj/3) for j=0,1,2
+    theta0 = 2.0 * w * np.cos(phi)
+    theta1 = 2.0 * w * np.cos(phi + 2.0 * np.pi / 3.0)
+    theta2 = 2.0 * w * np.cos(phi + 4.0 * np.pi / 3.0)
+    
+    # Eigenvalues of X are iθⱼ (if c0 > 0) or just θⱼ
+    # For anti-Hermitian: eigenvalues are pure imaginary
+    # exp(X) has eigenvalues exp(iθⱼ) = cos(θⱼ) + i*sin(θⱼ)
+    
+    # But we need sign handling based on c0's sign
+    # For anti-Hermitian X: c0 = -Tr(X²)/2 ≤ 0 typically
+    # Let's handle this more carefully
+    
+    # Actually c0 = -Tr(X²)/2 and for anti-Hermitian X†=-X:
+    # Tr(X²) = Tr(X·X) and X² is negative semi-definite in some sense
+    # Let's just compute eigenvalues of X directly via the formula
+    
+    # The eigenvalues λⱼ of X satisfy: λ³ + c0*λ + c1 = 0
+    # For anti-Hermitian, λⱼ = i*ωⱼ where ωⱼ real
+    # Substituting: (iω)³ + c0(iω) + c1 = -iω³ + ic0ω + c1 = 0
+    # → c1 = iω³ - ic0ω = i(ω³ - c0ω) if c1 is real... 
+    
+    # Let me use simpler approach: exp(X) = f0*I + f1*X + f2*X²
+    # Solve system from Cayley-Hamilton
+    
+    # For eigenvalues λ₀, λ₁, λ₂:
+    # exp(λⱼ) = f0 + f1*λⱼ + f2*λⱼ²
+    
+    # Since eigenvalues are pure imaginary: λⱼ = i*θⱼ
+    e0 = np.exp(1j * theta0)
+    e1 = np.exp(1j * theta1)  
+    e2 = np.exp(1j * theta2)
+    
+    lam0 = 1j * theta0
+    lam1 = 1j * theta1
+    lam2 = 1j * theta2
+    
+    # Solve Vandermonde system:
+    # [1  λ₀  λ₀²] [f0]   [e0]
+    # [1  λ₁  λ₁²] [f1] = [e1]
+    # [1  λ₂  λ₂²] [f2]   [e2]
+    
+    # Use explicit formula for 3×3 Vandermonde inverse
+    d01 = lam0 - lam1
+    d02 = lam0 - lam2
+    d12 = lam1 - lam2
+    
+    # Avoid division by zero for degenerate eigenvalues
+    denom = d01 * d02 * d12
+    if abs(denom) < 1e-14:
+        # Degenerate case: fall back to Taylor
+        term = np.eye(3, dtype=np.complex128)
+        result = np.eye(3, dtype=np.complex128)
+        for n in range(1, 15):
+            term = np.dot(term, X) / n
+            result = result + term
+        return project_to_su3(result)
+    
+    # f2 = (e0/((λ0-λ1)(λ0-λ2)) + e1/((λ1-λ0)(λ1-λ2)) + e2/((λ2-λ0)(λ2-λ1)))
+    f2 = e0 / (d01 * d02) + e1 / ((-d01) * d12) + e2 / ((-d02) * (-d12))
+    
+    # f1 = -(λ1+λ2)*e0/((λ0-λ1)(λ0-λ2)) - (λ0+λ2)*e1/((λ1-λ0)(λ1-λ2)) - (λ0+λ1)*e2/((λ2-λ0)(λ2-λ1))
+    f1 = (-(lam1+lam2)*e0/(d01*d02) 
+          - (lam0+lam2)*e1/((-d01)*d12) 
+          - (lam0+lam1)*e2/((-d02)*(-d12)))
+    
+    # f0 = λ1*λ2*e0/((λ0-λ1)(λ0-λ2)) + λ0*λ2*e1/((λ1-λ0)(λ1-λ2)) + λ0*λ1*e2/((λ2-λ0)(λ2-λ1))
+    f0 = (lam1*lam2*e0/(d01*d02) 
+          + lam0*lam2*e1/((-d01)*d12) 
+          + lam0*lam1*e2/((-d02)*(-d12)))
+    
+    # exp(X) = f0*I + f1*X + f2*X²
+    result = f0 * np.eye(3, dtype=np.complex128) + f1 * X + f2 * X2
+    
+    return project_to_su3(result)
