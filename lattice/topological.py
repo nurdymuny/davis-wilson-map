@@ -325,6 +325,9 @@ def apply_smearing(
 # ============================================================================
 # Wilson Flow (Gradient Flow) - Proper RG Scale Definition
 # ============================================================================
+# TODO: Numba-ize _compute_flow_force and _flow_step for 50-100x speedup
+# Current bottleneck: outer loops are pure Python despite JIT inner functions
+# See: https://github.com/nurdymuny/davis-wilson-map commit a4915a4
 
 def apply_wilson_flow(
     config: GaugeConfig,
