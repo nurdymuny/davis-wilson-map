@@ -187,4 +187,10 @@ MIT
 
 ---
 
-<sub>**Patent Notice:** Certain commercial compute applications of this system are protected by U.S. Provisional Patent Application No. 63/933,103 (filed December 7, 2025): *"System and Method for Geometric Verification and Optimization of Gauge Field Configurations via Topological Cache Mapping."*</sub>
+<sub>**Patent Notice:** Certain commercial applications of this system are protected by the following U.S. Provisional Patent Applications:</sub>
+
+<sub>• **63/933,299** — *System and Method for Modulation of Quantum Vacuum Topology via Non-Abelian Gauge Field Configurations*</sub>
+
+<sub>• **63/933,103** — *System and Method for Geometric Verification and Optimization of Gauge Field Configurations via Topological Cache Mapping*</sub>
+
+<sub>• **63/927,445** — *Systems and Methods for Fixed-Size Reasoning State Representation via Topological Residue in Neural Networks*</sub>

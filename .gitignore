@@ -49,6 +49,15 @@ experiments/
 # Extended capabilities (private research)
 extended_capabilities/
 
+# Documentation (confidential attorney-client draft)
+docs/
+
+# Harvest data (large binary files)
+harvest_data/
+harvest_merged.npz
+merged_harvest.npz
+*_topology.png
+
 # Large data files (anywhere)
 *.h5
 *.npy
