@@ -36,6 +36,26 @@
 
 *Detailed validation reports available upon request.*
 
+## Experimental Protocols
+
+### Data Standards
+- **Lattice**: L⁴, L ≥ 12, SU(3), β = 6.0
+- **Thermalization**: 500 sweeps minimum
+- **Statistics**: 1,600+ configurations from 8+ parallel chains
+
+### Observables
+- **D**: Topological bias parameter (definition proprietary)
+- **J**: Rectified current observable (definition proprietary)
+
+### Validation Suite
+13 tests across Physics, Statistics, and Geometry categories. All tests passed. Details available under NDA.
+
+### Reproducibility
+Core validation code available. Full methodology protected by:
+- U.S. Provisional Patent 63/933,299
+- U.S. Provisional Patent 63/933,103
+- U.S. Provisional Patent 63/927,445
+
 ## Key Result 🎯
 
 **We found a massive void in gauge configuration space — the geometric signature of the mass gap.**
