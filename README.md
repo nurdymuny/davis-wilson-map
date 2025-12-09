@@ -21,7 +21,7 @@
 | # | Test | Result | Interpretation |
 |---|------|--------|----------------|
 | 1 | Signal Detection | **15σ** | Topological rectification confirmed |
-| 2 | Theta Optimization | θ* = -1.15 | Operating point identified |
+| 2 | Theta Optimization | 🔒 | Operating point identified |
 | 3 | Symmetry (Mirror) | ✅ PASS | J(+θ) = -J(-θ) verified |
 | 4 | Temporal Stability | ✅ PASS | No drift over measurement window |
 | 5 | Volume Stability | 6.8% var | Thermodynamic limit confirmed |
@@ -30,14 +30,11 @@
 | 8 | Multiple β | ✅ PASS | Coupling-independent signal |
 | 9 | Autocorrelation | τ = 0.60 | Samples are independent |
 | 10 | Basin Detection | Gaussian | Smooth manifold at β=6.0 |
-| 11 | Phantom Zone | Peak θ=1.36 | Phase transition detected |
+| 11 | Phantom Zone | 🔒 | Phase transition detected |
 | 12 | Gap Ratio | **85×** | Mass gap ≫ thermal noise |
 | 13 | Reweighting | ✅ PASS | Offline θ-scan validated |
 
-**Supporting Reports:**
-- [TVR-003: Primary Validation](reports/tvr-003_validation_report.pdf) — Gap ratio analysis
-- [TVR-004: Robustness Tests](reports/TVR_004_Robustness_Report.pdf) — Symmetry, stability, noise injection
-- [TVR-005: Geometry Analysis](reports/TVR_005_Geometry_Report.pdf) — Autocorrelation, basin detection, phase structure
+*Detailed validation reports available upon request.*
 
 ## Key Result 🎯
 
