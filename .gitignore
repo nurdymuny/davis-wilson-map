@@ -65,6 +65,10 @@ merged_harvest.npz
 # But DO track results/figures for documentation
 !results/figures/
 
+# But ignore binary data files in results
+results/*.npz
+results/*.npy
+
 # Modal
 .modal/
 

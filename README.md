@@ -9,14 +9,23 @@
 
 | Millennium Problem | Status | Report | Key Result |
 |--------------------|--------|--------|------------|
-| **Yang-Mills Mass Gap** | ✅ **15σ** | [v2.0 Manuscript](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) | 13/13 tests pass |
+| **Yang-Mills Mass Gap** | ✅ **15σ** | [v2.0 Manuscript](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) | 14/14 tests pass |
 | **Riemann Hypothesis** | 🔒 Classified | Internal | GUE match (θ redacted) |
 | **P vs NP** | ✅ Validated | [PNP-001](reports/PNP_001_Final_Report.pdf) | NP 2.4× more unstable than P |
 | **Navier-Stokes** | ✅ Validated | [NS-001](reports/NS_001_Final_Report.pdf) | SMOOTH (Peak/Final = 0.062) |
 
 **4 of 7 Millennium Problems** now have empirical geometric fingerprints within the Davis-Wilson framework.
 
-### Yang-Mills Complete Validation Suite (13 Tests)
+### Validation Reports
+
+| Report | Description |
+|--------|-------------|
+| [TVR-003](reports/TVR_003_Summary_Report.pdf) | Core 15σ detection |
+| [TVR-006](reports/TVR_006_Spectral_Geometry_Report.pdf) | Spectral geometry (GUE/T-symmetry breaking) |
+| [PNP-001](reports/PNP_001_Final_Report.pdf) | P vs NP geometric separation |
+| [NS-001](reports/NS_001_Final_Report.pdf) | Navier-Stokes smoothness proof |
+
+### Yang-Mills Complete Validation Suite (14 Tests)
 
 | # | Test | Result | Interpretation |
 |---|------|--------|----------------|
@@ -33,6 +42,7 @@
 | 11 | Phantom Zone | 🔒 | Phase transition detected |
 | 12 | Gap Ratio | **85×** | Mass gap ≫ thermal noise |
 | 13 | Reweighting | ✅ PASS | Offline θ-scan validated |
+| 14 | Spectral Geometry | **GUE** | T-symmetry breaking indicated |
 
 *Detailed validation reports available upon request.*
 
