@@ -399,7 +399,13 @@ def analyze_deep_geometry(filename: str):
     
     plt.tight_layout()
     
-    outfile = "tvr_deep_geometry.png"
+    # Save to results/figures if it exists, otherwise cwd
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    results_dir = os.path.join(os.path.dirname(script_dir), "results", "figures")
+    if os.path.isdir(results_dir):
+        outfile = os.path.join(results_dir, "tvr_deep_geometry.png")
+    else:
+        outfile = "tvr_deep_geometry.png"
     plt.savefig(outfile, dpi=150)
     print(f"\n{'='*60}")
     print(f"RESULTS SAVED TO: {outfile}")
