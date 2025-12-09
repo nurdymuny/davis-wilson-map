@@ -79,3 +79,5 @@ results/*.npy
 # Logs
 *.log
 docs/confidential/
+# Ignore harvest data files
+data/harvests/*.npz

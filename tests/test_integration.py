@@ -27,11 +27,11 @@ class TestFullPipeline:
         assert result.r == 0, f"Cold config should have r=0, got {result.r}"
         assert abs(result.q_raw) < 0.1, f"Cold config should have Q≈0, got {result.q_raw}"
         
-        # All Wilson loops should give trace ≈ 3 (for SU(3) identity)
-        # So Φ should be (3, 0, 3, 0, 3, 0, ...)
+        # Wilson loops are normalized by /3, so identity gives 1.0
+        # Φ should be (1, 0, 1, 0, 1, 0, ...) for (Re, Im) pairs
         for i in range(0, len(result.phi), 2):
-            assert abs(result.phi[i] - 3.0) < 0.1, f"Re[W] should be 3, got {result.phi[i]}"
-            assert abs(result.phi[i+1]) < 0.1, f"Im[W] should be 0, got {result.phi[i+1]}"
+            assert abs(result.phi[i] - 1.0) < 0.1, f"Re[W]/3 should be 1, got {result.phi[i]}"
+            assert abs(result.phi[i+1]) < 0.1, f"Im[W]/3 should be 0, got {result.phi[i+1]}"
     
     def test_skeleton_size_scaling(self):
         """Skeleton size should scale as expected with stride."""
@@ -76,6 +76,7 @@ class TestFullPipeline:
     
     def test_clustering_synthetic_clustered(self):
         """Synthetic clustered data should give G > 0."""
+        pytest.importorskip("hdbscan")
         from analysis.clustering import analyze_cache_space
         
         # Create synthetic data with clear clusters
@@ -95,6 +96,7 @@ class TestFullPipeline:
     
     def test_clustering_synthetic_continuous(self):
         """Synthetic uniform data should give G ≈ 0."""
+        pytest.importorskip("hdbscan")
         from analysis.clustering import analyze_cache_space
         
         # Create synthetic uniform (no structure) data

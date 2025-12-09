@@ -5,14 +5,18 @@
 > **Author:** Bee Rosa Davis  
 > **Manuscript:** [Yang-Mills Mass Gap Solution v2.0](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) (23 pages, December 2025)
 
+## 🌐 The Universal Geometry of Information
+
+**NEW:** [REPORT: The Universal Geometry of Information](reports/REPORT_UNIVERSAL_GEOMETRY.pdf) — A unified framework demonstrating that Physics, Complexity, and Dynamics share a common geometric structure. Validates 7 theorems from *The Field Equations of Semantic Coherence* across four domains.
+
 ## Validation Status — Grand Slam 🏆
 
 | Millennium Problem | Status | Report | Key Result |
 |--------------------|--------|--------|------------|
 | **Yang-Mills Mass Gap** | ✅ **15σ** | [v2.0 Manuscript](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) | 14/14 tests pass |
 | **Riemann Hypothesis** | 🔒 Classified | Internal | GUE match (θ redacted) |
-| **P vs NP** | ✅ Validated | [PNP-001](reports/PNP_001_Final_Report.pdf) | NP 2.4× more unstable than P |
-| **Navier-Stokes** | ✅ Validated | [NS-001](reports/NS_001_Final_Report.pdf) | SMOOTH (Peak/Final = 0.062) |
+| **P vs NP** | ✅ Validated | [PNP-001](reports/PNP_001_Final_Report.pdf) | NP 1.88× rougher than P |
+| **Navier-Stokes** | ✅ Validated | [NS-001](reports/NS_001_Final_Report.pdf) | D_corr = 1.70 (vortex tubes) |
 
 **4 of 7 Millennium Problems** now have empirical geometric fingerprints within the Davis-Wilson framework.
 
@@ -20,6 +24,7 @@
 
 | Report | Description |
 |--------|-------------|
+| [Universal Geometry](reports/REPORT_UNIVERSAL_GEOMETRY.pdf) | **Unified framework** — 7 theorems validated |
 | [TVR-003](reports/TVR_003_Summary_Report.pdf) | Core 15σ detection |
 | [TVR-006](reports/TVR_006_Spectral_Geometry_Report.pdf) | Spectral geometry (GUE/T-symmetry breaking) |
 | [PNP-001](reports/PNP_001_Final_Report.pdf) | P vs NP geometric separation |
