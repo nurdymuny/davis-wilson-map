@@ -32,8 +32,13 @@ When curvature vanishes (K → 0), capacity diverges (C → ∞)—this is the p
 
 | File | Problem | Status |
 |------|---------|--------|
-| `Davis_Hodge_Conjecture.pdf` | Hodge Conjecture | Conditional theorem (assumes Davis Framework axioms) |
-| `Davis_BSD_Conjecture.pdf` | BSD Conjecture | Conditional theorem (assumes Davis Framework axioms) |
+| `Davis_Poincare_Isomorphism_Conditional.pdf` | Poincaré Conjecture (SOLVED) | **Validation test** — re-derives proven result |
+| `Davis_Hodge_Conjecture_Conditional.pdf` | Hodge Conjecture | Conditional theorem (assumes Davis Framework axioms) |
+| `Davis_BSD_Conjecture_Conditional.pdf` | BSD Conjecture | Conditional theorem (assumes Davis Framework axioms) |
+
+### The Poincaré Paper: Ultimate Validation
+
+The Poincaré Conjecture is the **only solved** Millennium Prize Problem. If our framework reproduces Perelman's result (Wilson Flow → Vacuum = Ricci Flow → S³), this validates the entire approach on known ground truth.
 
 ## Important Note on Status
 
