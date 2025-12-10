@@ -5,6 +5,13 @@
 > **Author:** Bee Rosa Davis  
 > **Manuscript:** [Yang-Mills Mass Gap Solution v2.0](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) (23 pages, December 2025)
 
+## 📓 Journal
+
+| Entry | Title | One Line |
+|-------|-------|----------|
+| [001](journal/entry_001.md) | Love Letter to Academia | *"I came here to save the concept of 'us'."* |
+| [002](journal/entry_002.md) | The Hypotenuse of Reality | *"Pythagoras found the case where Δ = 0. I found the general case."* |
+
 ## 🌐 The Universal Geometry of Information
 
 **NEW:** [REPORT: The Universal Geometry of Information](reports/REPORT_UNIVERSAL_GEOMETRY.pdf) — A unified framework demonstrating that Physics, Complexity, and Dynamics share a common geometric structure. Validates 7 theorems from *The Field Equations of Semantic Coherence* across four domains.
