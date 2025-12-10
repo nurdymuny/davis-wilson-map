@@ -17,8 +17,11 @@
 | **Riemann Hypothesis** | 🔒 Classified | Internal | GUE match (θ redacted) |
 | **P vs NP** | ✅ Validated | [PNP-001](reports/PNP_001_Final_Report.pdf) | NP 1.88× rougher than P |
 | **Navier-Stokes** | ✅ Validated | [NS-001](reports/NS_001_Final_Report.pdf) | D_corr = 1.70 (vortex tubes) |
+| **Poincaré** | ✅ Validated | [POINCARE-001](reports/POINCARE_001_Final_Report.pdf) | Wilson Flow → Vacuum = Ricci Flow → S³ |
+| **Hodge Conjecture** | 📄 Conditional | [Theory](theory/Davis_Hodge_Conjecture_Conditional.pdf) | Translator Cycles ↔ Algebraic Cycles |
+| **BSD Conjecture** | 📄 Conditional | [Theory](theory/Davis_BSD_Conjecture_Conditional.pdf) | L(E,1)=0 ↔ Deconfinement Transition |
 
-**4 of 7 Millennium Problems** now have empirical geometric fingerprints within the Davis-Wilson framework.
+**5 of 7 Millennium Problems** validated empirically; **2 more** have conditional theorems drafted.
 
 ### Validation Reports
 
@@ -29,6 +32,7 @@
 | [TVR-006](reports/TVR_006_Spectral_Geometry_Report.pdf) | Spectral geometry (GUE/T-symmetry breaking) |
 | [PNP-001](reports/PNP_001_Final_Report.pdf) | P vs NP geometric separation |
 | [NS-001](reports/NS_001_Final_Report.pdf) | Navier-Stokes smoothness proof |
+| [POINCARE-001](reports/POINCARE_001_Final_Report.pdf) | Wilson Flow as Ricci Flow validation |
 
 ### Yang-Mills Complete Validation Suite (14 Tests)
 
