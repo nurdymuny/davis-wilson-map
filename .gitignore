@@ -1,3 +1,6 @@
+# Prototypes (separate projects in development)
+prototytpes/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -45,6 +48,10 @@ Thumbs.db
 
 # Experiments and generated data (keep local, don't commit)
 experiments/
+
+# Sensitive Riemann results (RESPONSIBLE DISCLOSURE)
+rh_spectral_proof.png
+rh_spectrum*.npz
 
 # Extended capabilities (private research)
 extended_capabilities/
