@@ -20,6 +20,7 @@
 | [009](journal/entry_009.md) | Six for Six | *"6/6 Millennium domains validated."* |
 | [010](journal/entry_010.md) | All Proofs in Place | *"60 pages. 6 papers. One unified framework."* |
 | [011](journal/entry_011.md) | The Children of the Manifold | *"parallax.sh and helicity.io are live."* |
+| [012](journal/entry_012.md) | The Cultural Diode | *"The same math that confines quarks confines Ballroom artists."* |
 
 ## 🌐 The Universal Geometry of Information
 
