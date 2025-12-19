@@ -22,6 +22,11 @@ v17.3 PRODUCTION IMPROVEMENTS (fixes hanging t_ref estimation):
   - Thermalization logging (every 5 sweeps) for long-running production
   - Smoke test path unchanged (fixed t_ref=0.05)
 
+v17.4 GPU OPTIMIZATIONS (per @nurdymuny request):
+  - Checkerboarding: Red-black site ordering in Wilson flow for better GPU cache locality
+  - Jackknife error estimation: Robust confidence intervals for δ_O (delete-1 resampling)
+  - Error propagation: Jackknife CIs reported for all observables in A2S-001
+
 Target: Single A100 GPU run via Modal
 Expected Runtime: ~10 min (smoke), ~30-45 min (production) on A100
 """
@@ -347,42 +352,55 @@ def run_rest_of_validation():
             
             return staples
         
-        def wilson_flow_step_batch(self, dt: float):
+        def wilson_flow_step_batch(self, dt: float, use_checkerboard: bool = True):
             """
             Single step of Wilson gradient flow for all N configs (VECTORIZED).
             Using Euler integration with batch operations.
+            
+            Args:
+                dt: Time step size
+                use_checkerboard: If True, use red-black checkerboard ordering for
+                                 better GPU memory access patterns (default: True)
             """
             L, T = self.L, self.T
-            all_indices = self.all_indices
+            
+            # Use checkerboarding for better GPU cache locality
+            if use_checkerboard:
+                # Process red and black sites separately for better memory access
+                indices_list = [self.red_idx, self.black_idx]
+            else:
+                # Process all sites at once (original behavior)
+                indices_list = [self.all_indices]
             
             for mu in range(4):
-                # Compute staples for all sites at once across all N configs
-                staples = self.compute_staples_batch(all_indices, mu)  # (N, sites, 3, 3)
-                links = self.get_links_at_indices(all_indices, mu)      # (N, sites, 3, 3)
-                
-                # Flow equation: X = S·U† - U·S†
-                X = staples @ links.mH - links @ staples.mH
-                
-                # Traceless projection
-                trace_X = torch.diagonal(X, dim1=-2, dim2=-1).sum(dim=-1, keepdim=True).unsqueeze(-1) / 3.0
-                eye = torch.eye(3, dtype=torch.complex64, device=self.device)
-                X = X - trace_X * eye
-                
-                # Euler step
-                new_U = links - dt * X @ links
-                
-                # Re-project to SU(3) via QR (batched)
-                # Reshape for batch QR: (N * sites, 3, 3)
-                N_sites = all_indices.shape[0]
-                new_U_flat = new_U.reshape(self.N * N_sites, 3, 3)
-                Q, R = torch.linalg.qr(new_U_flat)
-                det = torch.linalg.det(Q)
-                phase = (det.abs() ** (1/3)) / (det + 1e-10)
-                new_U_proj = Q * phase.unsqueeze(-1).unsqueeze(-1)
-                new_U_proj = new_U_proj.reshape(self.N, N_sites, 3, 3)
-                
-                # Set back
-                self.set_links_at_indices(all_indices, mu, new_U_proj)
+                for indices in indices_list:
+                    # Compute staples for this subset of sites across all N configs
+                    staples = self.compute_staples_batch(indices, mu)  # (N, sites, 3, 3)
+                    links = self.get_links_at_indices(indices, mu)      # (N, sites, 3, 3)
+                    
+                    # Flow equation: X = S·U† - U·S†
+                    X = staples @ links.mH - links @ staples.mH
+                    
+                    # Traceless projection
+                    trace_X = torch.diagonal(X, dim1=-2, dim2=-1).sum(dim=-1, keepdim=True).unsqueeze(-1) / 3.0
+                    eye = torch.eye(3, dtype=torch.complex64, device=self.device)
+                    X = X - trace_X * eye
+                    
+                    # Euler step
+                    new_U = links - dt * X @ links
+                    
+                    # Re-project to SU(3) via QR (batched)
+                    # Reshape for batch QR: (N * sites, 3, 3)
+                    N_sites = indices.shape[0]
+                    new_U_flat = new_U.reshape(self.N * N_sites, 3, 3)
+                    Q, R = torch.linalg.qr(new_U_flat)
+                    det = torch.linalg.det(Q)
+                    phase = (det.abs() ** (1/3)) / (det + 1e-10)
+                    new_U_proj = Q * phase.unsqueeze(-1).unsqueeze(-1)
+                    new_U_proj = new_U_proj.reshape(self.N, N_sites, 3, 3)
+                    
+                    # Set back
+                    self.set_links_at_indices(indices, mu, new_U_proj)
         
         def wilson_flow_to_t(self, t_target: float, dt: float = 0.01):
             """
@@ -748,6 +766,50 @@ def run_rest_of_validation():
             std = np.std(values)
             return mean - std, mean + std
     
+    def compute_delta_O_jackknife(values, n_jackknife=None):
+        """
+        Compute δ_O = within-bin std with jackknife error estimation.
+        
+        Uses delete-1 jackknife resampling to estimate standard error
+        of the standard deviation, providing robust confidence intervals.
+        
+        Args:
+            values: array-like of values
+            n_jackknife: number of jackknife samples (default: all)
+        
+        Returns:
+            (delta_O, ci_lower, ci_upper): std and 95% confidence interval
+        """
+        values = np.array(values)
+        n = len(values)
+        if n < 3:
+            return 0.0, 0.0, 0.0
+        
+        if n_jackknife is None:
+            n_jackknife = n
+        
+        # Full sample estimate
+        delta_O_full = np.std(values)
+        
+        # Jackknife delete-1 estimates
+        jackknife_stds = []
+        for i in range(min(n, n_jackknife)):
+            mask = np.ones(n, dtype=bool)
+            mask[i] = False
+            jackknife_stds.append(np.std(values[mask]))
+        
+        jackknife_stds = np.array(jackknife_stds)
+        jackknife_mean = np.mean(jackknife_stds)
+        
+        # Jackknife standard error
+        se = np.sqrt((n - 1) / n * np.sum((jackknife_stds - jackknife_mean)**2))
+        
+        # 95% CI
+        ci_lower = delta_O_full - 1.96 * se
+        ci_upper = delta_O_full + 1.96 * se
+        
+        return delta_O_full, max(ci_lower, 0.0), ci_upper
+    
     # =========================================================================
     # BINNING AND ASSIGNMENT FUNCTIONS
     # =========================================================================
@@ -882,11 +944,16 @@ def run_rest_of_validation():
                 observable_results = []
                 
                 for obs_name, obs_values in observables.items():
-                    # Compute δ_O = median_b σ_b(O) for this observable
+                    # Compute δ_O = median_b σ_b(O) with jackknife error estimation
                     bin_stds = []
+                    bin_jackknife_stats = []
                     for bid, b in occupied_bins.items():
                         obs_in_bin = [obs_values[i] for i in b['indices']]
-                        if len(obs_in_bin) >= 2:
+                        if len(obs_in_bin) >= 3:  # Need >=3 for jackknife
+                            std_val, ci_lo, ci_hi = compute_delta_O_jackknife(obs_in_bin)
+                            bin_stds.append(std_val)
+                            bin_jackknife_stats.append({'std': std_val, 'ci_lo': ci_lo, 'ci_hi': ci_hi})
+                        elif len(obs_in_bin) >= 2:
                             bin_stds.append(np.std(obs_in_bin))
                     
                     if not bin_stds:
@@ -894,6 +961,13 @@ def run_rest_of_validation():
                     
                     delta_O = np.median(bin_stds)
                     q90_sigma = np.percentile(bin_stds, 90)
+                    
+                    # Compute jackknife error on delta_O if we have enough bins with jackknife
+                    delta_O_ci_lo, delta_O_ci_hi = delta_O, delta_O
+                    if len(bin_jackknife_stats) >= 3:
+                        jk_stds = [s['std'] for s in bin_jackknife_stats]
+                        delta_O_jk, delta_O_ci_lo, delta_O_ci_hi = compute_delta_O_jackknife(jk_stds)
+                        delta_O = delta_O_jk  # Use jackknife estimate
                     
                     # Compute D_min using k-NN in Φ-space
                     bin_centroids = []
@@ -937,6 +1011,8 @@ def run_rest_of_validation():
                     observable_results.append({
                         'observable': obs_name,
                         'delta_O': float(delta_O),
+                        'delta_O_ci_lo': float(delta_O_ci_lo),
+                        'delta_O_ci_hi': float(delta_O_ci_hi),
                         'q90_sigma': float(q90_sigma),
                         'D_min': float(D_min),
                         'bin_sep_ratio': float(bin_sep_ratio),
