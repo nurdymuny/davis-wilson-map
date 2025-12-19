@@ -106,7 +106,6 @@ def run_rest_of_validation():
     def random_su3_batch(batch_size: int) -> torch.Tensor:
         """Generate batch of random SU(3) matrices on GPU (complex64)."""
         A = torch.randn(batch_size, 3, 3, dtype=torch.complex64, device=device)
-        A = A + 1j * torch.randn(batch_size, 3, 3, dtype=torch.float32, device=device)
         Q, R = torch.linalg.qr(A)
         det = torch.linalg.det(Q)
         phase = torch.exp(-1j * torch.angle(det) / 3).unsqueeze(-1).unsqueeze(-1)
