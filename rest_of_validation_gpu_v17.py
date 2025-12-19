@@ -387,6 +387,65 @@ def run_rest_of_validation():
                 self.wilson_flow_step_batch(step)
                 t += step
         
+        def estimate_t_ref_with_logging(self, target_plaq: float = 0.6, max_t: float = 0.5, 
+                                       dt: float = 0.01, log_every: int = 10):
+            """
+            Estimate t_ref by flowing until plaquette reaches target_plaq.
+            Includes heartbeat logging and bounded execution to prevent hanging.
+            
+            Args:
+                target_plaq: Target plaquette value (default 0.6)
+                max_t: Maximum flow time to prevent infinite loops (default 0.5)
+                dt: Flow step size (default 0.01)
+                log_every: Log progress every N steps (default 10)
+            
+            Returns:
+                t_ref: Estimated reference flow time (or fallback if target not reached)
+            """
+            import sys
+            
+            t = 0.0
+            steps = 0
+            fallback_t_ref = 0.1  # Conservative fallback
+            
+            print(f"  Estimating t_ref (target plaquette: {target_plaq:.4f}, max_t: {max_t})...")
+            sys.stdout.flush()
+            
+            while t < max_t:
+                # Flow one step
+                step = min(dt, max_t - t)
+                self.wilson_flow_step_batch(step)
+                t += step
+                steps += 1
+                
+                # Check plaquette
+                plaq = self.plaquette()[0].item()  # Use first config as representative
+                
+                # Heartbeat logging with CUDA sync
+                if steps % log_every == 0:
+                    if self.device.type == "cuda":
+                        torch.cuda.synchronize()  # Ensure GPU work is complete
+                    print(f"    Flow step {steps}: t={t:.4f}, plaquette={plaq:.6f}")
+                    sys.stdout.flush()  # Force log output in Modal
+                
+                # Check if target reached
+                if plaq >= target_plaq:
+                    if self.device.type == "cuda":
+                        torch.cuda.synchronize()
+                    print(f"    ✓ Target reached at t={t:.4f} (plaquette={plaq:.6f})")
+                    sys.stdout.flush()
+                    return t
+            
+            # Max time reached without hitting target - use fallback
+            final_plaq = self.plaquette()[0].item()
+            if self.device.type == "cuda":
+                torch.cuda.synchronize()
+            print(f"    ⚠ Max t={max_t} reached (plaquette={final_plaq:.6f} < {target_plaq:.4f})")
+            print(f"    Using fallback t_ref={fallback_t_ref}")
+            sys.stdout.flush()
+            
+            return fallback_t_ref
+        
         def wilson_loop(self, R: int, T_loop: int):
             """
             Compute spatial Wilson loop of size R x T for all N configs (VECTORIZED).
@@ -1259,6 +1318,101 @@ def run_rest_of_validation():
             'N': N_configs,
             'L': L_test,
             'beta': beta_test,
+            't_ref': float(t_ref),
+            'flow_levels': ['t_ref', '2×t_ref'],
+            'plaquette_mean_t_ref': float(plaqs.mean()),
+            'plaquette_mean_2x': float(plaqs_2x.mean()),
+            'action_mean_t_ref': float(actions.mean()),
+            'action_mean_2x': float(actions_2x.mean()),
+            'r_histogram': dict(zip(*np.unique(topo_charges, return_counts=True))),
+        }
+    else:
+        # PRODUCTION RUN: Larger lattice, more configs, with proper t_ref estimation
+        N_configs = 30  # Conservative for 1h timeout on A100
+        L_prod = 8
+        beta_prod = 6.0
+        print(f"  Generating {N_configs} production configs (L={L_prod}, β={beta_prod})...")
+        
+        lattice = BatchedLattice(N_configs, L_prod, beta_prod, device=device)
+        
+        # Thermalize with progress logging
+        print(f"  Thermalizing (20 sweeps)...")
+        import sys
+        for sweep in range(20):
+            lattice.wilson_flow_to_t(0.01, dt=0.005)
+            if sweep % 5 == 0:
+                plaq = lattice.plaquette()[0].item()
+                if device.type == "cuda":
+                    torch.cuda.synchronize()
+                print(f"    Thermalization sweep {sweep}: plaquette={plaq:.6f}")
+                sys.stdout.flush()
+        
+        # Estimate t_ref with bounded, logged routine
+        print(f"  Estimating t_ref...")
+        t_ref_estimator = BatchedLattice(1, L_prod, beta_prod, device=device)
+        t_ref = t_ref_estimator.estimate_t_ref_with_logging(
+            target_plaq=0.6,  # Safe default
+            max_t=0.5,        # Hard cap to prevent hanging
+            dt=0.01,          # Conservative step size
+            log_every=10      # Heartbeat every 10 steps
+        )
+        print(f"  ✓ Using t_ref = {t_ref:.4f}")
+        
+        # Generate configs at t_ref flow level
+        print(f"  Computing observables at t_ref flow...")
+        lattice_t_ref = BatchedLattice(N_configs, L_prod, beta_prod, device=device)
+        lattice_t_ref.links = lattice.links.clone()
+        lattice_t_ref.wilson_flow_to_t(t_ref, dt=0.01)
+        
+        plaqs = lattice_t_ref.plaquette().cpu().numpy()
+        actions = lattice_t_ref.wilson_action().cpu().numpy()
+        topo_charges = lattice_t_ref.topological_charge_integer().cpu().numpy()
+        phi, r = lattice_t_ref.compute_cache(eps_skel=0.15)
+        wilson_loop_1x2 = lattice_t_ref.wilson_loop(1, 2).cpu().numpy()
+        
+        # Build configs_data list at t_ref
+        for i in range(N_configs):
+            configs_data.append({
+                'plaquette': float(plaqs[i]),
+                'action': float(actions[i]),
+                'r': int(topo_charges[i]),
+                'phi': phi[i],
+                'wilson_loop_1x2': float(wilson_loop_1x2[i]),
+            })
+            r_histogram_global.append(int(topo_charges[i]))
+        
+        # Generate configs at 2×t_ref flow level
+        print(f"  Computing observables at 2×t_ref flow...")
+        lattice_2x = BatchedLattice(N_configs, L_prod, beta_prod, device=device)
+        lattice_2x.links = lattice.links.clone()
+        lattice_2x.wilson_flow_to_t(2 * t_ref, dt=0.01)
+        
+        plaqs_2x = lattice_2x.plaquette().cpu().numpy()
+        actions_2x = lattice_2x.wilson_action().cpu().numpy()
+        topo_charges_2x = lattice_2x.topological_charge_integer().cpu().numpy()
+        phi_2x, r_2x = lattice_2x.compute_cache(eps_skel=0.15)
+        wilson_loop_1x2_2x = lattice_2x.wilson_loop(1, 2).cpu().numpy()
+        
+        # Build configs_data_2x list at 2×t_ref
+        for i in range(N_configs):
+            configs_data_2x.append({
+                'plaquette': float(plaqs_2x[i]),
+                'action': float(actions_2x[i]),
+                'r': int(topo_charges_2x[i]),
+                'phi': phi_2x[i],
+                'wilson_loop_1x2': float(wilson_loop_1x2_2x[i]),
+            })
+        
+        print(f"  Generated {N_configs} configs at 2 flow levels")
+        print(f"  t_ref flow - Plaquette: [{plaqs.min():.4f}, {plaqs.max():.4f}]")
+        print(f"  2×t_ref flow - Plaquette: [{plaqs_2x.min():.4f}, {plaqs_2x.max():.4f}]")
+        print(f"  Topological charges: {topo_charges}")
+        print(f"  r_histogram: {dict(zip(*np.unique(topo_charges, return_counts=True)))}")
+        
+        all_results['test_config'] = {
+            'N': N_configs,
+            'L': L_prod,
+            'beta': beta_prod,
             't_ref': float(t_ref),
             'flow_levels': ['t_ref', '2×t_ref'],
             'plaquette_mean_t_ref': float(plaqs.mean()),
