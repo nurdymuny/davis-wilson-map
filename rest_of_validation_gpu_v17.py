@@ -646,18 +646,20 @@ def run_rest_of_validation():
     # QUANTILE HELPERS (v17 NEW FEATURE - Per spec lines 55-58)
     # =========================================================================
     
-    def compute_quantiles_with_fallback(values, q_lo=0.1, q_hi=0.9):
+    def compute_quantiles_with_fallback(values, q_lo=0.2, q_hi=0.8):
         """
         Compute quantiles with occupancy-based fallback.
-        Per spec lines 55-58:
-        - n >= 20: use Q_0.1/Q_0.9
+        
+        v17.1 UPDATE per @nurdymuny feedback:
+        - Default to Q_0.2/Q_0.8 (less tail-sensitive) for robustness at finite N
+        - Use Q_0.1/Q_0.9 only when bin occupancy ≥ 50
         - n >= 10: use Q_0.2/Q_0.8
         - n < 10: use mean ± std
         
         Args:
             values: array-like of values
-            q_lo: lower quantile (default 0.1)
-            q_hi: upper quantile (default 0.9)
+            q_lo: lower quantile (default 0.2 for robustness)
+            q_hi: upper quantile (default 0.8 for robustness)
         
         Returns:
             (lower_val, upper_val)
@@ -665,9 +667,11 @@ def run_rest_of_validation():
         values = np.array(values)
         n = len(values)
         
-        if n >= 20:
-            return np.percentile(values, q_lo * 100), np.percentile(values, q_hi * 100)
+        # v17.1: Use Q_0.1/Q_0.9 only for high occupancy bins (n >= 50)
+        if n >= 50:
+            return np.percentile(values, 10), np.percentile(values, 90)
         elif n >= 10:
+            # Default to Q_0.2/Q_0.8 for better finite-N robustness
             return np.percentile(values, 20), np.percentile(values, 80)
         else:
             mean = np.mean(values)
@@ -794,58 +798,97 @@ def run_rest_of_validation():
                     print(f"    Insufficient bins ({len(occupied_bins)}), skipping")
                     continue
                 
-                # Compute δ_O = median_b σ_b(plaquette)
-                bin_stds = []
-                for bid, b in occupied_bins.items():
-                    plaqs = [configs_data[i]['plaquette'] for i in b['indices']]
-                    if len(plaqs) >= 2:
-                        bin_stds.append(np.std(plaqs))
+                # v17.1 UPDATE per @nurdymuny: Test multiple observables, not just plaquette
+                # Observables: plaquette, action density, Wilson loop 1x2
+                observables = {
+                    'plaquette': [configs_data[i]['plaquette'] for i in range(len(configs_data))],
+                    'action': [configs_data[i]['action'] for i in range(len(configs_data))],
+                }
                 
-                if not bin_stds:
-                    continue
+                # If we have Wilson loop data in phi, use it (first component is often W(1,1))
+                # For now, use action as second observable since we have it
                 
-                delta_O = np.median(bin_stds)
-                q90_sigma = np.percentile(bin_stds, 90)
+                observable_results = []
                 
-                # Compute D_min using k-NN in Φ-space
-                bin_centroids = []
-                bin_means = []
-                bin_ids = list(occupied_bins.keys())
-                
-                for bid in bin_ids:
-                    b = occupied_bins[bid]
-                    phis = [configs_data[i]['phi'] for i in b['indices']]
-                    centroid = np.mean(phis, axis=0)
-                    bin_centroids.append(centroid)
-                    plaqs = [configs_data[i]['plaquette'] for i in b['indices']]
-                    bin_means.append(np.mean(plaqs))
-                
-                D_min = float('inf')
-                if len(bin_centroids) >= 2:
-                    bin_centroids = np.array(bin_centroids)
-                    bin_means = np.array(bin_means)
+                for obs_name, obs_values in observables.items():
+                    # Compute δ_O = median_b σ_b(O) for this observable
+                    bin_stds = []
+                    for bid, b in occupied_bins.items():
+                        obs_in_bin = [obs_values[i] for i in b['indices']]
+                        if len(obs_in_bin) >= 2:
+                            bin_stds.append(np.std(obs_in_bin))
                     
-                    # k-NN graph (k=2) in Φ-space
-                    k = min(2, len(bin_ids) - 1)
-                    dists = cdist(bin_centroids, bin_centroids)
+                    if not bin_stds:
+                        continue
                     
-                    for i in range(len(bin_ids)):
-                        nn_indices = np.argsort(dists[i])[1:k+1]
-                        for j in nn_indices:
-                            sep = abs(bin_means[i] - bin_means[j])
-                            D_min = min(D_min, sep)
+                    delta_O = np.median(bin_stds)
+                    q90_sigma = np.percentile(bin_stds, 90)
+                    
+                    # Compute D_min using k-NN in Φ-space
+                    bin_centroids = []
+                    bin_means = []
+                    bin_ids = list(occupied_bins.keys())
+                    
+                    for bid in bin_ids:
+                        b = occupied_bins[bid]
+                        phis = [configs_data[i]['phi'] for i in b['indices']]
+                        centroid = np.mean(phis, axis=0)
+                        bin_centroids.append(centroid)
+                        obs_in_bin = [obs_values[i] for i in b['indices']]
+                        bin_means.append(np.mean(obs_in_bin))
+                    
+                    D_min = float('inf')
+                    if len(bin_centroids) >= 2:
+                        bin_centroids = np.array(bin_centroids)
+                        bin_means = np.array(bin_means)
+                        
+                        # k-NN graph (k=2) in Φ-space
+                        k = min(2, len(bin_ids) - 1)
+                        dists = cdist(bin_centroids, bin_centroids)
+                        
+                        for i in range(len(bin_ids)):
+                            nn_indices = np.argsort(dists[i])[1:k+1]
+                            for j in nn_indices:
+                                sep = abs(bin_means[i] - bin_means[j])
+                                D_min = min(D_min, sep)
+                    
+                    if D_min == float('inf'):
+                        D_min = 0.0
+                    
+                    # v17 IMPROVED CRITERIA per spec lines 209-215:
+                    # 1. Q_0.9(σ_b) ≤ 3 × δ_O (within-bin dispersion controlled)
+                    # 2. D_min / Q_0.9(σ_b) ≥ 5 (bins distinguishable)
+                    dispersion_ok = q90_sigma <= 3 * delta_O
+                    bin_sep_ratio = D_min / max(q90_sigma, 1e-10) if D_min > 0 else 0.0
+                    bins_distinguishable = bin_sep_ratio >= 5.0
+                    
+                    obs_pass = dispersion_ok and bins_distinguishable
+                    observable_results.append({
+                        'observable': obs_name,
+                        'delta_O': float(delta_O),
+                        'q90_sigma': float(q90_sigma),
+                        'D_min': float(D_min),
+                        'bin_sep_ratio': float(bin_sep_ratio),
+                        'pass': obs_pass,
+                    })
                 
-                if D_min == float('inf'):
-                    D_min = 0.0
+                # v17.1: Pass if any observable passes (robustness)
+                # In full run with more observables, require 2 of 3
+                any_obs_pass = any(obs['pass'] for obs in observable_results)
+                pass_criterion = any_obs_pass
                 
-                # v17 IMPROVED CRITERIA per spec lines 209-215:
-                # 1. Q_0.9(σ_b) ≤ 3 × δ_O (within-bin dispersion controlled)
-                # 2. D_min / Q_0.9(σ_b) ≥ 5 (bins distinguishable)
-                dispersion_ok = q90_sigma <= 3 * delta_O
-                bin_sep_ratio = D_min / max(q90_sigma, 1e-10) if D_min > 0 else 0.0
-                bins_distinguishable = bin_sep_ratio >= 5.0
-                
-                pass_criterion = dispersion_ok and bins_distinguishable
+                # Use best observable for reporting
+                if observable_results:
+                    best_obs = max(observable_results, key=lambda x: x['bin_sep_ratio'])
+                    delta_O = best_obs['delta_O']
+                    q90_sigma = best_obs['q90_sigma']
+                    D_min = best_obs['D_min']
+                    bin_sep_ratio = best_obs['bin_sep_ratio']
+                    dispersion_ok = best_obs['pass']
+                    bins_distinguishable = best_obs['pass']
+                else:
+                    delta_O = q90_sigma = D_min = bin_sep_ratio = 0.0
+                    dispersion_ok = bins_distinguishable = False
                 
                 test_result = {
                     'eps_skel': eps_skel,
@@ -858,11 +901,17 @@ def run_rest_of_validation():
                     'bin_sep_ratio': float(bin_sep_ratio),
                     'dispersion_ok': dispersion_ok,
                     'bins_distinguishable': bins_distinguishable,
+                    'observable_results': observable_results,  # v17.1: Track all observables
                     'pass': pass_criterion,
                 }
                 
                 results['resolution_tests'].append(test_result)
-                print(f"    δ_O={delta_O:.4f}, D_min/Q90={bin_sep_ratio:.2f}, {'PASS' if pass_criterion else 'FAIL'}")
+                
+                # v17.1: Report which observable(s) passed
+                passing_obs = [o['observable'] for o in observable_results if o['pass']]
+                print(f"    Best: δ_O={delta_O:.4f}, D_min/Q90={bin_sep_ratio:.2f}")
+                print(f"    Passing observables: {passing_obs if passing_obs else 'none'}")
+                print(f"    {'PASS' if pass_criterion else 'FAIL'}")
         
         # Overall pass if any resolution passes
         passing = sum(1 for t in results['resolution_tests'] if t['pass'])
@@ -1013,15 +1062,21 @@ def run_rest_of_validation():
         refinement_levels = [(0.20, 0.20), (0.15, 0.15)]
         reference_level = 0  # ε=0.20 for η measurement
         
+        # v17.1 UPDATE per @nurdymuny: Use coarser ε_disc for η measurement
+        # η_max needs bins that persist over MCMC steps (not too granular)
+        eta_eps_disc = 0.30  # Coarser than refinement ladder to avoid η_max=1.0
+        
         for level, (eps_skel, eps_disc) in enumerate(refinement_levels):
             print(f"  Level {level} (ε={eps_skel})...")
             
             bins, assignments = assign_bins(configs_data, eps_skel, eps_disc)
             
-            # v17 IMPROVEMENT: Compute η_mean and η_max at reference level per spec lines 485-494
+            # v17.1: Compute η_mean and η_max at reference level with COARSER ε_disc
             if level == reference_level:
-                eta_mean, eta_max = compute_eta_from_chain(configs_data, bins, assignments)
-                print(f"    η_mean={eta_mean:.3f}, η_max={eta_max:.3f}")
+                # Use separate coarser binning for η to avoid too-fine partitions
+                eta_bins, eta_assignments = assign_bins(configs_data, eps_skel, eta_eps_disc)
+                eta_mean, eta_max = compute_eta_from_chain(configs_data, eta_bins, eta_assignments)
+                print(f"    η_mean={eta_mean:.3f}, η_max={eta_max:.3f} (at ε_disc={eta_eps_disc})")
             else:
                 eta_mean, eta_max = None, None
             

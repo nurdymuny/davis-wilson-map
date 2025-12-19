@@ -11,31 +11,33 @@ def test_quantile_fallback():
     """Test compute_quantiles_with_fallback function."""
     print("Testing compute_quantiles_with_fallback...")
     
-    # Mock the function (copied from v17)
-    def compute_quantiles_with_fallback(values, q_lo=0.1, q_hi=0.9):
+    # Mock the function (copied from v17.1)
+    def compute_quantiles_with_fallback(values, q_lo=0.2, q_hi=0.8):
         values = np.array(values)
         n = len(values)
         
-        if n >= 20:
-            return np.percentile(values, q_lo * 100), np.percentile(values, q_hi * 100)
+        # v17.1: Use Q_0.1/Q_0.9 only for high occupancy bins (n >= 50)
+        if n >= 50:
+            return np.percentile(values, 10), np.percentile(values, 90)
         elif n >= 10:
+            # Default to Q_0.2/Q_0.8 for better finite-N robustness
             return np.percentile(values, 20), np.percentile(values, 80)
         else:
             mean = np.mean(values)
             std = np.std(values)
             return mean - std, mean + std
     
-    # Test case 1: n >= 20 (use Q_0.1/Q_0.9)
+    # Test case 1: n >= 50 (use Q_0.1/Q_0.9)
+    values_50 = np.random.randn(55)
+    q_lo, q_hi = compute_quantiles_with_fallback(values_50)
+    assert q_lo < np.median(values_50) < q_hi, "Failed n>=50 case"
+    print("  ✓ n>=50 case: uses Q_0.1/Q_0.9")
+    
+    # Test case 2: 10 <= n < 50 (use Q_0.2/Q_0.8, the default)
     values_20 = np.random.randn(25)
     q_lo, q_hi = compute_quantiles_with_fallback(values_20)
-    assert q_lo < np.median(values_20) < q_hi, "Failed n>=20 case"
-    print("  ✓ n>=20 case: uses Q_0.1/Q_0.9")
-    
-    # Test case 2: 10 <= n < 20 (use Q_0.2/Q_0.8)
-    values_15 = np.random.randn(15)
-    q_lo, q_hi = compute_quantiles_with_fallback(values_15)
-    assert q_lo < np.median(values_15) < q_hi, "Failed 10<=n<20 case"
-    print("  ✓ 10<=n<20 case: uses Q_0.2/Q_0.8")
+    assert q_lo < np.median(values_20) < q_hi, "Failed 10<=n<50 case"
+    print("  ✓ 10<=n<50 case: uses Q_0.2/Q_0.8 (default)")
     
     # Test case 3: n < 10 (use mean ± std)
     values_5 = np.random.randn(5)
