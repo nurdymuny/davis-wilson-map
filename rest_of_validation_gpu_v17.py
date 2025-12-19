@@ -1076,7 +1076,8 @@ def run_rest_of_validation():
         # r_histogram (v17 requirement per spec lines 126-134)
         r_counts = {}
         for r in r_histogram_global:
-            r_counts[r] = r_counts.get(r, 0) + 1
+            r_key = int(r)  # Convert numpy.int64 to Python int for JSON serialization
+            r_counts[r_key] = r_counts.get(r_key, 0) + 1
         results['r_histogram'] = r_counts
         results['topology_frozen'] = len(r_counts) == 1
         results['r_diversity'] = len(r_counts)
@@ -1146,7 +1147,8 @@ def run_rest_of_validation():
         # r_histogram (v17 requirement)
         r_counts = {}
         for r in r_histogram_global:
-            r_counts[r] = r_counts.get(r, 0) + 1
+            r_key = int(r)  # Convert numpy.int64 to Python int for JSON serialization
+            r_counts[r_key] = r_counts.get(r_key, 0) + 1
         results['r_histogram'] = r_counts
         results['topology_frozen'] = len(r_counts) == 1
         results['r_diversity'] = len(r_counts)
@@ -1222,7 +1224,8 @@ def run_rest_of_validation():
         # r_histogram (v17 requirement)
         r_counts = {}
         for r in r_histogram_global:
-            r_counts[r] = r_counts.get(r, 0) + 1
+            r_key = int(r)  # Convert numpy.int64 to Python int for JSON serialization
+            r_counts[r_key] = r_counts.get(r_key, 0) + 1
         results['r_histogram'] = r_counts
         results['topology_frozen'] = len(r_counts) == 1
         results['r_diversity'] = len(r_counts)
@@ -1282,7 +1285,8 @@ def run_rest_of_validation():
         # r_histogram (v17 requirement per spec lines 126-134)
         r_counts = {}
         for r in r_histogram_global:
-            r_counts[r] = r_counts.get(r, 0) + 1
+            r_key = int(r)  # Convert numpy.int64 to Python int for JSON serialization
+            r_counts[r_key] = r_counts.get(r_key, 0) + 1
         results['r_histogram'] = r_counts
         results['topology_frozen'] = len(r_counts) == 1
         results['r_diversity'] = len(r_counts)
@@ -1394,7 +1398,10 @@ def run_rest_of_validation():
         print(f"  t_ref flow - Plaquette: [{plaqs.min():.4f}, {plaqs.max():.4f}]")
         print(f"  2×t_ref flow - Plaquette: [{plaqs_2x.min():.4f}, {plaqs_2x.max():.4f}]")
         print(f"  Topological charges: {topo_charges}")
-        print(f"  r_histogram: {dict(zip(*np.unique(topo_charges, return_counts=True)))}")
+        # Convert numpy.int64 keys to Python int for JSON serialization
+        topo_unique, topo_counts = np.unique(topo_charges, return_counts=True)
+        r_histogram_dict = {int(k): int(v) for k, v in zip(topo_unique, topo_counts)}
+        print(f"  r_histogram: {r_histogram_dict}")
         
         all_results['test_config'] = {
             'N': N_configs,
@@ -1406,7 +1413,7 @@ def run_rest_of_validation():
             'plaquette_mean_2x': float(plaqs_2x.mean()),
             'action_mean_t_ref': float(actions.mean()),
             'action_mean_2x': float(actions_2x.mean()),
-            'r_histogram': dict(zip(*np.unique(topo_charges, return_counts=True))),
+            'r_histogram': r_histogram_dict,
         }
     else:
         # PRODUCTION RUN: Larger lattice, more configs, with proper t_ref estimation
@@ -1495,8 +1502,10 @@ def run_rest_of_validation():
         # Print topological charge summary (not full array for large N)
         topo_unique, topo_counts = np.unique(topo_charges, return_counts=True)
         topo_summary = f"range=[{topo_charges.min()}, {topo_charges.max()}], diversity={len(topo_unique)}"
+        # Convert numpy.int64 keys to Python int for JSON serialization
+        r_histogram_dict = {int(k): int(v) for k, v in zip(topo_unique, topo_counts)}
         print(f"  Topological charges: {topo_summary}")
-        print(f"  r_histogram: {dict(zip(topo_unique, topo_counts))}")
+        print(f"  r_histogram: {r_histogram_dict}")
         
         all_results['test_config'] = {
             'N': N_configs,
@@ -1508,7 +1517,7 @@ def run_rest_of_validation():
             'plaquette_mean_2x': float(plaqs_2x.mean()),
             'action_mean_t_ref': float(actions.mean()),
             'action_mean_2x': float(actions_2x.mean()),
-            'r_histogram': dict(zip(*np.unique(topo_charges, return_counts=True))),
+            'r_histogram': r_histogram_dict,
         }
     
     # v17.2: Run tests at both flow levels and select better-performing
