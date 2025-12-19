@@ -15,8 +15,15 @@ v17.2 NEW FEATURES (per @nurdymuny request):
   - OSBRIDGE flow-based correlators to reduce UV noise
   - Wilson loop 1×2 as 3rd A2S observable (2-of-3 criterion)
 
+v17.3 PRODUCTION IMPROVEMENTS (fixes hanging t_ref estimation):
+  - Bounded t_ref estimation with heartbeat logging (CUDA sync + flush)
+  - Production path (SMOKE_TEST=False) with proper t_ref estimation
+  - Hard caps: max_t=0.5, dt=0.01, with fallback_t_ref=0.1
+  - Thermalization logging (every 5 sweeps) for long-running production
+  - Smoke test path unchanged (fixed t_ref=0.05)
+
 Target: Single A100 GPU run via Modal
-Expected Runtime: ~30 minutes on A100
+Expected Runtime: ~10 min (smoke), ~30-45 min (production) on A100
 """
 
 import modal
