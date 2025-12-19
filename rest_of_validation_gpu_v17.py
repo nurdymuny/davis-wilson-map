@@ -28,6 +28,7 @@ Expected Runtime: ~10 min (smoke), ~30-45 min (production) on A100
 
 import modal
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 import numpy as np
@@ -409,8 +410,6 @@ def run_rest_of_validation():
             Returns:
                 t_ref: Estimated reference flow time (or fallback if target not reached)
             """
-            import sys
-            
             t = 0.0
             steps = 0
             fallback_t_ref = 0.1  # Conservative fallback
@@ -1343,8 +1342,10 @@ def run_rest_of_validation():
         lattice = BatchedLattice(N_configs, L_prod, beta_prod, device=device)
         
         # Thermalize with progress logging
+        # Note: This accumulates flow time (0.01, 0.02, 0.03...) across sweeps,
+        # consistent with smoke test pattern. This is a simplified thermalization
+        # for demo purposes; full production would use Monte Carlo updates.
         print(f"  Thermalizing (20 sweeps)...")
-        import sys
         for sweep in range(20):
             lattice.wilson_flow_to_t(0.01, dt=0.005)
             if sweep % 5 == 0:
@@ -1355,6 +1356,8 @@ def run_rest_of_validation():
                 sys.stdout.flush()
         
         # Estimate t_ref with bounded, logged routine
+        # Use a fresh (cold start) lattice for t_ref estimation to get a
+        # representative flow time from a well-defined initial state
         print(f"  Estimating t_ref...")
         t_ref_estimator = BatchedLattice(1, L_prod, beta_prod, device=device)
         t_ref = t_ref_estimator.estimate_t_ref_with_logging(
@@ -1413,8 +1416,11 @@ def run_rest_of_validation():
         print(f"  Generated {N_configs} configs at 2 flow levels")
         print(f"  t_ref flow - Plaquette: [{plaqs.min():.4f}, {plaqs.max():.4f}]")
         print(f"  2×t_ref flow - Plaquette: [{plaqs_2x.min():.4f}, {plaqs_2x.max():.4f}]")
-        print(f"  Topological charges: {topo_charges}")
-        print(f"  r_histogram: {dict(zip(*np.unique(topo_charges, return_counts=True)))}")
+        # Print topological charge summary (not full array for large N)
+        topo_unique, topo_counts = np.unique(topo_charges, return_counts=True)
+        topo_summary = f"range=[{topo_charges.min()}, {topo_charges.max()}], diversity={len(topo_unique)}"
+        print(f"  Topological charges: {topo_summary}")
+        print(f"  r_histogram: {dict(zip(topo_unique, topo_counts))}")
         
         all_results['test_config'] = {
             'N': N_configs,
