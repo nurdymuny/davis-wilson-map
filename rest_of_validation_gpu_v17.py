@@ -15,12 +15,25 @@ v17.2 NEW FEATURES (per @nurdymuny request):
   - OSBRIDGE flow-based correlators to reduce UV noise
   - Wilson loop 1×2 as 3rd A2S observable (2-of-3 criterion)
 
+v17.3 PRODUCTION IMPROVEMENTS (fixes hanging t_ref estimation):
+  - Bounded t_ref estimation with heartbeat logging (CUDA sync + flush)
+  - Production path (SMOKE_TEST=False) with proper t_ref estimation
+  - Hard caps: max_t=0.5, dt=0.01, with fallback_t_ref=0.1
+  - Thermalization logging (every 5 sweeps) for long-running production
+  - Smoke test path unchanged (fixed t_ref=0.05)
+
+v17.4 GPU OPTIMIZATIONS (per @nurdymuny request):
+  - Checkerboarding: Red-black site ordering in Wilson flow for better GPU cache locality
+  - Jackknife error estimation: Robust confidence intervals for δ_O (delete-1 resampling)
+  - Error propagation: Jackknife CIs reported for all observables in A2S-001
+
 Target: Single A100 GPU run via Modal
-Expected Runtime: ~30 minutes on A100
+Expected Runtime: ~10 min (smoke), ~30-45 min (production) on A100
 """
 
 import modal
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 import numpy as np
@@ -339,42 +352,55 @@ def run_rest_of_validation():
             
             return staples
         
-        def wilson_flow_step_batch(self, dt: float):
+        def wilson_flow_step_batch(self, dt: float, use_checkerboard: bool = True):
             """
             Single step of Wilson gradient flow for all N configs (VECTORIZED).
             Using Euler integration with batch operations.
+            
+            Args:
+                dt: Time step size
+                use_checkerboard: If True, use red-black checkerboard ordering for
+                                 better GPU memory access patterns (default: True)
             """
             L, T = self.L, self.T
-            all_indices = self.all_indices
+            
+            # Use checkerboarding for better GPU cache locality
+            if use_checkerboard:
+                # Process red and black sites separately for better memory access
+                indices_list = [self.red_idx, self.black_idx]
+            else:
+                # Process all sites at once (original behavior)
+                indices_list = [self.all_indices]
             
             for mu in range(4):
-                # Compute staples for all sites at once across all N configs
-                staples = self.compute_staples_batch(all_indices, mu)  # (N, sites, 3, 3)
-                links = self.get_links_at_indices(all_indices, mu)      # (N, sites, 3, 3)
-                
-                # Flow equation: X = S·U† - U·S†
-                X = staples @ links.mH - links @ staples.mH
-                
-                # Traceless projection
-                trace_X = torch.diagonal(X, dim1=-2, dim2=-1).sum(dim=-1, keepdim=True).unsqueeze(-1) / 3.0
-                eye = torch.eye(3, dtype=torch.complex64, device=self.device)
-                X = X - trace_X * eye
-                
-                # Euler step
-                new_U = links - dt * X @ links
-                
-                # Re-project to SU(3) via QR (batched)
-                # Reshape for batch QR: (N * sites, 3, 3)
-                N_sites = all_indices.shape[0]
-                new_U_flat = new_U.reshape(self.N * N_sites, 3, 3)
-                Q, R = torch.linalg.qr(new_U_flat)
-                det = torch.linalg.det(Q)
-                phase = (det.abs() ** (1/3)) / (det + 1e-10)
-                new_U_proj = Q * phase.unsqueeze(-1).unsqueeze(-1)
-                new_U_proj = new_U_proj.reshape(self.N, N_sites, 3, 3)
-                
-                # Set back
-                self.set_links_at_indices(all_indices, mu, new_U_proj)
+                for indices in indices_list:
+                    # Compute staples for this subset of sites across all N configs
+                    staples = self.compute_staples_batch(indices, mu)  # (N, sites, 3, 3)
+                    links = self.get_links_at_indices(indices, mu)      # (N, sites, 3, 3)
+                    
+                    # Flow equation: X = S·U† - U·S†
+                    X = staples @ links.mH - links @ staples.mH
+                    
+                    # Traceless projection
+                    trace_X = torch.diagonal(X, dim1=-2, dim2=-1).sum(dim=-1, keepdim=True).unsqueeze(-1) / 3.0
+                    eye = torch.eye(3, dtype=torch.complex64, device=self.device)
+                    X = X - trace_X * eye
+                    
+                    # Euler step
+                    new_U = links - dt * X @ links
+                    
+                    # Re-project to SU(3) via QR (batched)
+                    # Reshape for batch QR: (N * sites, 3, 3)
+                    N_sites = indices.shape[0]
+                    new_U_flat = new_U.reshape(self.N * N_sites, 3, 3)
+                    Q, R = torch.linalg.qr(new_U_flat)
+                    det = torch.linalg.det(Q)
+                    phase = (det.abs() ** (1/3)) / (det + 1e-10)
+                    new_U_proj = Q * phase.unsqueeze(-1).unsqueeze(-1)
+                    new_U_proj = new_U_proj.reshape(self.N, N_sites, 3, 3)
+                    
+                    # Set back
+                    self.set_links_at_indices(indices, mu, new_U_proj)
         
         def wilson_flow_to_t(self, t_target: float, dt: float = 0.01):
             """
@@ -386,6 +412,63 @@ def run_rest_of_validation():
                 step = min(dt, t_target - t)
                 self.wilson_flow_step_batch(step)
                 t += step
+        
+        def estimate_t_ref_with_logging(self, target_plaq: float = 0.6, max_t: float = 0.5, 
+                                       dt: float = 0.01, log_every: int = 10):
+            """
+            Estimate t_ref by flowing until plaquette reaches target_plaq.
+            Includes heartbeat logging and bounded execution to prevent hanging.
+            
+            Args:
+                target_plaq: Target plaquette value (default 0.6)
+                max_t: Maximum flow time to prevent infinite loops (default 0.5)
+                dt: Flow step size (default 0.01)
+                log_every: Log progress every N steps (default 10)
+            
+            Returns:
+                t_ref: Estimated reference flow time (or fallback if target not reached)
+            """
+            t = 0.0
+            steps = 0
+            fallback_t_ref = 0.1  # Conservative fallback
+            
+            print(f"  Estimating t_ref (target plaquette: {target_plaq:.4f}, max_t: {max_t})...")
+            sys.stdout.flush()
+            
+            while t < max_t:
+                # Flow one step
+                step = min(dt, max_t - t)
+                self.wilson_flow_step_batch(step)
+                t += step
+                steps += 1
+                
+                # Check plaquette
+                plaq = self.plaquette()[0].item()  # Use first config as representative
+                
+                # Heartbeat logging with CUDA sync
+                if steps % log_every == 0:
+                    if self.device.type == "cuda":
+                        torch.cuda.synchronize()  # Ensure GPU work is complete
+                    print(f"    Flow step {steps}: t={t:.4f}, plaquette={plaq:.6f}")
+                    sys.stdout.flush()  # Force log output in Modal
+                
+                # Check if target reached
+                if plaq >= target_plaq:
+                    if self.device.type == "cuda":
+                        torch.cuda.synchronize()
+                    print(f"    ✓ Target reached at t={t:.4f} (plaquette={plaq:.6f})")
+                    sys.stdout.flush()
+                    return t
+            
+            # Max time reached without hitting target - use fallback
+            final_plaq = self.plaquette()[0].item()
+            if self.device.type == "cuda":
+                torch.cuda.synchronize()
+            print(f"    ⚠ Max t={max_t} reached (plaquette={final_plaq:.6f} < {target_plaq:.4f})")
+            print(f"    Using fallback t_ref={fallback_t_ref}")
+            sys.stdout.flush()
+            
+            return fallback_t_ref
         
         def wilson_loop(self, R: int, T_loop: int):
             """
@@ -683,6 +766,50 @@ def run_rest_of_validation():
             std = np.std(values)
             return mean - std, mean + std
     
+    def compute_delta_O_jackknife(values, n_jackknife=None):
+        """
+        Compute δ_O = within-bin std with jackknife error estimation.
+        
+        Uses delete-1 jackknife resampling to estimate standard error
+        of the standard deviation, providing robust confidence intervals.
+        
+        Args:
+            values: array-like of values
+            n_jackknife: number of jackknife samples (default: all)
+        
+        Returns:
+            (delta_O, ci_lower, ci_upper): std and 95% confidence interval
+        """
+        values = np.array(values)
+        n = len(values)
+        if n < 3:
+            return 0.0, 0.0, 0.0
+        
+        if n_jackknife is None:
+            n_jackknife = n
+        
+        # Full sample estimate
+        delta_O_full = np.std(values)
+        
+        # Jackknife delete-1 estimates
+        jackknife_stds = []
+        for i in range(min(n, n_jackknife)):
+            mask = np.ones(n, dtype=bool)
+            mask[i] = False
+            jackknife_stds.append(np.std(values[mask]))
+        
+        jackknife_stds = np.array(jackknife_stds)
+        jackknife_mean = np.mean(jackknife_stds)
+        
+        # Jackknife standard error
+        se = np.sqrt((n - 1) / n * np.sum((jackknife_stds - jackknife_mean)**2))
+        
+        # 95% CI
+        ci_lower = delta_O_full - 1.96 * se
+        ci_upper = delta_O_full + 1.96 * se
+        
+        return delta_O_full, max(ci_lower, 0.0), ci_upper
+    
     # =========================================================================
     # BINNING AND ASSIGNMENT FUNCTIONS
     # =========================================================================
@@ -817,11 +944,16 @@ def run_rest_of_validation():
                 observable_results = []
                 
                 for obs_name, obs_values in observables.items():
-                    # Compute δ_O = median_b σ_b(O) for this observable
+                    # Compute δ_O = median_b σ_b(O) with jackknife error estimation
                     bin_stds = []
+                    bin_jackknife_stats = []
                     for bid, b in occupied_bins.items():
                         obs_in_bin = [obs_values[i] for i in b['indices']]
-                        if len(obs_in_bin) >= 2:
+                        if len(obs_in_bin) >= 3:  # Need >=3 for jackknife
+                            std_val, ci_lo, ci_hi = compute_delta_O_jackknife(obs_in_bin)
+                            bin_stds.append(std_val)
+                            bin_jackknife_stats.append({'std': std_val, 'ci_lo': ci_lo, 'ci_hi': ci_hi})
+                        elif len(obs_in_bin) >= 2:
                             bin_stds.append(np.std(obs_in_bin))
                     
                     if not bin_stds:
@@ -829,6 +961,13 @@ def run_rest_of_validation():
                     
                     delta_O = np.median(bin_stds)
                     q90_sigma = np.percentile(bin_stds, 90)
+                    
+                    # Compute jackknife error on delta_O if we have enough bins with jackknife
+                    delta_O_ci_lo, delta_O_ci_hi = delta_O, delta_O
+                    if len(bin_jackknife_stats) >= 3:
+                        jk_stds = [s['std'] for s in bin_jackknife_stats]
+                        delta_O_jk, delta_O_ci_lo, delta_O_ci_hi = compute_delta_O_jackknife(jk_stds)
+                        delta_O = delta_O_jk  # Use jackknife estimate
                     
                     # Compute D_min using k-NN in Φ-space
                     bin_centroids = []
@@ -872,6 +1011,8 @@ def run_rest_of_validation():
                     observable_results.append({
                         'observable': obs_name,
                         'delta_O': float(delta_O),
+                        'delta_O_ci_lo': float(delta_O_ci_lo),
+                        'delta_O_ci_hi': float(delta_O_ci_hi),
                         'q90_sigma': float(q90_sigma),
                         'D_min': float(D_min),
                         'bin_sep_ratio': float(bin_sep_ratio),
@@ -1259,6 +1400,108 @@ def run_rest_of_validation():
             'N': N_configs,
             'L': L_test,
             'beta': beta_test,
+            't_ref': float(t_ref),
+            'flow_levels': ['t_ref', '2×t_ref'],
+            'plaquette_mean_t_ref': float(plaqs.mean()),
+            'plaquette_mean_2x': float(plaqs_2x.mean()),
+            'action_mean_t_ref': float(actions.mean()),
+            'action_mean_2x': float(actions_2x.mean()),
+            'r_histogram': dict(zip(*np.unique(topo_charges, return_counts=True))),
+        }
+    else:
+        # PRODUCTION RUN: Larger lattice, more configs, with proper t_ref estimation
+        N_configs = 30  # Conservative for 1h timeout on A100
+        L_prod = 8
+        beta_prod = 6.0
+        print(f"  Generating {N_configs} production configs (L={L_prod}, β={beta_prod})...")
+        
+        lattice = BatchedLattice(N_configs, L_prod, beta_prod, device=device)
+        
+        # Thermalize with progress logging
+        # Note: This accumulates flow time (0.01, 0.02, 0.03...) across sweeps,
+        # consistent with smoke test pattern. This is a simplified thermalization
+        # for demo purposes; full production would use Monte Carlo updates.
+        print(f"  Thermalizing (20 sweeps)...")
+        for sweep in range(20):
+            lattice.wilson_flow_to_t(0.01, dt=0.005)
+            if sweep % 5 == 0:
+                plaq = lattice.plaquette()[0].item()
+                if device.type == "cuda":
+                    torch.cuda.synchronize()
+                print(f"    Thermalization sweep {sweep}: plaquette={plaq:.6f}")
+                sys.stdout.flush()
+        
+        # Estimate t_ref with bounded, logged routine
+        # Use a fresh (cold start) lattice for t_ref estimation to get a
+        # representative flow time from a well-defined initial state
+        print(f"  Estimating t_ref...")
+        t_ref_estimator = BatchedLattice(1, L_prod, beta_prod, device=device)
+        t_ref = t_ref_estimator.estimate_t_ref_with_logging(
+            target_plaq=0.6,  # Safe default
+            max_t=0.5,        # Hard cap to prevent hanging
+            dt=0.01,          # Conservative step size
+            log_every=10      # Heartbeat every 10 steps
+        )
+        print(f"  ✓ Using t_ref = {t_ref:.4f}")
+        
+        # Generate configs at t_ref flow level
+        print(f"  Computing observables at t_ref flow...")
+        lattice_t_ref = BatchedLattice(N_configs, L_prod, beta_prod, device=device)
+        lattice_t_ref.links = lattice.links.clone()
+        lattice_t_ref.wilson_flow_to_t(t_ref, dt=0.01)
+        
+        plaqs = lattice_t_ref.plaquette().cpu().numpy()
+        actions = lattice_t_ref.wilson_action().cpu().numpy()
+        topo_charges = lattice_t_ref.topological_charge_integer().cpu().numpy()
+        phi, r = lattice_t_ref.compute_cache(eps_skel=0.15)
+        wilson_loop_1x2 = lattice_t_ref.wilson_loop(1, 2).cpu().numpy()
+        
+        # Build configs_data list at t_ref
+        for i in range(N_configs):
+            configs_data.append({
+                'plaquette': float(plaqs[i]),
+                'action': float(actions[i]),
+                'r': int(topo_charges[i]),
+                'phi': phi[i],
+                'wilson_loop_1x2': float(wilson_loop_1x2[i]),
+            })
+            r_histogram_global.append(int(topo_charges[i]))
+        
+        # Generate configs at 2×t_ref flow level
+        print(f"  Computing observables at 2×t_ref flow...")
+        lattice_2x = BatchedLattice(N_configs, L_prod, beta_prod, device=device)
+        lattice_2x.links = lattice.links.clone()
+        lattice_2x.wilson_flow_to_t(2 * t_ref, dt=0.01)
+        
+        plaqs_2x = lattice_2x.plaquette().cpu().numpy()
+        actions_2x = lattice_2x.wilson_action().cpu().numpy()
+        topo_charges_2x = lattice_2x.topological_charge_integer().cpu().numpy()
+        phi_2x, r_2x = lattice_2x.compute_cache(eps_skel=0.15)
+        wilson_loop_1x2_2x = lattice_2x.wilson_loop(1, 2).cpu().numpy()
+        
+        # Build configs_data_2x list at 2×t_ref
+        for i in range(N_configs):
+            configs_data_2x.append({
+                'plaquette': float(plaqs_2x[i]),
+                'action': float(actions_2x[i]),
+                'r': int(topo_charges_2x[i]),
+                'phi': phi_2x[i],
+                'wilson_loop_1x2': float(wilson_loop_1x2_2x[i]),
+            })
+        
+        print(f"  Generated {N_configs} configs at 2 flow levels")
+        print(f"  t_ref flow - Plaquette: [{plaqs.min():.4f}, {plaqs.max():.4f}]")
+        print(f"  2×t_ref flow - Plaquette: [{plaqs_2x.min():.4f}, {plaqs_2x.max():.4f}]")
+        # Print topological charge summary (not full array for large N)
+        topo_unique, topo_counts = np.unique(topo_charges, return_counts=True)
+        topo_summary = f"range=[{topo_charges.min()}, {topo_charges.max()}], diversity={len(topo_unique)}"
+        print(f"  Topological charges: {topo_summary}")
+        print(f"  r_histogram: {dict(zip(topo_unique, topo_counts))}")
+        
+        all_results['test_config'] = {
+            'N': N_configs,
+            'L': L_prod,
+            'beta': beta_prod,
             't_ref': float(t_ref),
             'flow_levels': ['t_ref', '2×t_ref'],
             'plaquette_mean_t_ref': float(plaqs.mean()),
