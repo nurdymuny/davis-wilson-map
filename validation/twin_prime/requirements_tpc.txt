@@ -1,0 +1,52 @@
+# TPC-001-A: Twin Prime Holonomy Budget Test
+# Requirements for RTX 5070 (Blackwell) GPU acceleration
+
+# Core GPU acceleration (CUDA 12.x for Blackwell)
+cupy-cuda12x>=13.0.0
+
+# Fast prime generation (C++ backend, ~10x faster than pure Python)
+primesieve>=2.3.0
+
+# Numerical computing
+numpy>=1.24.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# Optional: Progress bars for long computations
+tqdm>=4.65.0
+
+# Optional: Better terminal output
+rich>=13.0.0
+
+# =============================================================================
+# Installation Notes for RTX 5070 (Blackwell):
+# =============================================================================
+#
+# 1. Ensure CUDA 12.x is installed:
+#    nvidia-smi  # Should show CUDA 12.x
+#
+# 2. Install CuPy for CUDA 12:
+#    pip install cupy-cuda12x
+#
+# 3. Install primesieve (requires C++ compiler):
+#    pip install primesieve
+#
+# 4. Run the test:
+#    python tpc_001_a_budget_stability.py          # Standard test (10^6 to 10^10)
+#    python tpc_001_a_budget_stability.py --quick  # Quick test (10^5 to 10^8)
+#    python tpc_001_a_budget_stability.py --full   # Full test (includes 10^11)
+#
+# =============================================================================
+# Expected Performance on RTX 5070:
+# =============================================================================
+#
+# N = 10^6:   ~0.5 seconds
+# N = 10^7:   ~1 second
+# N = 10^8:   ~5 seconds
+# N = 10^9:   ~30 seconds
+# N = 10^10:  ~5 minutes
+# N = 10^11:  ~45 minutes (requires 33GB+ RAM)
+#
+# Total for standard test: ~6 minutes
+# =============================================================================

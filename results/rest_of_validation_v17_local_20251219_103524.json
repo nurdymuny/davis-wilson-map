@@ -1,0 +1,196 @@
+{
+  "timestamp": "20251219_103524",
+  "device": "cuda",
+  "version": "17",
+  "smoke_test": false,
+  "sanity_checks_passed": true,
+  "test_config": {
+    "N": 100,
+    "L": 8,
+    "beta": 6.0,
+    "n_therm": 100,
+    "mcmc_method": "Cabibbo-Marinari heatbath + overrelaxation",
+    "t_ref": 0.0,
+    "flow_levels": [
+      "thermalized (MCMC)"
+    ],
+    "plaquette_mean": 0.0018072909442707896,
+    "action_mean": 147189.515625,
+    "r_histogram": {
+      "0": 100
+    }
+  },
+  "A2S_001": {
+    "test_id": "A2S-001",
+    "description": "Axiom 2: Approximate Cache Sufficiency (\u03b4_O, D_min/Q_0.9)",
+    "resolution_tests": [
+      {
+        "eps_skel": 0.15,
+        "eps_disc": 0.005,
+        "n_bins": 91,
+        "n_occupied": 8,
+        "delta_O": 0.0004927709087496623,
+        "q90_sigma": 0.0012816329166525974,
+        "D_min": 0.00029890635596530046,
+        "bin_sep_ratio": 0.23322306417190966,
+        "dispersion_ok": "False",
+        "bins_distinguishable": "False",
+        "observable_results": [
+          {
+            "observable": "plaquette",
+            "delta_O": 0.00039379706140607595,
+            "delta_O_ci_lo": 0.00039379706140607595,
+            "delta_O_ci_hi": 0.00039379706140607595,
+            "q90_sigma": 0.000704599288292229,
+            "D_min": 0.00010143348481506109,
+            "bin_sep_ratio": 0.14395910768077877,
+            "pass": "False"
+          },
+          {
+            "observable": "action",
+            "delta_O": 58.06640625,
+            "delta_O_ci_lo": 58.06640625,
+            "delta_O_ci_hi": 58.06640625,
+            "q90_sigma": 103.89531249999999,
+            "D_min": 14.96875,
+            "bin_sep_ratio": 0.14407531619869762,
+            "pass": "False"
+          },
+          {
+            "observable": "wilson_loop_1x2",
+            "delta_O": 0.0004927709087496623,
+            "delta_O_ci_lo": 0.0004927709087496623,
+            "delta_O_ci_hi": 0.0004927709087496623,
+            "q90_sigma": 0.0012816329166525974,
+            "D_min": 0.00029890635596530046,
+            "bin_sep_ratio": 0.23322306417190966,
+            "pass": "False"
+          }
+        ],
+        "pass": false
+      },
+      {
+        "eps_skel": 0.15,
+        "eps_disc": 0.01,
+        "n_bins": 32,
+        "n_occupied": 12,
+        "delta_O": 0.0007432665155194845,
+        "q90_sigma": 0.0027119491261475195,
+        "D_min": 0.0001245197816128244,
+        "bin_sep_ratio": 0.04591523506553087,
+        "dispersion_ok": "False",
+        "bins_distinguishable": "False",
+        "observable_results": [
+          {
+            "observable": "plaquette",
+            "delta_O": 0.0002770096237172515,
+            "delta_O_ci_lo": 0.00011602132811901848,
+            "delta_O_ci_hi": 0.0004379979193154845,
+            "q90_sigma": 0.0011078988353756902,
+            "D_min": 2.4576975036844778e-05,
+            "bin_sep_ratio": 0.022183410842300133,
+            "pass": "False"
+          },
+          {
+            "observable": "action",
+            "delta_O": 40.84832544125763,
+            "delta_O_ci_lo": 17.10972726671474,
+            "delta_O_ci_hi": 64.58692361580052,
+            "q90_sigma": 163.3700484631907,
+            "D_min": 3.6156250000058208,
+            "bin_sep_ratio": 0.022131504728178288,
+            "pass": "False"
+          },
+          {
+            "observable": "wilson_loop_1x2",
+            "delta_O": 0.0007432665155194845,
+            "delta_O_ci_lo": 0.0004377199409194766,
+            "delta_O_ci_hi": 0.0010488130901194926,
+            "q90_sigma": 0.0027119491261475195,
+            "D_min": 0.0001245197816128244,
+            "bin_sep_ratio": 0.04591523506553087,
+            "pass": "False"
+          }
+        ],
+        "pass": false
+      }
+    ],
+    "n_passing": 0,
+    "n_total": 2,
+    "overall_pass": false,
+    "r_histogram": {
+      "0": 100
+    },
+    "topology_frozen": true,
+    "r_diversity": 1,
+    "flow_level_used": "t_flow=0 (unflowed)"
+  },
+  "A4C2_001": {
+    "test_id": "A4C2-001",
+    "description": "Axiom 4 Case 2: Same-r Curvature Gap",
+    "overall_pass": false,
+    "kappa_adj": 0.0,
+    "r_histogram": {
+      "0": 100
+    },
+    "topology_frozen": true,
+    "r_diversity": 1
+  },
+  "KSTAR_001": {
+    "test_id": "KSTAR-001",
+    "description": "\u03ba* Continuum Survival (simplified demo)",
+    "scaling_data": [],
+    "overall_pass": true,
+    "note": "Simplified implementation for v17 demo"
+  },
+  "OSBRIDGE_001": {
+    "test_id": "OSBRIDGE-001",
+    "description": "Transfer-Matrix Qualitative Alignment (flow-based correlators)",
+    "t_flow": 0.1,
+    "action_variance": 43374.04357851562,
+    "m_gap_proxy": 208.26435983748064,
+    "n_configs": 100,
+    "overall_pass": "True",
+    "r_histogram": {
+      "0": 100
+    },
+    "topology_frozen": true,
+    "r_diversity": 1
+  },
+  "HEPS_001": {
+    "test_id": "HEPS-001",
+    "description": "H_\u03b5 \u2192 H_phys Uniform Gap (\u03b7_mean/\u03b7_max at reference)",
+    "refinement_ladder": [
+      {
+        "level": 0,
+        "eps_skel": 0.2,
+        "eps_disc": 0.2,
+        "n_bins": 1,
+        "eta_mean": 0.0,
+        "eta_max": 0.0
+      },
+      {
+        "level": 1,
+        "eps_skel": 0.15,
+        "eps_disc": 0.15,
+        "n_bins": 1,
+        "eta_mean": null,
+        "eta_max": null
+      }
+    ],
+    "overall_pass": true,
+    "r_histogram": {
+      "0": 100
+    },
+    "topology_frozen": true,
+    "r_diversity": 1
+  },
+  "summary": {
+    "A2S_001": false,
+    "A4C2_001": false,
+    "KSTAR_001": true,
+    "OSBRIDGE_001": "True",
+    "HEPS_001": true
+  },
+  "all_pass": false
+}

@@ -50,6 +50,7 @@ Thumbs.db
 experiments/
 
 # Sensitive Riemann results (RESPONSIBLE DISCLOSURE)
+results/riemann/
 rh_spectral_proof.png
 rh_spectrum*.npz
 
@@ -78,6 +79,9 @@ results/*.npy
 
 # Modal
 .modal/
+
+# Internal dev notes (not for public)
+docs/internal/
 
 # Jupyter
 .ipynb_checkpoints/

@@ -1,0 +1,119 @@
+{
+  "timestamp": "20251219_020816",
+  "device": "cuda",
+  "version": "17",
+  "smoke_test": false,
+  "sanity_checks_passed": true,
+  "test_config": {
+    "N": 30,
+    "L": 8,
+    "beta": 6.0,
+    "t_ref": 0.1,
+    "flow_levels": [
+      "t_ref",
+      "2\u00d7t_ref"
+    ],
+    "plaquette_mean_t_ref": 0.003991990350186825,
+    "plaquette_mean_2x": 0.004881595261394978,
+    "action_mean_t_ref": 146867.359375,
+    "action_mean_2x": 146736.1875,
+    "r_histogram": {
+      "0": 30
+    }
+  },
+  "A2S_001": {
+    "test_id": "A2S-001",
+    "description": "Axiom 2: Approximate Cache Sufficiency (\u03b4_O, D_min/Q_0.9)",
+    "resolution_tests": [],
+    "n_passing": 0,
+    "n_total": 0,
+    "overall_pass": false,
+    "r_histogram": {
+      "0": 30
+    },
+    "topology_frozen": true,
+    "r_diversity": 1,
+    "flow_level_used": "t_ref"
+  },
+  "A2S_001_2x": {
+    "test_id": "A2S-001",
+    "description": "Axiom 2: Approximate Cache Sufficiency (\u03b4_O, D_min/Q_0.9)",
+    "resolution_tests": [],
+    "n_passing": 0,
+    "n_total": 0,
+    "overall_pass": false,
+    "r_histogram": {
+      "0": 30
+    },
+    "topology_frozen": true,
+    "r_diversity": 1
+  },
+  "A4C2_001": {
+    "test_id": "A4C2-001",
+    "description": "Axiom 4 Case 2: Same-r Curvature Gap",
+    "overall_pass": false,
+    "kappa_adj": 0.0,
+    "r_histogram": {
+      "0": 30
+    },
+    "topology_frozen": true,
+    "r_diversity": 1
+  },
+  "KSTAR_001": {
+    "test_id": "KSTAR-001",
+    "description": "\u03ba* Continuum Survival (simplified demo)",
+    "scaling_data": [],
+    "overall_pass": true,
+    "note": "Simplified implementation for v17 demo"
+  },
+  "OSBRIDGE_001": {
+    "test_id": "OSBRIDGE-001",
+    "description": "Transfer-Matrix Qualitative Alignment (flow-based correlators)",
+    "t_flow": 0.1,
+    "action_variance": 63327.10283094618,
+    "m_gap_proxy": 251.6487687848804,
+    "n_configs": 30,
+    "overall_pass": "True",
+    "r_histogram": {
+      "0": 30
+    },
+    "topology_frozen": true,
+    "r_diversity": 1
+  },
+  "HEPS_001": {
+    "test_id": "HEPS-001",
+    "description": "H_\u03b5 \u2192 H_phys Uniform Gap (\u03b7_mean/\u03b7_max at reference)",
+    "refinement_ladder": [
+      {
+        "level": 0,
+        "eps_skel": 0.2,
+        "eps_disc": 0.2,
+        "n_bins": 1,
+        "eta_mean": 0.0,
+        "eta_max": 0.0
+      },
+      {
+        "level": 1,
+        "eps_skel": 0.15,
+        "eps_disc": 0.15,
+        "n_bins": 1,
+        "eta_mean": null,
+        "eta_max": null
+      }
+    ],
+    "overall_pass": true,
+    "r_histogram": {
+      "0": 30
+    },
+    "topology_frozen": true,
+    "r_diversity": 1
+  },
+  "summary": {
+    "A2S_001": false,
+    "A4C2_001": false,
+    "KSTAR_001": true,
+    "OSBRIDGE_001": "True",
+    "HEPS_001": true
+  },
+  "all_pass": false
+}
