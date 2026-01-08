@@ -369,33 +369,33 @@ class SimplicialSpacetime:
 
 
 # =============================================================================
-# TEST L: CORRELATOR-BASED COMMUTATOR
+# TEST L: CORRELATOR-BASED COMMUTATOR (with multi-seed stability)
 # =============================================================================
 
-def test_L_correlator_commutator(spacetime: SimplicialSpacetime) -> QGTestResult:
+def _compute_commutator_single(spacetime: SimplicialSpacetime, seed: int = None):
     """
-    QUANTUM-001-L: Extract [X,P] from time-ordered correlators.
-    
-    The commutator can be extracted from:
-    [X,P] = lim_{τ→0⁺} (⟨X(τ)P(0)⟩ - ⟨P(0)X(τ)⟩)
-    
-    In Euclidean signature:
-    [X,P] ∝ ∂/∂τ ⟨X(τ)P(0)⟩|_{τ→0}
-    
-    This is how lattice QCD extracts operator relations.
+    Compute commutator estimate for a single configuration.
+    Returns (commutator, asymmetry) tuple.
     """
+    if seed is not None:
+        np.random.seed(seed)
+        # Small random perturbation to winding to get different sample
+        winding_np = to_numpy(spacetime.winding)
+        perturbation = np.random.choice([-1, 0, 0, 0, 1], size=len(winding_np))
+        winding_np = winding_np + perturbation * 0.1
+    else:
+        winding_np = to_numpy(spacetime.winding)
+    
     # Get time slices
     slices = spacetime.get_time_slices(n_slices=20)
     
     vertices_np = to_numpy(spacetime.vertices)
     lengths_np = to_numpy(spacetime.edge_lengths)
-    winding_np = to_numpy(spacetime.winding)
     
     # X operator: average edge length at each time
     X_t = []
     for s in slices:
         if len(s) > 0:
-            # Edges involving these vertices
             edges_np = to_numpy(spacetime.edges)
             mask = np.isin(edges_np[:, 0], s) | np.isin(edges_np[:, 1], s)
             if np.any(mask):
@@ -407,7 +407,6 @@ def test_L_correlator_commutator(spacetime: SimplicialSpacetime) -> QGTestResult
     X_t = np.array(X_t)
     
     # P operator: related to winding/momentum
-    # P ~ ℏ * (derivative of phase)
     P_t = []
     triangles_np = to_numpy(spacetime.triangles)
     for s in slices:
@@ -421,10 +420,7 @@ def test_L_correlator_commutator(spacetime: SimplicialSpacetime) -> QGTestResult
             P_t.append(PlanckUnits.hbar * np.mean(np.abs(winding_np)) if len(winding_np) > 0 else 0)
     P_t = np.array(P_t)
     
-    # Compute correlators at different time separations
-    # C_XP(τ) = ⟨X(t+τ)P(t)⟩ averaged over t
-    # C_PX(τ) = ⟨P(t+τ)X(t)⟩ averaged over t
-    
+    # Compute correlators
     max_tau = len(X_t) // 2
     tau_values = np.arange(1, max_tau)
     
@@ -432,7 +428,6 @@ def test_L_correlator_commutator(spacetime: SimplicialSpacetime) -> QGTestResult
     C_PX = []
     
     for tau in tau_values:
-        # X(t+τ)P(t)
         xp_corr = np.mean(X_t[tau:] * P_t[:-tau])
         px_corr = np.mean(P_t[tau:] * X_t[:-tau])
         C_XP.append(xp_corr)
@@ -441,41 +436,77 @@ def test_L_correlator_commutator(spacetime: SimplicialSpacetime) -> QGTestResult
     C_XP = np.array(C_XP)
     C_PX = np.array(C_PX)
     
-    # Commutator ~ derivative of difference at τ→0
-    # [X,P] ~ d/dτ (C_XP - C_PX)|_{τ→0}
-    
+    # Extract commutator
     diff = C_XP - C_PX
     
-    # Fit to extract τ→0 limit
     if len(tau_values) > 2:
-        # Linear fit near τ=0
         slope, intercept = np.polyfit(tau_values[:5], diff[:5], 1)
-        commutator_estimate = intercept  # Value at τ=0
+        commutator_estimate = intercept
     else:
         commutator_estimate = diff[0] if len(diff) > 0 else 0
     
-    # The commutator should be non-zero (quantum) and have consistent sign
-    is_nonzero = abs(commutator_estimate) > 1e-6  # Meaningful threshold
+    asymmetry = np.mean(np.abs(C_XP - C_PX))
     
-    # Check if correlators show quantum behavior (non-commuting)
-    # Even small asymmetry indicates quantum structure
-    correlation_asymmetry = np.mean(np.abs(C_XP - C_PX))
-    has_asymmetry = correlation_asymmetry > 1e-6  # Meaningful threshold
+    return commutator_estimate, asymmetry
+
+
+def test_L_correlator_commutator(spacetime: SimplicialSpacetime) -> QGTestResult:
+    """
+    QUANTUM-001-L: Extract [X,P] from time-ordered correlators.
     
-    # Also check that correlators exist (have variance)
-    correlators_exist = len(C_XP) > 0 and np.std(C_XP) > 1e-10
+    The commutator can be extracted from:
+    [X,P] = lim_{τ→0⁺} (⟨X(τ)P(0)⟩ - ⟨P(0)X(τ)⟩)
     
-    # FIXED: Require BOTH asymmetry AND nonzero commutator estimate
-    passed = (is_nonzero or has_asymmetry) and correlators_exist
+    Multi-seed stability check: run 5 seeds and verify consistent nonzero structure.
+    Sign may flip (convention-dependent), but |[X,P]| should be stable.
+    """
+    # Multi-seed sweep for stability
+    n_seeds = 5
+    commutators = []
+    asymmetries = []
+    
+    for seed in range(n_seeds):
+        comm, asym = _compute_commutator_single(spacetime, seed=seed + 42)
+        commutators.append(comm)
+        asymmetries.append(asym)
+    
+    commutators = np.array(commutators)
+    asymmetries = np.array(asymmetries)
+    
+    # Statistics on MAGNITUDE (sign doesn't matter for structure)
+    abs_comm = np.abs(commutators)
+    mean_abs_comm = np.mean(abs_comm)
+    std_abs_comm = np.std(abs_comm)
+    
+    mean_asym = np.mean(asymmetries)
+    std_asym = np.std(asymmetries)
+    
+    # Gate conditions:
+    # 1. Mean |commutator| > epsilon (nonzero structure)
+    eps_comm = 1e-6
+    is_nonzero = mean_abs_comm > eps_comm
+    
+    # 2. Mean asymmetry > epsilon (quantum non-commutativity)
+    eps_asym = 1e-6
+    has_asymmetry = mean_asym > eps_asym
+    
+    # 3. Coefficient of variation < threshold (stability, not just noise)
+    # CV = std/mean; for stable signal, should be < 1
+    cv_comm = std_abs_comm / mean_abs_comm if mean_abs_comm > 0 else float('inf')
+    cv_asym = std_asym / mean_asym if mean_asym > 0 else float('inf')
+    is_stable = cv_comm < 1.5 and cv_asym < 1.5  # Allow some variation
+    
+    passed = is_nonzero and has_asymmetry and is_stable
     
     return QGTestResult(
         test_name="QUANTUM-001-L (Correlator Commutator)",
         passed=passed,
-        measured_value=commutator_estimate,
+        measured_value=mean_abs_comm,
         expected_value=PlanckUnits.hbar,
         tolerance=PlanckUnits.hbar,
-        details=f"[X,P]_corr = {commutator_estimate:.4f}, asymmetry = {correlation_asymmetry:.4f}, "
-                f"nonzero: {is_nonzero}, asymmetric: {has_asymmetry}"
+        details=f"|[X,P]| = {mean_abs_comm:.4f} ± {std_abs_comm:.4f} (n={n_seeds}), "
+                f"asym = {mean_asym:.4f} ± {std_asym:.4f}, "
+                f"CV = {cv_comm:.2f} (stable: {is_stable})"
     )
 
 
