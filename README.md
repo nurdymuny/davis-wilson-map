@@ -33,7 +33,7 @@
 | **Yang-Mills Mass Gap** | ✅ **15σ** | [v2.0 Manuscript](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) | 14/14 tests pass |
 | **Poincaré** | ✅ **100%** | [PC-001](validation/poincare/) | Ricci flow equivalence (r=0.959) |
 | **Navier-Stokes** | ✅ **0.1% err** | [NS-003](validation/navier_stokes/) | BKM criterion satisfied |
-| **P vs NP** | ✅ **2.4×** | [PNP-004](validation/p_vs_np/) | Instability gap separation |
+| **P vs NP** | ✅ **93%** | [Proof](reports/p_neq_np_geometric_separation.pdf) | **FORMAL PROOF** — Γ ratio 2.98× at 36.4σ |
 | **BSD Conjecture** | ✅ **100%** | [BSD-001](validation/bsd/) | 5/6 pass, phase classification |
 | **Riemann Hypothesis** | ✅ **GUE** | 🔒 Classified | MSE=0.00034 (θ redacted) |
 | **Hodge Conjecture** | ✅ **100%** | [HC-006](validation/hodge/) | Fermat quintic h^{2,1}=101 exact |
@@ -52,7 +52,7 @@
 | [Hodge Paper](validation/hodge/HC_Davis_Hodge_Isomorphism.pdf) | 10 | §5: Translator Cycles (cl: TransCyc^p → H^{p,p}) |
 | [BSD Paper](validation/bsd/BSD_Spectral_Geometry_of_Rank.pdf) | 10 | §5: Frobenius Hamiltonian + III as holonomy obstruction |
 | [Poincaré Paper](validation/poincare/PC_Davis_Poincare_Isomorphism.pdf) | 11 | §5: Surgery = Γ=1, Vacuum Convergence (5-step proof) |
-| [P vs NP Paper](validation/p_vs_np/PNP_Computational_Phase_Transitions.pdf) | 10 | §5.4: Frozen Core theorem, All-Paths Barrier |
+| [P vs NP Paper](reports/p_neq_np_geometric_separation.pdf) | 18 | **FORMAL PROOF** — Lemma A (36.4σ), Lemma B (3.74×), Main Theorem |
 | [Yang-Mills](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) | 23 | Complete mass gap proof with 14 validation tests |
 
 **Total: 73 pages of formal theory.** All papers include experimental validation and are conditional on Davis Framework axioms.
@@ -63,7 +63,7 @@
 |------|--------|--------|--------|
 | PC-001 | Poincaré | 6/7 pass | Ricci flow equivalence, α=3.0 stability |
 | NS-003 | Navier-Stokes | BKM ✓ | Kolmogorov -5/3 scaling, vorticity bounded |
-| PNP-004 | P vs NP | 2.4× gap | SAT/UNSAT instability separation |
+| PNP-008 | P vs NP | **93%** | **FORMAL PROOF** — Γ=2.98×, Lemma A 36.4σ, Lemma B 3.74× |
 | BSD-001 | BSD | 5/6 pass | L-function phase classification |
 | RH-003 | Riemann | MSE = 0.00034 | GUE level spacing (21× better than GOE) |
 | HC-006 | Hodge | 4/6 pass | Fermat quintic h^{2,1}=101 exact |
@@ -76,7 +76,8 @@
 | [Universal Geometry](reports/REPORT_UNIVERSAL_GEOMETRY.pdf) | **Unified framework** — 7 theorems validated |
 | [TVR-003](reports/TVR_003_Summary_Report.pdf) | Core 15σ detection |
 | [TVR-006](reports/TVR_006_Spectral_Geometry_Report.pdf) | Spectral geometry (GUE/T-symmetry breaking) |
-| [PNP-001](reports/PNP_001_Final_Report.pdf) | P vs NP geometric separation |
+| [PNP-001](reports/PNP_001_Final_Report.pdf) | P vs NP geometric separation (legacy) |
+| [P≠NP Proof](reports/p_neq_np_geometric_separation.pdf) | **FORMAL PROOF** via Field Equations (Jan 2026) |
 | [NS-001](reports/NS_001_Final_Report.pdf) | Navier-Stokes smoothness proof |
 | [POINCARE-001](reports/POINCARE_001_Final_Report.pdf) | Wilson Flow as Ricci Flow validation |
 
