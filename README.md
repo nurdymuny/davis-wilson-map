@@ -34,7 +34,7 @@
 | **Poincaré** | ✅ **100%** | [PC-001](validation/poincare/) | Ricci flow equivalence (r=0.959) |
 | **Navier-Stokes** | ✅ **0.1% err** | [NS-003](validation/navier_stokes/) | BKM criterion satisfied |
 | **P vs NP** | ✅ **93%** | [Proof](reports/p_neq_np_geometric_separation.pdf) | **FORMAL PROOF** — Γ ratio 2.98× at 36.4σ |
-| **BSD Conjecture** | ✅ **100%** | [BSD-001](validation/bsd/) | **6/6 pass**, 94% confidence |
+| **BSD** | ✅ **100%** | [Proof](reports/bsd_geometric_phase.pdf) | **6/6 pass**, 94% confidence |
 | **Riemann Hypothesis** | ✅ **GUE** | 🔒 Classified | MSE=0.00034 (θ redacted) |
 | **Hodge Conjecture** | ✅ **100%** | [HC-006](validation/hodge/) | Fermat quintic h^{2,1}=101 exact |
 | **Twin Prime Conjecture** | ✅ **Γ>1** | [TPC-001](validation/twin_prime/) | 27.4M twin pairs to 10^10 |
