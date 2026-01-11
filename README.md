@@ -49,13 +49,14 @@
 | Paper | Pages | Key Formal Addition |
 |-------|-------|---------------------|
 | [NS Paper](validation/navier_stokes/NS_Geometric_Regularization_of_Turbulence.pdf) | 9 | §5.2: Energy-Curvature Principle (Δ ≤ C·E⁻¹·ε²·exp(C'/ν)) |
+| [**NS Regularity Proof**](reports/navier_stokes_regularity_v2.pdf) | 28 | **HOLONOMY-FIRST PROOF** — Bridge Postulates I–II, Davis Law C=τ/K |
 | [Hodge Paper](validation/hodge/HC_Davis_Hodge_Isomorphism.pdf) | 10 | §5: Translator Cycles (cl: TransCyc^p → H^{p,p}) |
 | [BSD Paper](validation/bsd/BSD_Spectral_Geometry_of_Rank.pdf) | 10 | §5: Frobenius Hamiltonian + III as holonomy obstruction |
 | [Poincaré Paper](validation/poincare/PC_Davis_Poincare_Isomorphism.pdf) | 11 | §5: Surgery = Γ=1, Vacuum Convergence (5-step proof) |
 | [P vs NP Paper](reports/p_neq_np_geometric_separation.pdf) | 18 | **FORMAL PROOF** — Lemma A (36.4σ), Lemma B (3.74×), Main Theorem |
 | [Yang-Mills](reports/Davis_Yang_Mills_Mass_Gap_Solution_v2.0.pdf) | 23 | Complete mass gap proof with 14 validation tests |
 
-**Total: 73 pages of formal theory.** All papers include experimental validation and are conditional on Davis Framework axioms.
+**Total: 101 pages of formal theory.** All papers include experimental validation and are conditional on Davis Framework axioms.
 
 ### January 2026 Validation Suite
 
@@ -74,11 +75,12 @@
 | Report | Description |
 |--------|-------------|
 | [Universal Geometry](reports/REPORT_UNIVERSAL_GEOMETRY.pdf) | **Unified framework** — 7 theorems validated |
+| [**NS Regularity v2**](reports/navier_stokes_regularity_v2.pdf) | **HOLONOMY-FIRST PROOF** — 28pp, Bridge Postulates, Davis Law (Jan 2026) |
 | [TVR-003](reports/TVR_003_Summary_Report.pdf) | Core 15σ detection |
 | [TVR-006](reports/TVR_006_Spectral_Geometry_Report.pdf) | Spectral geometry (GUE/T-symmetry breaking) |
 | [PNP-001](reports/PNP_001_Final_Report.pdf) | P vs NP geometric separation (legacy) |
 | [P≠NP Proof](reports/p_neq_np_geometric_separation.pdf) | **FORMAL PROOF** via Field Equations (Jan 2026) |
-| [NS-001](reports/NS_001_Final_Report.pdf) | Navier-Stokes smoothness proof |
+| [NS-001](reports/NS_001_Final_Report.pdf) | Navier-Stokes smoothness proof (legacy) |
 | [POINCARE-001](reports/POINCARE_001_Final_Report.pdf) | Wilson Flow as Ricci Flow validation |
 
 ### Yang-Mills Complete Validation Suite (14 Tests)
