@@ -79,10 +79,19 @@ When $m \geq \dim(M)$, the solution set is discrete (finitely many points).
 
 We establish that Hodge problems ARE Davis-Wilson problems via an embedding functor.
 
-\begin{definition}[Category DW]
-Objects: Pairs $(M, \mathcal{C})$ where $M$ is a Riemannian manifold with 
-$K \leq K_{\max}$ and $\mathcal{C}$ is a finite set of holonomy constraints.
-Morphisms: Constraint-preserving isometries.
+\begin{definition}[Extended DW Category]
+Objects: Triples $(M, \mathcal{C}_T, \mathcal{C}_P)$ where:
+\begin{itemize}
+\item $M$ is a Riemannian manifold with $K \leq K_{\max}$
+\item $\mathcal{C}_T$ is a set of \emph{transport constraints} (holonomy conditions)
+\item $\mathcal{C}_P$ is a set of \emph{position constraints} (pointwise conditions)
+\end{itemize}
+The solution set is:
+\[
+S_{\text{valid}} = \{x \in M : x \text{ satisfies } \mathcal{C}_P\} 
+\cap \{x : \text{holonomy at } x \text{ satisfies } \mathcal{C}_T\}
+\]
+Morphisms: Maps preserving both constraint types.
 \end{definition}
 
 \begin{definition}[Category Hodge]
@@ -92,16 +101,16 @@ Morphisms: Period map morphisms preserving $\alpha$.
 \end{definition}
 
 \begin{theorem}[Embedding Functor G: Hodge $\to$ DW]
-Define $G(D, \alpha) = (D, \mathcal{C}_\alpha)$ where $D$ retains its 
-Griffiths-Schmid metric and $\mathcal{C}_\alpha$ consists of:
+Define $G(D, \alpha) = (D, \mathcal{C}_T, \mathcal{C}_P)$ where $D$ retains its 
+Griffiths-Schmid metric and:
 \begin{itemize}
-\item Transport constraints (holonomy conditions on loops)
-\item Position constraints (pointwise conditions on locus)
+\item $\mathcal{C}_T$ = transport constraints (rationality, Hodge-Riemann)
+\item $\mathcal{C}_P$ = position constraints (type $(p,p)$ locus)
 \end{itemize}
 \end{theorem}
 
 \begin{proof}
-We construct explicit holonomy constraints for each Hodge condition.
+We construct explicit constraints for each Hodge condition.
 
 \textbf{Setup:} Let $\mathcal{H} \to D$ be the Hodge bundle with fiber 
 $\mathcal{H}_s = H^{2p}(X_s, \mathbb{C})$ over $s \in D$.
