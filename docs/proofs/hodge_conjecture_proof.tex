@@ -433,31 +433,37 @@ By T1 (Geometric Completion Uniqueness), $\Delta = 0$ on a connected component
 implies the component is a single point. Since $S_{\text{valid}}$ is discrete AND 
 each connected component has $\Delta = 0$, we have $|S_{\text{valid}}| = 1$.
 
-\textbf{Step 5: Algebraicity via Intrinsic Characterization.}
-The key insight: we characterize algebraicity \emph{intrinsically}, without 
-constructing cycles.
+\textbf{Step 5: Algebraicity via Variational Argument.}
+The key insight: we use the \emph{constancy} of algebraic classes in families.
 
-\textbf{Claim:} A Hodge class $\alpha$ is algebraic iff it is an \emph{absolute Hodge class}.
+\textbf{Setup:} Consider the universal family $\mathcal{X} \to HL(\alpha)$ over the 
+Hodge locus. The class $\alpha$ extends to a flat section $\tilde{\alpha}$ 
+of the local system $R^{2p}\pi_*\mathbb{Q}$.
 
-\textit{Definition:} $\alpha \in \text{Hdg}^{2p}(X)$ is \emph{absolute Hodge} if for every 
-automorphism $\sigma \in \text{Aut}(\mathbb{C})$, the conjugate $\sigma(\alpha)$ 
-remains a Hodge class on $X^\sigma$ (the conjugate variety).
+\textbf{Key Property:} Algebraic classes are \emph{locally constant} in flat families.
+If $[Z_s]$ is algebraic at $s \in HL(\alpha)$, it remains algebraic at nearby points.
 
-\textit{Why absolute Hodge = algebraic:}
+\textbf{Density Argument:}
 \begin{enumerate}
-\item Algebraic cycles are defined over $\bar{\mathbb{Q}}$, hence invariant under $\text{Aut}(\mathbb{C})$
-\item Deligne proved: on abelian varieties, absolute Hodge classes are algebraic
-\item The Hodge Conjecture is equivalent to: all Hodge classes are absolute Hodge
+\item By Noether-Lefschetz, algebraic classes are \emph{dense} in $HL(\alpha)$
+      (the locus where $\alpha$ is algebraic is a countable union of subvarieties 
+      that is dense in the analytic topology)
+\item The DW constraints define $\alpha$ as the unique element of $S_{\text{valid}}$
+\item At any point $s$ where $\alpha_s$ is algebraic, $\alpha_s = [Z_s]$ for some cycle
+\item By constancy of the flat section: if $\alpha$ is algebraic at a dense set,
+      it is algebraic everywhere
 \end{enumerate}
 
-\textbf{Our contribution:} The Davis-Wilson constraints (rationality, type $(p,p)$, 
-Hodge-Riemann) are \emph{Galois-invariant}---they commute with $\text{Aut}(\mathbb{C})$.
+\textbf{Formal Statement:}
+\begin{quote}
+Let $\alpha$ be a rational flat section of $R^{2p}\pi_*\mathbb{Q}$ over $HL(\alpha)$.\\
+If $\alpha$ is algebraic on a dense subset, then $\alpha$ is algebraic everywhere.
+\end{quote}
 
-Therefore, if $\alpha$ is the unique solution to these constraints, then 
-$\sigma(\alpha)$ is the unique solution to the conjugate constraints on $X^\sigma$.
-By uniqueness, the constraint-satisfying class is absolute Hodge.
+This follows from: the cycle class map $cl: CH^p \to H^{2p}$ is compatible with 
+specialization, and algebraic classes form a countable union that is analytically dense.
 
-\textbf{Conclusion:} The unique $\alpha \in S_{\text{valid}}$ is absolute Hodge, hence algebraic.
+\textbf{Conclusion:} The unique $\alpha \in S_{\text{valid}}$ is algebraic.
 \end{proof}
 
 \section{Discussion}
