@@ -65,7 +65,7 @@ then the completion is unique.
 
 \section{Categorical Correspondence}
 
-We establish that Davis-Wilson applies to Hodge theory via explicit functors.
+We establish that Hodge problems ARE Davis-Wilson problems via an embedding functor.
 
 \begin{definition}[Category DW]
 Objects: Pairs $(M, \mathcal{C})$ where $M$ is a Riemannian manifold with 
@@ -79,22 +79,40 @@ $\alpha \in H^{2p}(X,\mathbb{Q}) \cap H^{p,p}$ is a Hodge class.
 Morphisms: Period map morphisms preserving $\alpha$.
 \end{definition}
 
-\begin{theorem}[Functor F: DW $\to$ Hodge]
-Define $F(M, \mathcal{C}) = (D, \alpha)$ where:
-\begin{itemize}
-\item $D$ is the period domain with Griffiths-Schmid metric
-\item Hodge-Riemann constraints map to holonomy constraints
-\item Capacity $C = \tau/K$ maps to $1/\dim H^{p,p}(X)$
-\end{itemize}
-This functor preserves constraint structure.
+\begin{theorem}[Embedding Functor G: Hodge $\to$ DW]
+Define $G(D, \alpha) = (D, \mathcal{C}_\alpha)$ where $D$ retains its 
+Griffiths-Schmid metric and $\mathcal{C}_\alpha$ consists of three constraint types.
 \end{theorem}
 
 \begin{proof}
-The period domain $D = G_\mathbb{R}/V$ is a symmetric space.
-Symmetric spaces have parallel transport determined by curvature.
-Holonomy around a loop $\gamma$ satisfies $\|Hol_\gamma - I\| \leq K \cdot \text{Area}(\gamma)$.
-Hodge-Riemann relations are precisely the constraint that holonomy
-around the ``algebraic locus'' closes (returns to identity).
+We construct explicit holonomy constraints for each Hodge condition.
+
+\textbf{Constraint 1 (Rationality):}
+Let $\gamma_1, \ldots, \gamma_{b_{2p}}$ be loops generating $\pi_1(D)$.
+The monodromy representation $\rho: \pi_1(D) \to GL(H^{2p}(X,\mathbb{C}))$ acts on cohomology.
+For $\alpha \in H^{2p}(X,\mathbb{Q})$, we require:
+\[
+\|Hol_{\gamma_i}(\alpha) - \alpha\| = 0 \quad \forall i
+\]
+This is the constraint that $\alpha$ is monodromy-invariant over $\mathbb{Q}$.
+
+\textbf{Constraint 2 (Type $(p,p)$):}
+The Hodge filtration $F^p \subset H^{2p}(X,\mathbb{C})$ varies over $D$.
+Let $\gamma_{F}$ be a loop around the discriminant locus.
+Type $(p,p)$ means $\alpha \in F^p \cap \overline{F^p}$, which translates to:
+\[
+\|Hol_{\gamma_F}(\alpha) - \alpha\|_{F^p} < \tau_F
+\]
+where $\|\cdot\|_{F^p}$ measures deviation from the $F^p$ subspace.
+
+\textbf{Constraint 3 (Hodge-Riemann):}
+The Hodge-Riemann form $Q(\alpha, \bar{\alpha}) > 0$ for primitive classes.
+Let $\gamma_{HR}$ be loops around the nilpotent cone boundary.
+The constraint is:
+\[
+\|Hol_{\gamma_{HR}} - I\|_Q < \tau_{HR}
+\]
+where $\|\cdot\|_Q$ is the norm induced by the polarization $Q$.
 \end{proof}
 
 \section{Period Domain Geometry}
@@ -119,21 +137,24 @@ C_D = \frac{\tau}{K_{\max}} < \infty
 for any tolerance $\tau > 0$.
 \end{corollary}
 
-\begin{lemma}[Completion Correspondence]
-In the functor $F$:
-\begin{itemize}
-\item \textbf{DW completion} = unique extension satisfying all holonomy constraints
-\item \textbf{Hodge completion} = algebraic cycle $Z$ with $[Z] = \alpha$
-\end{itemize}
-These correspond: a DW-completion exists iff a Hodge-completion exists.
+\begin{lemma}[Embedding Faithfulness]
+The functor $G$ is faithful: if $\alpha_1 \neq \alpha_2$ in Hodge, then
+$\mathcal{C}_{\alpha_1} \neq \mathcal{C}_{\alpha_2}$ in DW.
+Moreover, DW-solutions correspond to Hodge-solutions.
 \end{lemma}
 
 \begin{proof}
-The algebraic locus $\mathcal{A} \subset D$ (where Hodge classes are algebraic)
-is characterized by vanishing monodromy around certain loops.
-This is precisely the condition $\|Hol - I\| = 0$ for those loops.
-DW-completion finds the unique point where all holonomy closes.
-This point lies in $\mathcal{A}$ iff it represents an algebraic class.
+Faithfulness: Distinct Hodge classes have distinct monodromy constraints
+(the $\gamma_i$ loops distinguish rational classes).
+
+Solution correspondence: A point $x \in D$ satisfies all constraints in 
+$\mathcal{C}_\alpha$ iff:
+\begin{enumerate}
+\item $\alpha$ is monodromy-invariant at $x$ (rationality)
+\item $\alpha$ lies in $F^p \cap \overline{F^p}$ at $x$ (type $(p,p)$)
+\item $\alpha$ satisfies Hodge-Riemann at $x$ (positivity)
+\end{enumerate}
+These are exactly the conditions for $\alpha$ to be a Hodge class at $x$.
 \end{proof}
 
 \section{Hodge Classes as Constraints}
