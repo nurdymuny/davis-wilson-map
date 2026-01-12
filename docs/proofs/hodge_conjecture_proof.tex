@@ -83,15 +83,17 @@ We establish that Hodge problems ARE Davis-Wilson problems via an embedding func
 Objects: Triples $(M, \mathcal{C}_T, \mathcal{C}_P)$ where:
 \begin{itemize}
 \item $M$ is a Riemannian manifold with $K \leq K_{\max}$
-\item $\mathcal{C}_T$ is a set of \emph{transport constraints} (holonomy conditions)
-\item $\mathcal{C}_P$ is a set of \emph{position constraints} (pointwise conditions)
+\item $\mathcal{C}_T$ is a set of \emph{transport constraints}: conditions on 
+      $Hol_\gamma$ for loops $\gamma$ based at points of $M$
+\item $\mathcal{C}_P$ is a set of \emph{position constraints}: pointwise conditions on $M$
 \end{itemize}
 The solution set is:
 \[
-S_{\text{valid}} = \{x \in M : x \text{ satisfies } \mathcal{C}_P\} 
-\cap \{x : \text{holonomy at } x \text{ satisfies } \mathcal{C}_T\}
+S_{\text{valid}} = \{x \in M : x \text{ satisfies } \mathcal{C}_P \text{ and }
+Hol_\gamma \text{ satisfies } \mathcal{C}_T \text{ for all } \gamma \text{ based at } x\}
 \]
-Morphisms: Maps preserving both constraint types.
+Morphisms: Isometries $f: M_1 \to M_2$ with $f^*\mathcal{C}_{T,2} = \mathcal{C}_{T,1}$ 
+and $f^{-1}(\mathcal{C}_{P,2}) = \mathcal{C}_{P,1}$.
 \end{definition}
 
 \begin{definition}[Category Hodge]
@@ -115,10 +117,13 @@ We construct explicit constraints for each Hodge condition.
 \textbf{Setup:} Let $\mathcal{H} \to D$ be the Hodge bundle with fiber 
 $\mathcal{H}_s = H^{2p}(X_s, \mathbb{C})$ over $s \in D$.
 Equip $\mathcal{H}$ with the Gauss-Manin connection $\nabla^{GM}$.
-The Griffiths-Schmid metric $h$ on $D$ is induced by the Hodge metric on fibers:
+
+The \emph{fiber metric} is the Hodge inner product:
 \[
-h(\alpha, \beta) = \int_X \alpha \wedge \bar{\beta}
+\langle\alpha, \beta\rangle_s = \int_{X_s} \alpha \wedge \bar{\beta}
 \]
+The \emph{base metric} $g_{GS}$ on $D$ is the Griffiths-Schmid metric, induced 
+by the Killing form on $\mathfrak{g} = \text{Lie}(G)$.
 
 \textbf{Key Relationship:} The Gauss-Manin connection has holonomy group 
 $Hol(\nabla^{GM}) \subseteq GL(H^{2p})$. For a loop $\gamma$ based at $s$:
@@ -151,16 +156,17 @@ S_{(p,p)} = \{s \in D : \alpha_s \in F^p_s \cap \overline{F^p_s}\}
 This is the \emph{Hodge locus} for $\alpha$.
 
 \textbf{Constraint 3 (Hodge-Riemann):}
-The polarization $Q: \mathcal{H} \times \mathcal{H} \to \mathbb{C}$ is flat for $\nabla^{GM}$
-(Riemann bilinear relations). For primitive $\alpha$:
+The polarization $Q: \mathcal{H} \times \mathcal{H} \to \mathbb{C}$ satisfies 
+Riemann bilinear relations. For $\alpha$ of type $(p,p)$ on an $n$-fold:
 \[
-i^{p-q} Q(\alpha, \bar{\alpha}) > 0
+(-1)^p Q(\alpha, \bar{\alpha}) > 0 \quad \text{(for primitive } \alpha \text{)}
 \]
-This positivity is preserved by $Hol_\gamma$ since $Q$ is flat:
+This is a \emph{position constraint}: it restricts which $\alpha$ are valid at each $s \in D$.
+Combined with type $(p,p)$, the position constraint becomes:
 \[
-Q(Hol_\gamma(\alpha), \overline{Hol_\gamma(\alpha)}) = Q(\alpha, \bar{\alpha})
+\mathcal{C}_P: \quad s \in D \text{ where } \alpha_s \in F^p_s \cap \overline{F^p_s} 
+\text{ and } (-1)^p Q(\alpha_s, \bar{\alpha}_s) > 0
 \]
-The constraint: holonomy preserves the Hodge-Riemann cone.
 \end{proof}
 
 \begin{lemma}[Functor on Morphisms]
@@ -168,11 +174,11 @@ Let $f: (D_1, \alpha_1) \to (D_2, \alpha_2)$ be a morphism in Hodge
 (a holomorphic map $f: D_1 \to D_2$ with $f^*\alpha_2 = \alpha_1$).
 
 Define $G(f): (D_1, \mathcal{C}_{\alpha_1}) \to (D_2, \mathcal{C}_{\alpha_2})$ 
-as the same map $f$, which is:
+as the same map $f$. This preserves constraints because:
 \begin{enumerate}
-\item An isometry: period maps preserve the Griffiths-Schmid metric
-\item Constraint-preserving: $f^*\mathcal{C}_{\alpha_2} = \mathcal{C}_{\alpha_1}$ 
-      because $f^*$ intertwines Gauss-Manin connections
+\item $f^*$ intertwines Gauss-Manin connections: $f^* \nabla^{GM}_2 = \nabla^{GM}_1 f^*$
+\item Hence $f^*$ preserves monodromy: $f^* \circ Hol_{\gamma} = Hol_{f_*\gamma} \circ f^*$
+\item Position constraints pull back: $f^{-1}(\mathcal{C}_{P,2}) \supseteq \mathcal{C}_{P,1}$
 \end{enumerate}
 \end{lemma}
 
@@ -191,17 +197,16 @@ and $V$ is a compact subgroup, yielding a symmetric space of finite curvature.
 \end{theorem}
 
 \begin{lemma}[Curvature Identification]
-The curvature bound $K_{\max}$ in T3 is the sectional curvature of $(D, g_{GS})$ 
-where $g_{GS}$ is the Griffiths-Schmid metric on the base $D$.
+Two curvatures are relevant:
 
-This is the relevant curvature because:
-\begin{enumerate}
-\item T3 bounds holonomy via $\|Hol_\gamma - I\| \leq K \cdot \text{Area}(\Sigma_\gamma)$
-\item $\Sigma_\gamma$ is a surface in $D$ bounding the loop $\gamma$
-\item The bound uses sectional curvature of $D$, not fiber curvature
-\end{enumerate}
-Since $D = G_\mathbb{R}/V$ is a symmetric space, 
-$K_{\max} = \max_{\sigma} K(\sigma)$ over all 2-planes $\sigma \subset TD$ is finite.
+\textbf{1. Connection curvature:} The Gauss-Manin connection $\nabla^{GM}$ is flat 
+($\Omega^{GM} = 0$), so holonomy depends only on homotopy class of $\gamma$, not area.
+
+\textbf{2. Base curvature:} The Griffiths-Schmid metric $g_{GS}$ on $D$ has 
+sectional curvature bounded by $K_{\max} < \infty$ (symmetric space).
+
+For T3, we use base curvature to bound the \emph{size} of the Hodge locus $HL(\alpha)$.
+The constraint count $m$ relates to the codimension of $HL(\alpha)$ in $D$.
 \end{lemma}
 
 \begin{corollary}
@@ -213,23 +218,17 @@ for any tolerance $\tau > 0$.
 \end{corollary}
 
 \begin{lemma}[Embedding Faithfulness]
-The functor $G$ is faithful: if $\alpha_1 \neq \alpha_2$ in Hodge, then
-$\mathcal{C}_{\alpha_1} \neq \mathcal{C}_{\alpha_2}$ in DW.
-Moreover, DW-solutions correspond to Hodge-solutions.
+The functor $G$ is faithful: distinct morphisms in Hodge map to distinct morphisms in DW.
+Moreover, $G$ is injective on objects.
 \end{lemma}
 
 \begin{proof}
-Faithfulness: Distinct Hodge classes have distinct monodromy constraints
-(the $\gamma_i$ loops distinguish rational classes).
+\textbf{Injective on objects:} If $(D, \alpha_1) \neq (D, \alpha_2)$, then either
+$D_1 \neq D_2$ (distinct base) or $\alpha_1 \neq \alpha_2$ (distinct class).
+Distinct classes have distinct Hodge loci, hence distinct $\mathcal{C}_P$.
 
-Solution correspondence: A point $x \in D$ satisfies all constraints in 
-$\mathcal{C}_\alpha$ iff:
-\begin{enumerate}
-\item $\alpha$ is monodromy-invariant at $x$ (rationality)
-\item $\alpha$ lies in $F^p \cap \overline{F^p}$ at $x$ (type $(p,p)$)
-\item $\alpha$ satisfies Hodge-Riemann at $x$ (positivity)
-\end{enumerate}
-These are exactly the conditions for $\alpha$ to be a Hodge class at $x$.
+\textbf{Faithful on morphisms:} Let $f, g: (D_1, \alpha_1) \to (D_2, \alpha_2)$ with 
+$G(f) = G(g)$. Then $f = g$ as maps $D_1 \to D_2$, so $f = g$ in Hodge.
 \end{proof}
 
 \begin{definition}[Completion Domain]
@@ -258,14 +257,17 @@ is an algebraic subvariety of $D$ (Cattani-Deligne-Kaplan).
 AL(\alpha) = \{s \in HL(\alpha) : \alpha_s = [Z] \text{ for some cycle } Z\}
 \]
 
-\textbf{Step 3 (Field Equations):} 
-By T3, the constraint structure forces a unique completion.
-The completion point $s^* \in HL(\alpha)$ has $\Delta(s^*) = 0$.
+\textbf{Step 3:} Define the obstruction:
+\[
+\Delta(\alpha, s) = \text{dist}([\alpha_s], \text{im}(cl: CH^p(X_s) \to H^{2p}(X_s)))
+\]
+where $cl$ is the cycle class map. By definition, $\Delta = 0$ iff $\alpha_s$ is algebraic.
 
-\textbf{Step 4 (Key Claim):} $\Delta = 0$ characterizes $AL(\alpha)$ within $HL(\alpha)$.
+\textbf{Step 4 (Gap - requires proof):} 
+The claim ``$\Delta = 0$ at the unique T3 completion point'' requires showing 
+that the DW constraint structure \emph{forces} $\Delta = 0$.
 
-The obstruction $\Delta$ measures failure of the holonomy to close in $CH^p(X)$.
-When $\Delta = 0$, the class lifts from $H^{2p}$ to $CH^p$---i.e., it is algebraic.
+This is the core of the Hodge Conjecture and is addressed in Section 7.
 \end{proof}
 
 \section{Hodge Classes as Constraints}
