@@ -169,6 +169,20 @@ Specifically, $D = G_\mathbb{R}/V$ where $G$ is a reductive algebraic group
 and $V$ is a compact subgroup, yielding a symmetric space of finite curvature.
 \end{theorem}
 
+\begin{lemma}[Curvature Identification]
+The curvature bound $K_{\max}$ in T3 is the sectional curvature of $(D, g_{GS})$ 
+where $g_{GS}$ is the Griffiths-Schmid metric on the base $D$.
+
+This is the relevant curvature because:
+\begin{enumerate}
+\item T3 bounds holonomy via $\|Hol_\gamma - I\| \leq K \cdot \text{Area}(\Sigma_\gamma)$
+\item $\Sigma_\gamma$ is a surface in $D$ bounding the loop $\gamma$
+\item The bound uses sectional curvature of $D$, not fiber curvature
+\end{enumerate}
+Since $D = G_\mathbb{R}/V$ is a symmetric space, 
+$K_{\max} = \max_{\sigma} K(\sigma)$ over all 2-planes $\sigma \subset TD$ is finite.
+\end{lemma}
+
 \begin{corollary}
 The Davis capacity of the period domain is finite:
 \[
