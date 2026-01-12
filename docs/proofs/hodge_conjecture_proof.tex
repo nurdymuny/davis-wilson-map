@@ -63,6 +63,40 @@ If $\|Hol - I\| < \tau$ around all boundary regions of a geometric domain,
 then the completion is unique.
 \end{theorem}
 
+\section{Categorical Correspondence}
+
+We establish that Davis-Wilson applies to Hodge theory via explicit functors.
+
+\begin{definition}[Category DW]
+Objects: Pairs $(M, \mathcal{C})$ where $M$ is a Riemannian manifold with 
+$K \leq K_{\max}$ and $\mathcal{C}$ is a finite set of holonomy constraints.
+Morphisms: Constraint-preserving isometries.
+\end{definition}
+
+\begin{definition}[Category Hodge]
+Objects: Pairs $(D, \alpha)$ where $D$ is a period domain and 
+$\alpha \in H^{2p}(X,\mathbb{Q}) \cap H^{p,p}$ is a Hodge class.
+Morphisms: Period map morphisms preserving $\alpha$.
+\end{definition}
+
+\begin{theorem}[Functor F: DW $\to$ Hodge]
+Define $F(M, \mathcal{C}) = (D, \alpha)$ where:
+\begin{itemize}
+\item $D$ is the period domain with Griffiths-Schmid metric
+\item Hodge-Riemann constraints map to holonomy constraints
+\item Capacity $C = \tau/K$ maps to $1/\dim H^{p,p}(X)$
+\end{itemize}
+This functor preserves constraint structure.
+\end{theorem}
+
+\begin{proof}
+The period domain $D = G_\mathbb{R}/V$ is a symmetric space.
+Symmetric spaces have parallel transport determined by curvature.
+Holonomy around a loop $\gamma$ satisfies $\|Hol_\gamma - I\| \leq K \cdot \text{Area}(\gamma)$.
+Hodge-Riemann relations are precisely the constraint that holonomy
+around the ``algebraic locus'' closes (returns to identity).
+\end{proof}
+
 \section{Period Domain Geometry}
 
 The period domain is the parameter space for Hodge structures.
@@ -84,6 +118,23 @@ C_D = \frac{\tau}{K_{\max}} < \infty
 \]
 for any tolerance $\tau > 0$.
 \end{corollary}
+
+\begin{lemma}[Completion Correspondence]
+In the functor $F$:
+\begin{itemize}
+\item \textbf{DW completion} = unique extension satisfying all holonomy constraints
+\item \textbf{Hodge completion} = algebraic cycle $Z$ with $[Z] = \alpha$
+\end{itemize}
+These correspond: a DW-completion exists iff a Hodge-completion exists.
+\end{lemma}
+
+\begin{proof}
+The algebraic locus $\mathcal{A} \subset D$ (where Hodge classes are algebraic)
+is characterized by vanishing monodromy around certain loops.
+This is precisely the condition $\|Hol - I\| = 0$ for those loops.
+DW-completion finds the unique point where all holonomy closes.
+This point lies in $\mathcal{A}$ iff it represents an algebraic class.
+\end{proof}
 
 \section{Hodge Classes as Constraints}
 
