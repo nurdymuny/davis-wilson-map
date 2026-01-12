@@ -87,32 +87,52 @@ Griffiths-Schmid metric and $\mathcal{C}_\alpha$ consists of three constraint ty
 \begin{proof}
 We construct explicit holonomy constraints for each Hodge condition.
 
-\textbf{Constraint 1 (Rationality):}
-Let $\gamma_1, \ldots, \gamma_{b_{2p}}$ be loops generating $\pi_1(D)$.
-The monodromy representation $\rho: \pi_1(D) \to GL(H^{2p}(X,\mathbb{C}))$ acts on cohomology.
-For $\alpha \in H^{2p}(X,\mathbb{Q})$, we require:
+\textbf{Setup:} Let $\mathcal{H} \to D$ be the Hodge bundle with fiber 
+$\mathcal{H}_s = H^{2p}(X_s, \mathbb{C})$ over $s \in D$.
+Equip $\mathcal{H}$ with the Gauss-Manin connection $\nabla^{GM}$.
+The Griffiths-Schmid metric $h$ on $D$ is induced by the Hodge metric on fibers:
 \[
-\|Hol_{\gamma_i}(\alpha) - \alpha\| = 0 \quad \forall i
+h(\alpha, \beta) = \int_X \alpha \wedge \bar{\beta}
 \]
-This is the constraint that $\alpha$ is monodromy-invariant over $\mathbb{Q}$.
+
+\textbf{Key Relationship:} The Gauss-Manin connection has holonomy group 
+$Hol(\nabla^{GM}) \subseteq GL(H^{2p})$. For a loop $\gamma$ based at $s$:
+\[
+Hol_\gamma: \mathcal{H}_s \to \mathcal{H}_s
+\]
+is parallel transport around $\gamma$. This equals the monodromy $\rho(\gamma)$.
+
+\textbf{Constraint 1 (Rationality):}
+Let $\gamma_1, \ldots, \gamma_r$ generate $\pi_1(D, s)$.
+For $\alpha \in H^{2p}(X,\mathbb{Q})$, rationality requires monodromy-invariance:
+\[
+Hol_{\gamma_i}(\alpha) = \alpha \quad \forall i
+\]
+In DW terms: $\|Hol_{\gamma_i} - I\|_{|\alpha} = 0$ (holonomy acts as identity on $\alpha$).
 
 \textbf{Constraint 2 (Type $(p,p)$):}
-The Hodge filtration $F^p \subset H^{2p}(X,\mathbb{C})$ varies over $D$.
-Let $\gamma_{F}$ be a loop around the discriminant locus.
-Type $(p,p)$ means $\alpha \in F^p \cap \overline{F^p}$, which translates to:
+The Hodge filtration $F^p \subset \mathcal{H}$ is a subbundle varying holomorphically.
+The Griffiths transversality condition: $\nabla^{GM}(F^p) \subseteq F^{p-1} \otimes \Omega^1_D$.
+Type $(p,p)$ means $\alpha_s \in F^p_s \cap \overline{F^p_s}$ at each point.
+
+Under parallel transport around $\gamma$, the $F^p$ subspace rotates.
+The constraint: $\alpha$ remains in $F^p \cap \overline{F^p}$ after transport:
 \[
-\|Hol_{\gamma_F}(\alpha) - \alpha\|_{F^p} < \tau_F
+\|Hol_\gamma(\alpha) - \pi_{F^p \cap \overline{F^p}}(Hol_\gamma(\alpha))\| = 0
 \]
-where $\|\cdot\|_{F^p}$ measures deviation from the $F^p$ subspace.
+where $\pi$ is projection onto the $(p,p)$ component.
 
 \textbf{Constraint 3 (Hodge-Riemann):}
-The Hodge-Riemann form $Q(\alpha, \bar{\alpha}) > 0$ for primitive classes.
-Let $\gamma_{HR}$ be loops around the nilpotent cone boundary.
-The constraint is:
+The polarization $Q: \mathcal{H} \times \mathcal{H} \to \mathbb{C}$ is flat for $\nabla^{GM}$
+(Riemann bilinear relations). For primitive $\alpha$:
 \[
-\|Hol_{\gamma_{HR}} - I\|_Q < \tau_{HR}
+i^{p-q} Q(\alpha, \bar{\alpha}) > 0
 \]
-where $\|\cdot\|_Q$ is the norm induced by the polarization $Q$.
+This positivity is preserved by $Hol_\gamma$ since $Q$ is flat:
+\[
+Q(Hol_\gamma(\alpha), \overline{Hol_\gamma(\alpha)}) = Q(\alpha, \bar{\alpha})
+\]
+The constraint: holonomy preserves the Hodge-Riemann cone.
 \end{proof}
 
 \section{Period Domain Geometry}
