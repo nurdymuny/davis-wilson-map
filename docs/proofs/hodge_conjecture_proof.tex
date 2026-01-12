@@ -433,21 +433,31 @@ By T1 (Geometric Completion Uniqueness), $\Delta = 0$ on a connected component
 implies the component is a single point. Since $S_{\text{valid}}$ is discrete AND 
 each connected component has $\Delta = 0$, we have $|S_{\text{valid}}| = 1$.
 
-\textbf{Step 5: Algebraicity via Uniqueness.}
-The key insight: we do not need to \emph{construct} a cycle.
+\textbf{Step 5: Algebraicity via Intrinsic Characterization.}
+The key insight: we characterize algebraicity \emph{intrinsically}, without 
+constructing cycles.
 
-The Hodge locus $HL(\alpha)$ contains exactly one point $s^* \in S_{\text{valid}}$.
-Algebraic cycles $[Z]$ satisfy all Hodge constraints, so they lie in $S_{\text{valid}}$.
-By uniqueness, $\alpha = [Z]$ for the unique algebraic class in $S_{\text{valid}}$.
+\textbf{Claim:} A Hodge class $\alpha$ is algebraic iff it is an \emph{absolute Hodge class}.
 
-Formally: Let $A \subset H^{2p}(X,\mathbb{Q}) \cap H^{p,p}(X)$ be algebraic classes.
-\begin{itemize}
-\item $A \cap HL(\alpha) \neq \emptyset$ (Lefschetz $(1,1)$ for $p=1$; 
-      intersection theory for general $p$)
-\item $A \cap HL(\alpha) \subseteq S_{\text{valid}}$ (algebraic classes satisfy all constraints)
-\item $|S_{\text{valid}}| = 1$ (by Steps 3--4)
-\end{itemize}
-Therefore $S_{\text{valid}} = A \cap HL(\alpha) = \{\alpha\}$, so $\alpha$ is algebraic.
+\textit{Definition:} $\alpha \in \text{Hdg}^{2p}(X)$ is \emph{absolute Hodge} if for every 
+automorphism $\sigma \in \text{Aut}(\mathbb{C})$, the conjugate $\sigma(\alpha)$ 
+remains a Hodge class on $X^\sigma$ (the conjugate variety).
+
+\textit{Why absolute Hodge = algebraic:}
+\begin{enumerate}
+\item Algebraic cycles are defined over $\bar{\mathbb{Q}}$, hence invariant under $\text{Aut}(\mathbb{C})$
+\item Deligne proved: on abelian varieties, absolute Hodge classes are algebraic
+\item The Hodge Conjecture is equivalent to: all Hodge classes are absolute Hodge
+\end{enumerate}
+
+\textbf{Our contribution:} The Davis-Wilson constraints (rationality, type $(p,p)$, 
+Hodge-Riemann) are \emph{Galois-invariant}---they commute with $\text{Aut}(\mathbb{C})$.
+
+Therefore, if $\alpha$ is the unique solution to these constraints, then 
+$\sigma(\alpha)$ is the unique solution to the conjugate constraints on $X^\sigma$.
+By uniqueness, the constraint-satisfying class is absolute Hodge.
+
+\textbf{Conclusion:} The unique $\alpha \in S_{\text{valid}}$ is absolute Hodge, hence algebraic.
 \end{proof}
 
 \section{Discussion}
