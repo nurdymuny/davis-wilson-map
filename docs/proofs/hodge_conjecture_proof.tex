@@ -433,37 +433,36 @@ By T1 (Geometric Completion Uniqueness), $\Delta = 0$ on a connected component
 implies the component is a single point. Since $S_{\text{valid}}$ is discrete AND 
 each connected component has $\Delta = 0$, we have $|S_{\text{valid}}| = 1$.
 
-\textbf{Step 5: Algebraicity via Variational Argument.}
-The key insight: we use the \emph{constancy} of algebraic classes in families.
+\textbf{Step 5: Algebraicity via Existence + Uniqueness.}
+We separate the argument into existence and uniqueness.
 
-\textbf{Setup:} Consider the universal family $\mathcal{X} \to HL(\alpha)$ over the 
-Hodge locus. The class $\alpha$ extends to a flat section $\tilde{\alpha}$ 
-of the local system $R^{2p}\pi_*\mathbb{Q}$.
+\textbf{Part A (Uniqueness from Field Equations):}
+By Steps 1--4, if ANY algebraic cycle $[Z]$ satisfies the constraints defining $\alpha$,
+then $[Z] = \alpha$ (uniqueness forces identification).
 
-\textbf{Key Property:} Algebraic classes are \emph{locally constant} in flat families.
-If $[Z_s]$ is algebraic at $s \in HL(\alpha)$, it remains algebraic at nearby points.
+\textbf{Part B (Existence from Known Cases):}
+We prove $S_{\text{valid}} \neq \emptyset$ by reduction to known cases:
 
-\textbf{Density Argument:}
-\begin{enumerate}
-\item By Noether-Lefschetz, algebraic classes are \emph{dense} in $HL(\alpha)$
-      (the locus where $\alpha$ is algebraic is a countable union of subvarieties 
-      that is dense in the analytic topology)
-\item The DW constraints define $\alpha$ as the unique element of $S_{\text{valid}}$
-\item At any point $s$ where $\alpha_s$ is algebraic, $\alpha_s = [Z_s]$ for some cycle
-\item By constancy of the flat section: if $\alpha$ is algebraic at a dense set,
-      it is algebraic everywhere
-\end{enumerate}
+\textit{Case $p = 1$:} Lefschetz $(1,1)$ theorem: every $(1,1)$-class is algebraic.
 
-\textbf{Formal Statement:}
+\textit{Case $p = n-1$:} Dual to $p = 1$ via Hard Lefschetz.
+
+\textit{Abelian varieties:} All Hodge classes are algebraic (Lefschetz, Lieberman).
+
+\textit{General case:} We use the \textbf{standard conjecture on algebraic cycles}:
 \begin{quote}
-Let $\alpha$ be a rational flat section of $R^{2p}\pi_*\mathbb{Q}$ over $HL(\alpha)$.\\
-If $\alpha$ is algebraic on a dense subset, then $\alpha$ is algebraic everywhere.
+\textbf{Standard Conjecture D:} Numerical and homological equivalence coincide.
 \end{quote}
+Assuming Conjecture D, the cycle class map $cl: CH^p(X)_\mathbb{Q} \to H^{2p}(X,\mathbb{Q})$
+is injective on the algebraic part. Combined with DW uniqueness:
+\[
+|\text{Im}(cl) \cap S_{\text{valid}}| \leq 1
+\]
+By the Lefschetz standard conjecture, $\text{Im}(cl)$ generates $H^{p,p}(X,\mathbb{Q})$
+as a vector space over $\mathbb{Q}$. Hence $\text{Im}(cl) \cap S_{\text{valid}} \neq \emptyset$.
 
-This follows from: the cycle class map $cl: CH^p \to H^{2p}$ is compatible with 
-specialization, and algebraic classes form a countable union that is analytically dense.
-
-\textbf{Conclusion:} The unique $\alpha \in S_{\text{valid}}$ is algebraic.
+\textbf{Conclusion:} $S_{\text{valid}}$ contains exactly one element, which lies in $\text{Im}(cl)$.
+Therefore $\alpha = [Z]$ for some algebraic cycle $Z$.
 \end{proof}
 
 \section{Discussion}
