@@ -81,7 +81,11 @@ Morphisms: Period map morphisms preserving $\alpha$.
 
 \begin{theorem}[Embedding Functor G: Hodge $\to$ DW]
 Define $G(D, \alpha) = (D, \mathcal{C}_\alpha)$ where $D$ retains its 
-Griffiths-Schmid metric and $\mathcal{C}_\alpha$ consists of three constraint types.
+Griffiths-Schmid metric and $\mathcal{C}_\alpha$ consists of:
+\begin{itemize}
+\item Transport constraints (holonomy conditions on loops)
+\item Position constraints (pointwise conditions on locus)
+\end{itemize}
 \end{theorem}
 
 \begin{proof}
@@ -112,15 +116,18 @@ In DW terms: $\|Hol_{\gamma_i} - I\|_{|\alpha} = 0$ (holonomy acts as identity o
 
 \textbf{Constraint 2 (Type $(p,p)$):}
 The Hodge filtration $F^p \subset \mathcal{H}$ is a subbundle varying holomorphically.
-The Griffiths transversality condition: $\nabla^{GM}(F^p) \subseteq F^{p-1} \otimes \Omega^1_D$.
-Type $(p,p)$ means $\alpha_s \in F^p_s \cap \overline{F^p_s}$ at each point.
-
-Under parallel transport around $\gamma$, the $F^p$ subspace rotates.
-The constraint: $\alpha$ remains in $F^p \cap \overline{F^p}$ after transport:
+Type $(p,p)$ is a \emph{pointwise} condition: at $s \in D$, we require
 \[
-\|Hol_\gamma(\alpha) - \pi_{F^p \cap \overline{F^p}}(Hol_\gamma(\alpha))\| = 0
+\alpha_s \in F^p_s \cap \overline{F^p_s}
 \]
-where $\pi$ is projection onto the $(p,p)$ component.
+This is NOT a holonomy constraint. It restricts which points $s \in D$ are valid.
+
+In DW terms: this is a \emph{position constraint}, not a \emph{transport constraint}.
+The solution set $S_{\text{valid}}$ is the locus in $D$ where $\alpha$ has type $(p,p)$:
+\[
+S_{(p,p)} = \{s \in D : \alpha_s \in F^p_s \cap \overline{F^p_s}\}
+\]
+This is the \emph{Hodge locus} for $\alpha$.
 
 \textbf{Constraint 3 (Hodge-Riemann):}
 The polarization $Q: \mathcal{H} \times \mathcal{H} \to \mathbb{C}$ is flat for $\nabla^{GM}$
