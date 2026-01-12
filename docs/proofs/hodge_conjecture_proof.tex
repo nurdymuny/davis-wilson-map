@@ -359,36 +359,29 @@ the constraint structure forces $S_{\text{valid}}$ to be discrete.
 \end{lemma}
 
 \begin{proof}
-We do not need $m \geq \dim(D)$ globally. We need 
-$m \geq \dim(HL(\alpha))$ where $HL(\alpha)$ is the Hodge locus.
+For a \emph{fixed} variety $X$, we work at a single point $s_0 \in D$ 
+corresponding to $X$. The class $\alpha$ is fixed in $H^{2p}(X,\mathbb{Q})$.
 
-The Hodge locus $HL(\alpha) \subset D$ is already constrained by the 
-type $(p,p)$ condition. By Cattani-Deligne-Kaplan, $HL(\alpha)$ is a 
-\emph{special subvariety} with:
+The question is not ``where in $D$ is $\alpha$ type $(p,p)$'' (that defines $HL(\alpha)$),
+but ``is the fixed class $\alpha$ at $s_0$ algebraic?''
+
+\textbf{Discreteness applies to the space of Hodge classes:}
 \[
-\dim(HL(\alpha)) \leq \dim(D) - \text{codim}(F^p \cap \bar{F}^p)
+\text{Hdg}^{2p}(X) := H^{2p}(X,\mathbb{Q}) \cap H^{p,p}(X)
 \]
+This is a $\mathbb{Q}$-vector space of finite dimension (intersection of 
+rational lattice with the $(p,p)$-subspace). 
 
-Within $HL(\alpha)$, rationality imposes additional constraints. The key point:
-
-\textbf{Claim:} Rationality + type $(p,p)$ implies $S_{\text{valid}}$ is discrete.
-
-\textit{Proof of claim:} Monodromy acts on $H^{2p}(X,\mathbb{Z})$ preserving 
-the integral lattice. Rational classes $\alpha \in H^{2p}(X,\mathbb{Q})$ form 
-a discrete subset of the real cohomology $H^{2p}(X,\mathbb{R})$.
-
-The monodromy orbit $\text{Mon} \cdot \alpha$ is a discrete set (finite orbits 
-on lattice points). The type $(p,p)$ locus $HL(\alpha)$ is an algebraic subvariety.
-
-The intersection:
+The constraint-satisfying set is:
 \[
-S_{\text{valid}} = HL(\alpha) \cap \{\text{monodromy-invariant classes}\}
+S_{\text{valid}} \subseteq \text{Hdg}^{2p}(X) \subset H^{2p}(X,\mathbb{R})
 \]
-is the intersection of an algebraic variety with a discrete set, hence discrete.
+$S_{\text{valid}}$ is discrete in $H^{2p}(X,\mathbb{R})$ because $H^{2p}(X,\mathbb{Q})$ is 
+a lattice, and any $\mathbb{Q}$-subspace of a lattice is discrete in the ambient $\mathbb{R}$-space.
 
-More precisely: monodromy-invariance means $\alpha$ is fixed by $\pi_1(D)$-action.
-The fixed locus of a discrete group acting on a lattice is a sub-lattice, 
-which intersects any bounded region in finitely many points.
+\textbf{Note:} Discreteness alone does not prove algebraicity---$\text{Hdg}^{2p}(X)$ 
+is discrete yet may contain non-algebraic classes. The uniqueness argument 
+(Step 4 of the main theorem) is what forces algebraicity.
 \end{proof}
 
 \section{The Main Theorem}
