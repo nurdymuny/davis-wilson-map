@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "purpose": "intra-process bit-identity reference for sector_classifier (R_J gate)",
+    "rng_seeds": {
+      "data_construction": 20260617,
+      "permutation": 20260618
+    },
+    "code_module": "inertia_damping.sector_classifier",
+    "k": 5,
+    "n_permutations": 100,
+    "n_per_cluster": 30,
+    "feature_dim": 4,
+    "cross_os": false,
+    "note": "Drop the cross-OS bit-identity claim for Section 9 only -- BLAS/LAPACK vendor differences would otherwise break this. Intra-process re-runs under the SAME process MUST match."
+  },
+  "classifier": {
+    "accuracy": 0.9222222222222223,
+    "confusion_matrix": [
+      [
+        29,
+        1,
+        0
+      ],
+      [
+        3,
+        25,
+        2
+      ],
+      [
+        0,
+        1,
+        29
+      ]
+    ],
+    "per_class_accuracy": {
+      "B0": 0.9666666666666667,
+      "B1": 0.8333333333333334,
+      "B2": 0.9666666666666667
+    }
+  },
+  "permutation": {
+    "p_value": 0.009900990099009901,
+    "null_accuracy_mean": 0.3442222222222221,
+    "null_accuracy_std": 0.06480721456160818,
+    "n_permutations": 100
+  },
+  "ablation": {
+    "leave_one_out": {
+      "total_plaq_action": 0.9888888888888889,
+      "Q_surrogate": 0.9666666666666667,
+      "P_mean": 0.9666666666666667,
+      "max_plaq_holonomy_dist": 0.9888888888888889
+    },
+    "single_feature": {
+      "total_plaq_action": 1.0,
+      "Q_surrogate": 1.0,
+      "P_mean": 1.0,
+      "max_plaq_holonomy_dist": 1.0
+    },
+    "single_feature_max": 1.0
+  }
+}

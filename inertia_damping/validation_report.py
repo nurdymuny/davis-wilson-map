@@ -2160,7 +2160,7 @@ def _markdown(payload: Dict[str, Any]) -> str:
             a("|---|---|---|")
             loo = s9["feature_ablation"].get("leave_one_out", {})
             single = s9["feature_ablation"].get("single_feature", {})
-            for name in s9.get("feature_names", []):
+            for name in (s9.get("feature_names") or []):
                 lo = loo.get(name, "n/a")
                 sg = single.get(name, "n/a")
                 lo_s = f"{lo:.4f}" if isinstance(lo, (int, float)) else lo
