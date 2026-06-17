@@ -2181,12 +2181,8 @@ def _markdown(payload: Dict[str, Any]) -> str:
     a("---")
     a("")
 
-    # Reproducibility (renumbered to 11 in schema 1.2)
-    a("## 11. Reproducibility checksums")
-    a("")
-    a("_Renumbered to 11 in schema 1.2 (Sections 8, 9 now occupy 8 and 9; "
-      "Appendix A retains its slot)._")
-    a("")
+    # Reproducibility (Section 10 in schema 1.2; Section 7 still holds "Open items").
+    a("## 10. Reproducibility checksums")
     a("")
     a("| File | SHA-256 (truncated) | Size |")
     a("|---|---|---|")
@@ -2238,15 +2234,22 @@ def _markdown(payload: Dict[str, Any]) -> str:
     _N_p = int(p.get("n_steps") or 1000)
     _dt_p = float(p.get("dt") or 0.02)
     _beta_p = float(p.get("beta") or 2.5)
+    _N_env_p = int(p.get("envelope_leapfrog_steps") or 400)
+    _env_sweeps_p = int(p.get("envelope_measure_sweeps") or 1000)
     _fmt_ctx = {
         "N": _N_p, "dt": _dt_p, "dt2": _dt_p * _dt_p,
         "rw": 2e-14 * math.sqrt(_N_p), "lin": 2e-14 * _N_p,
         "beta": _beta_p, "Tdt": _N_p * _dt_p,
         "sys": 0.09 / max(math.sqrt(_N_p * _dt_p), 1e-30),
+        "N_env": _N_env_p, "env_sweeps": _env_sweeps_p,
     }
     _derivations = rm.get("tolerance_derivations", TOLERANCE_DERIVATIONS)
     for _entry in _derivations:
-        _src = _entry.get("source_template", _entry.get("source", "")).format(**_fmt_ctx)
+        _src_tpl = _entry.get("source_template", _entry.get("source", ""))
+        try:
+            _src = _src_tpl.format(**_fmt_ctx)
+        except KeyError as _kerr:
+            _src = _src_tpl + f"  [render warning: missing key {_kerr!s}]"
         _exp_str = (_fmt_sci(_entry["expected_residual"])
                     if _entry.get("expected_residual") is not None else "n/a")
         a(f"| `{_entry['key']}` | {_fmt_sci(_entry['value'])} | {_exp_str} | "
