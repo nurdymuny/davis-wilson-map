@@ -36,6 +36,7 @@ from inertia_damping.gigi_client.protocol import (
 )
 from inertia_damping.gigi_client.client import GIGIClient
 from inertia_damping.gigi_client.mock import MockGIGIClient
+from inertia_damping.gigi_client.live import LiveGIGIClient
 
 __all__ = [
     "Group",
@@ -47,4 +48,5 @@ __all__ = [
     "HolonomyResult",
     "GIGIClient",
     "MockGIGIClient",
+    "LiveGIGIClient",
 ]
