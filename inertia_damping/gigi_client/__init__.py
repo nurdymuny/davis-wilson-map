@@ -15,6 +15,15 @@ gate tests assert against the same bit-identical truth a real GIGI
 implementation will need to reproduce. When GIGI ships, replacing
 ``MockGIGIClient`` with the live client is the only change Halcyon
 needs to make; the test suite stays.
+
+Wire choice for the swap: **embedded binding (PyO3 / native CFFI)**,
+NOT the HTTP surface. Two reasons: (1) the A2 same-process bit-
+identity contract is cheapest to honor in-process; (2) GIGI's HTTP
+``POST /v1/gauge_field`` declares in-memory only and would not
+survive a gigi-stream restart, while embedded GQL is the path to
+``Engine::declare_*_durable``. The HTTP surface is for consumers
+(Marcella, dashboards, REPL exploration) — not the Halcyon
+production path. See ``theory/halcyon/HALCYON_PART_I_GATES.md``.
 """
 from inertia_damping.gigi_client.protocol import (
     Group,

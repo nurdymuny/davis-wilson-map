@@ -158,6 +158,13 @@ def main() -> int:
     code_commit = _git_head()
 
     # --- 1. Build the graph -----------------------------------------------
+    # Cold-start invariant: this script does not persist or warm-start the
+    # gauge field. Each run cold-starts from buckyball_action.identity_links()
+    # and writes its U_init / U_final to a per-run final_state.npz sidecar
+    # before exit. Halcyon's substrate-side migration onto GIGI assumes an
+    # embedded (PyO3/CFFI) binding, NOT the HTTP surface; adding a --resume
+    # or --warm-start flag would cross into durable-persistence territory
+    # and re-open the Part II HTTP-durable gap as a Halcyon concern.
     t0 = _phase("build_graph")
     graph = buckyball_graph.build_truncated_icosahedron()
     assert graph.verify_euler()
