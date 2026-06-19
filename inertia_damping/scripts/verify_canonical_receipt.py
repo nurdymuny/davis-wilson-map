@@ -163,7 +163,11 @@ def verify(
     print(f"      thermalization wall: {therm_wall:.2f}s", flush=True)
 
     row = _rows_first(body)
-    P_chain = (row.get("mean_plaquette")
+    # GIBBS_SAMPLE columns: gigi-stream uses CamelCase enum-variant names
+    # (MeanPlaquette / QSurrogate) per the V.0 dispatch shape; the older
+    # snake_case forms are kept as fallbacks for local-dev compatibility.
+    P_chain = (row.get("MeanPlaquette")
+               or row.get("mean_plaquette")
                or row.get("MEAN(PLAQUETTE)")
                or row.get("mean(plaquette)"))
     if P_chain is None:
@@ -193,17 +197,25 @@ def verify(
     chain_bytes = json.dumps(P_chain, sort_keys=True).encode("utf-8")
     chain_sha256 = hashlib.sha256(chain_bytes).hexdigest()
 
-    # Statement 4 — SELECT MEAN(PLAQUETTE) as a separate receipt
-    print(f"[4/4] SELECT MEAN(PLAQUETTE) OF {field_name}", flush=True)
-    sel_body = _post_gql(
-        base_url,
-        f"SELECT MEAN(PLAQUETTE) OF {field_name};",
-        headers,
+    # Statement 4 — post-thermalization scalar mean via the dedicated
+    # HTTP read route. The parser's `SELECT` surface only accepts
+    # `SELECT PLAQUETTE OF U` (per-face) and `SELECT Q_SURROGATE OF U`
+    # (scalar); the `MEAN(...)` wrapper is a MEASURE-clause-only form.
+    # The `?reduction=mean` HTTP route is the canonical scalar-reduction
+    # surface (per gauge/http.rs::plaquette_get).
+    print(f"[4/4] GET /v1/gauge_field/{field_name}/plaquette?reduction=mean",
+          flush=True)
+    sel_resp = requests.get(
+        f"{base_url.rstrip('/')}/v1/gauge_field/{field_name}/plaquette",
+        params={"reduction": "mean"},
+        headers=headers,
+        timeout=30.0,
     )
-    sel_row = _rows_first(sel_body)
-    P_final = (sel_row.get("mean_plaquette")
-               or sel_row.get("MEAN(PLAQUETTE)")
-               or sel_row.get("value"))
+    if sel_resp.ok:
+        P_final = float(sel_resp.json().get("value", float("nan")))
+    else:
+        # Non-fatal: the chain tail mean is the load-bearing canonical
+        P_final = None
 
     return {
         "base_url": base_url,
@@ -260,6 +272,13 @@ def _print_report(result: Dict[str, Any]) -> None:
 
 
 def main() -> int:
+    # Force UTF-8 stdout on Windows so the β / ⟨⟩ / σ characters in the
+    # pretty-printed report don't trip cp1252 encoding.
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument(
         "--base-url", default=os.environ.get("GIGI_URL", "http://localhost:3142"),
