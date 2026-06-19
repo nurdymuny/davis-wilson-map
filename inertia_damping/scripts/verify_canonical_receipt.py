@@ -126,11 +126,14 @@ def verify(
     persist_clause = " PERSIST" if persist else ""
 
     # Statement 1 — LATTICE
+    # Note: gigi-stream's lexer accepts single-quoted strings only
+    # (see gigi/src/parser.rs::tokenize line 1237); double quotes
+    # raise "Unexpected character".
     print(f"[1/4] DECLARE LATTICE {lattice_name}", flush=True)
     _post_gql(
         base_url,
-        f'LATTICE {lattice_name} FROM TRUNCATED_ICOSAHEDRON '
-        f'TOPOLOGY "S2"{persist_clause};',
+        f"LATTICE {lattice_name} FROM TRUNCATED_ICOSAHEDRON "
+        f"TOPOLOGY 'S2'{persist_clause};",
         headers,
     )
 
