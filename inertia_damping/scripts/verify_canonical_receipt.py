@@ -110,6 +110,7 @@ def verify(
     abs_band_margin: float = 0.02,
     lattice_name: str = LATTICE_NAME,
     field_name: str = GAUGE_FIELD_NAME,
+    snapshot: bool = False,
 ) -> Dict[str, Any]:
     """Fire the 5-statement chapter receipt against ``base_url`` and
     verify the tail-mean canonical lands within tolerance.
@@ -217,7 +218,7 @@ def verify(
         # Non-fatal: the chain tail mean is the load-bearing canonical
         P_final = None
 
-    return {
+    result: Dict[str, Any] = {
         "base_url": base_url,
         "lattice_name": lattice_name,
         "field_name": field_name,
@@ -236,6 +237,24 @@ def verify(
         "P_chain_sha256": chain_sha256,
         "persist": persist,
     }
+    # Optional Statement 5 — SNAPSHOT GAUGE_FIELD U PERSIST;
+    # Writes OP_GAUGE_FIELD_SNAPSHOT (0x0B) to the engine's WAL and
+    # returns the buffer SHA-256, which is the durable citation handle
+    # the chapter Appendix A.4 cites once Part V is live.
+    # Bare `SNAPSHOT GAUGE_FIELD U;` parse-errors per D-V-D.
+    if snapshot:
+        print(f"[5] SNAPSHOT GAUGE_FIELD {field_name} PERSIST", flush=True)
+        snap_body = _post_gql(
+            base_url,
+            f"SNAPSHOT GAUGE_FIELD {field_name} PERSIST;",
+            headers,
+        )
+        snap_row = _rows_first(snap_body)
+        result["snapshot_sha256"] = snap_row.get("sha256")
+        result["snapshot_wal_offset"] = snap_row.get("wal_offset")
+        result["snapshot_n_edges"] = snap_row.get("n_edges")
+        result["snapshot_repr_dim"] = snap_row.get("repr_dim")
+    return result
 
 
 def _print_report(result: Dict[str, Any]) -> None:
@@ -261,6 +280,9 @@ def _print_report(result: Dict[str, Any]) -> None:
           f"{'PASS' if result['band_pass'] else 'FAIL'}")
     print()
     print(f"  P chain SHA-256   {result['P_chain_sha256']}")
+    if result.get("snapshot_sha256"):
+        print(f"  buffer SHA-256    {result['snapshot_sha256']}  "
+              f"(WAL offset {result.get('snapshot_wal_offset')})")
     print(f"  SELECT P final    {result['P_final_select']}")
     persist_note = (
         "WAL-logged (LATTICE + GAUGE_FIELD only; thermalization "
@@ -298,7 +320,16 @@ def main() -> int:
     )
     ap.add_argument(
         "--i-confirm-this-writes-to-the-engine", action="store_true",
-        help="Required when --persist is set against a non-localhost URL.",
+        help="Required when --persist or --snapshot is set against a "
+             "non-localhost URL.",
+    )
+    ap.add_argument(
+        "--snapshot", action="store_true",
+        help="After thermalization, fire `SNAPSHOT GAUGE_FIELD U PERSIST;` "
+             "to write OP_GAUGE_FIELD_SNAPSHOT (0x0B) to the engine's "
+             "WAL. The returned sha256 is the durable citation handle "
+             "the chapter Appendix A.4 cites. Against a non-localhost "
+             "URL, requires --i-confirm-this-writes-to-the-engine.",
     )
     ap.add_argument(
         "--lattice-name", default=LATTICE_NAME,
@@ -315,11 +346,14 @@ def main() -> int:
     args = ap.parse_args()
 
     is_localhost = ("localhost" in args.base_url) or ("127.0.0.1" in args.base_url)
-    if args.persist and not is_localhost and not args.i_confirm_this_writes_to_the_engine:
+    writes_wal = args.persist or args.snapshot
+    if writes_wal and not is_localhost and not args.i_confirm_this_writes_to_the_engine:
         sys.stderr.write(
-            "ERROR: --persist against a non-localhost URL requires "
-            "--i-confirm-this-writes-to-the-engine. This adds an entry "
-            "to the engine's WAL that the next replay will re-install.\n"
+            "ERROR: --persist or --snapshot against a non-localhost URL "
+            "requires --i-confirm-this-writes-to-the-engine. The "
+            "DECLARE-PERSIST writes a 0x09/0x0A WAL entry; SNAPSHOT "
+            "writes a 0x0B WAL entry. Replay will re-install on next "
+            "engine start.\n"
         )
         return 2
 
@@ -330,6 +364,7 @@ def main() -> int:
             api_key=args.api_key,
             lattice_name=args.lattice_name,
             field_name=args.field_name,
+            snapshot=args.snapshot,
         )
     except Exception as ex:
         sys.stderr.write(f"VERIFY FAILED: {type(ex).__name__}: {ex}\n")
