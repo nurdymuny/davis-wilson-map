@@ -73,6 +73,7 @@ class LiveGIGIClient:
         base_url: Optional[str] = None,
         timeout_s: float = DEFAULT_TIMEOUT_S,
         ping: bool = False,
+        api_key: Optional[str] = None,
     ):
         try:
             import requests  # noqa: F401 — checked at construction time
@@ -84,8 +85,17 @@ class LiveGIGIClient:
             ) from ex
         self.base_url = (base_url or os.environ.get("GIGI_URL") or DEFAULT_GIGI_URL).rstrip("/")
         self.timeout_s = float(timeout_s)
+        # Auth: explicit api_key arg > GIGI_API_KEY env > no auth.
+        # Header shape is X-API-Key (per gigi/src/bin/gigi_stream.rs).
+        self.api_key = api_key or os.environ.get("GIGI_API_KEY")
         if ping:
             self._ping()
+
+    def _headers(self) -> dict:
+        h = {"Accept": "application/json"}
+        if self.api_key:
+            h["X-API-Key"] = self.api_key
+        return h
 
     # =================================================================
     # Reachability
@@ -97,7 +107,7 @@ class LiveGIGIClient:
         try:
             resp = requests.get(
                 f"{self.base_url}/v1/lattice/__live_client_probe__",
-                timeout=self.timeout_s,
+                headers=self._headers(), timeout=self.timeout_s,
             )
         except requests.exceptions.ConnectionError as ex:
             raise ConnectionError(
@@ -137,7 +147,7 @@ class LiveGIGIClient:
         resp = requests.post(
             f"{self.base_url}/v1/lattice",
             json=body,
-            timeout=self.timeout_s,
+            headers=self._headers(), timeout=self.timeout_s,
         )
         if not resp.ok:
             raise RuntimeError(
@@ -157,7 +167,7 @@ class LiveGIGIClient:
         import requests
         resp = requests.get(
             f"{self.base_url}/v1/lattice/{name}",
-            timeout=self.timeout_s,
+            headers=self._headers(), timeout=self.timeout_s,
         )
         if not resp.ok:
             raise RuntimeError(
@@ -216,7 +226,7 @@ class LiveGIGIClient:
         resp = requests.post(
             f"{self.base_url}/v1/gauge_field",
             json=body,
-            timeout=self.timeout_s,
+            headers=self._headers(), timeout=self.timeout_s,
         )
         if not resp.ok:
             raise self._error_from_response(resp, group)
@@ -236,7 +246,7 @@ class LiveGIGIClient:
         import requests
         resp = requests.get(
             f"{self.base_url}/v1/gauge_field/{name}",
-            timeout=self.timeout_s,
+            headers=self._headers(), timeout=self.timeout_s,
         )
         if not resp.ok:
             raise RuntimeError(
@@ -273,7 +283,7 @@ class LiveGIGIClient:
         resp = requests.get(
             f"{self.base_url}/v1/gauge_field/{field_name}/plaquette",
             params={"reduction": reduction},
-            timeout=self.timeout_s,
+            headers=self._headers(), timeout=self.timeout_s,
         )
         if not resp.ok:
             raise RuntimeError(
@@ -299,7 +309,7 @@ class LiveGIGIClient:
         if observable == ObservableId.Q_SURROGATE:
             resp = requests.get(
                 f"{self.base_url}/v1/gauge_field/{field_name}/q_surrogate",
-                timeout=self.timeout_s,
+                headers=self._headers(), timeout=self.timeout_s,
             )
             if not resp.ok:
                 raise RuntimeError(
@@ -396,12 +406,20 @@ class LiveGIGIClient:
         for obs in measure:
             # Try both label conventions: ObservableId.value (e.g. "MEAN(PLAQUETTE)")
             # and the snake_case label the GIGI executor emits.
+            # gigi-stream returns measurement chains under CamelCase
+            # enum-variant column names (MeanPlaquette / QSurrogate) per
+            # the V.0 dispatch shape; snake_case + parser-string forms
+            # are kept as fallbacks for older / local engines.
+            camel = {
+                ObservableId.MEAN_PLAQUETTE: "MeanPlaquette",
+                ObservableId.Q_SURROGATE: "QSurrogate",
+            }.get(obs)
             snake = {
                 ObservableId.MEAN_PLAQUETTE: "mean_plaquette",
                 ObservableId.Q_SURROGATE: "q_surrogate",
             }.get(obs)
             chain = None
-            for key in (snake, obs.value):
+            for key in (camel, snake, obs.value):
                 if key and key in row:
                     chain = row[key]
                     break
@@ -621,7 +639,7 @@ class LiveGIGIClient:
         resp = requests.post(
             f"{self.base_url}/v1/gql",
             json={"query": query},
-            timeout=self.timeout_s,
+            headers=self._headers(), timeout=self.timeout_s,
         )
         if not resp.ok:
             raise RuntimeError(
