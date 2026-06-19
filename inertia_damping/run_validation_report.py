@@ -50,7 +50,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
@@ -145,7 +145,55 @@ def main() -> int:
     ap.add_argument("--output", type=str, default=os.path.join(_HERE, "reports"))
     ap.add_argument("--no-cross-check", action="store_true",
                     help="skip the canonical heatbath cross-check (Section 5 -> unavailable; phases 8b, 8c also skipped because they reuse the heatbath kernel)")
+    # --- --use-gigi flag surface (HALCYON_USE_GIGI_FLAG_SPEC.md §3) -----
+    # When --use-gigi is set, the gauge-field phases (2, 3, 4, 6, 7, 8a,
+    # 8b) route to the GIGI HTTP/GQL surface; phases 1, 5, 8c, 9, 10,
+    # 11-13 stay in Python and consume the same locals the kernel path
+    # populates. The validator (validation_report.py) and sidecar shape
+    # do not change.
+    ap.add_argument("--use-gigi", action="store_true", default=False,
+                    help="route gauge-field phases through GIGI's HTTP/GQL substrate")
+    ap.add_argument("--gigi-url", type=str,
+                    default=os.environ.get("GIGI_URL", "http://localhost:3142"),
+                    help="GIGI engine URL (default: GIGI_URL env or http://localhost:3142)")
+    ap.add_argument("--gigi-api-key", type=str,
+                    default=os.environ.get("GIGI_API_KEY"),
+                    help="GIGI API key (default: GIGI_API_KEY env); sent as X-API-Key header")
+    ap.add_argument("--gigi-snapshot", action="store_true", default=False,
+                    help="after canonical heatbath, fire SNAPSHOT GAUGE_FIELD U PERSIST; "
+                         "records sha256 + wal_offset into the sidecar")
+    ap.add_argument("--i-confirm-this-writes-to-the-engine", action="store_true",
+                    default=False,
+                    help="safety interlock for --gigi-snapshot against a non-localhost URL")
     args = ap.parse_args()
+
+    # --- --use-gigi safety interlock (must run BEFORE any work) --------
+    gigi_url = getattr(args, "gigi_url", "")
+    is_localhost_gigi = ("localhost" in gigi_url) or ("127.0.0.1" in gigi_url)
+    if args.gigi_snapshot and not is_localhost_gigi and not args.i_confirm_this_writes_to_the_engine:
+        print(
+            "ERROR: --gigi-snapshot against a non-localhost URL "
+            f"({gigi_url!r}) writes OP_GAUGE_FIELD_SNAPSHOT (0x0B) to "
+            "the engine's WAL. Add --i-confirm-this-writes-to-the-engine "
+            "to proceed.",
+            file=sys.stderr, flush=True,
+        )
+        return 2
+
+    # --- --use-gigi client construction (only when flag set) -----------
+    gigi_client = None
+    gigi_lattice_name: Optional[str] = None
+    if args.use_gigi:
+        from inertia_damping.gigi_client import LiveGIGIClient
+        from inertia_damping import gigi_orchestrator as _gigi
+        gigi_client = LiveGIGIClient(
+            base_url=args.gigi_url,
+            api_key=args.gigi_api_key,
+            ping=True,
+        )
+        gigi_lattice_name = _gigi.declare_lattice_phase(gigi_client, args)
+        print(f"  --use-gigi: declared lattice {gigi_lattice_name!r} "
+              f"on {args.gigi_url}", flush=True)
 
     t_total = time.time()
 
@@ -173,36 +221,81 @@ def main() -> int:
 
     # --- 2. Symplectic arm: cold-thermalize via heatbath ------------------
     t0 = _phase(f"heatbath_thermalize x{args.therm_sweeps} @ beta={args.beta}")
-    rng_therm = np.random.default_rng(args.seed)
-    U_therm = buckyball_action.identity_links(graph.n_edges)
-    for _ in range(args.therm_sweeps):
-        buckyball_heatbath.heatbath_sweep(U_therm, graph, args.beta, generator=rng_therm)
+    U_gigi_handle: Optional[str] = None
+    if args.use_gigi:
+        from inertia_damping import gigi_orchestrator as _gigi
+        therm_out = _gigi.thermalize_via_gigi(gigi_client, args, gigi_lattice_name)
+        U_gigi_handle = therm_out["U_handle"]
+        U_therm = therm_out["U_buf_torch"]
+    else:
+        rng_therm = np.random.default_rng(args.seed)
+        U_therm = buckyball_action.identity_links(graph.n_edges)
+        for _ in range(args.therm_sweeps):
+            buckyball_heatbath.heatbath_sweep(U_therm, graph, args.beta, generator=rng_therm)
     _done("heatbath_thermalize", t0)
 
     # --- 3. Canonical E (Gauss-projected to FP64 floor) -------------------
     t0 = _phase("initialize_E_canonical (CG project)")
-    gen_E = torch.Generator()
-    gen_E.manual_seed(args.seed + 1)
-    E_init_t = buckyball_integrator.initialize_E_canonical(
-        graph, args.beta, gauge_group="SU(2)",
-        generator=gen_E, project_gauss=True, U=U_therm,
-    )
-    U_init_t = U_therm.detach().clone()
-    H0, K0, V0 = buckyball_integrator.compute_hamiltonian(U_init_t, E_init_t, graph, args.beta)
-    print(f"  H_0 = {H0:.6f} (K={K0:.6f}, V={V0:.6f}), K/V = {(K0/max(V0,1e-30)):.4f}",
-          flush=True)
+    E_gigi_handle: Optional[str] = None
+    if args.use_gigi:
+        from inertia_damping import gigi_orchestrator as _gigi
+        e_out = _gigi.initialize_E_via_gigi(gigi_client, args, U_gigi_handle)
+        E_gigi_handle = e_out["E_handle"]
+        # GIGI's HTTP surface has no introspect_e_field GET endpoint
+        # (spec § open Q on E introspection). Use a Maxwell-Boltzmann
+        # zero-q0 quaternion buffer as a documented placeholder so the
+        # phase 5 dumper and the sidecar serializer don't crash; H_0
+        # readout will be approximate. Phase 4 below consumes the GIGI
+        # E_handle directly, not this Python placeholder.
+        E_init_t = torch.zeros((graph.n_edges, 4), dtype=torch.float64)
+        U_init_t = U_therm.detach().clone()
+        # Read H_0 off the engine via SELECT H_TOTAL.
+        try:
+            H0 = float(gigi_client.select_h_total(U_gigi_handle, E_gigi_handle))
+        except Exception:
+            H0 = 0.0
+        K0 = V0 = 0.0
+        print(f"  H_0 (gigi) = {H0:.6f}  (K, V not exposed on the wire)",
+              flush=True)
+    else:
+        gen_E = torch.Generator()
+        gen_E.manual_seed(args.seed + 1)
+        E_init_t = buckyball_integrator.initialize_E_canonical(
+            graph, args.beta, gauge_group="SU(2)",
+            generator=gen_E, project_gauss=True, U=U_therm,
+        )
+        U_init_t = U_therm.detach().clone()
+        H0, K0, V0 = buckyball_integrator.compute_hamiltonian(U_init_t, E_init_t, graph, args.beta)
+        print(f"  H_0 = {H0:.6f} (K={K0:.6f}, V={V0:.6f}), K/V = {(K0/max(V0,1e-30)):.4f}",
+              flush=True)
     _done("initialize_E_canonical", t0)
 
     # --- 4. Run leapfrog + harvest snapshots ------------------------------
     t0 = _phase(f"leapfrog x{args.steps} @ dt={args.dt}, measure every {args.measure_every}")
-    result = buckyball_observables.integrate_with_states(
-        U_init_t, E_init_t,
-        dt=args.dt, n_steps=args.steps, graph=graph, beta=args.beta,
-        measure_every=args.measure_every, include_initial=False,
-    )
+    if args.use_gigi:
+        from inertia_damping import gigi_orchestrator as _gigi
+        result = _gigi.leapfrog_via_gigi(
+            gigi_client, args, U_gigi_handle, E_gigi_handle,
+        )
+        # Spec § open Q: GIGI returns scalar chains + final U only,
+        # no per-snapshot U/E. result['U_traj'] is a degenerate fill
+        # (every entry == U_final); phase 5 (dump_trajectory) and
+        # phase 8c (sector_classifier) skip per-frame body when
+        # --use-gigi is set, see the guards below.
+    else:
+        result = buckyball_observables.integrate_with_states(
+            U_init_t, E_init_t,
+            dt=args.dt, n_steps=args.steps, graph=graph, beta=args.beta,
+            measure_every=args.measure_every, include_initial=False,
+        )
     H_hist = result["H_history"]
-    print(f"  max |dH/H_0| over {len(H_hist)} snapshots: "
-          f"{(max(abs(h - H0) for h in H_hist) / abs(H0)):.3e}", flush=True)
+    if len(H_hist) > 0 and abs(H0) > 0:
+        max_drift = max(abs(h - H0) for h in H_hist) / abs(H0)
+        print(f"  max |dH/H_0| over {len(H_hist)} snapshots: {max_drift:.3e}",
+              flush=True)
+    else:
+        print(f"  max |dH/H_0|: SKIPPED (H_hist len={len(H_hist)}, H_0={H0})",
+              flush=True)
     # Trajectory-wise Gauss history (new sidecar field; kernel-supplied, no
     # double-physics). Length-consistency assertion catches step misalignment.
     assert len(result["U_traj"]) == len(result["E_traj"]) == len(result["steps"]) == len(result["G_history"]), (
@@ -210,16 +303,21 @@ def main() -> int:
         f"U_traj={len(result['U_traj'])}, E_traj={len(result['E_traj'])}, "
         f"steps={len(result['steps'])}, G_history={len(result['G_history'])}"
     )
-    gauss_history_arr = np.asarray(
-        [(int(result["steps"][i]), float(result["G_history"][i]))
-         for i in range(len(result["steps"]))],
-        dtype=np.float64,
-    )
-    g_argmax = int(gauss_history_arr[:, 1].argmax())
-    print(f"  max |G|_inf across trajectory: {gauss_history_arr[g_argmax, 1]:.3e} "
-          f"at step {int(gauss_history_arr[g_argmax, 0])} "
-          f"(over {gauss_history_arr.shape[0]} snapshots; "
-          f"cost: ~50 O(n_edges) ops, negligible)", flush=True)
+    if len(result["steps"]) > 0:
+        gauss_history_arr = np.asarray(
+            [(int(result["steps"][i]), float(result["G_history"][i]))
+             for i in range(len(result["steps"]))],
+            dtype=np.float64,
+        )
+        g_argmax = int(gauss_history_arr[:, 1].argmax())
+        print(f"  max |G|_inf across trajectory: {gauss_history_arr[g_argmax, 1]:.3e} "
+              f"at step {int(gauss_history_arr[g_argmax, 0])} "
+              f"(over {gauss_history_arr.shape[0]} snapshots; "
+              f"cost: ~50 O(n_edges) ops, negligible)", flush=True)
+    else:
+        gauss_history_arr = np.zeros((0, 2), dtype=np.float64)
+        print("  trajectory has zero measurement records; gauss_history empty",
+              flush=True)
     _done("leapfrog", t0)
 
     # --- 5. Dump trajectory.json (v0.1 schema, same as the cage demo) ----
@@ -235,7 +333,14 @@ def main() -> int:
         U_i = result["U_traj"][i]
         E_i = result["E_traj"][i]
         phases = buckyball_observables.edge_phase(U_i).detach().cpu().numpy()
-        kinetic = buckyball_observables.edge_kinetic(E_i).detach().cpu().numpy()
+        # --use-gigi: per-snapshot E is not exposed on the HTTP wire
+        # (spec § open Q on E introspection). Fill kinetic with zeros;
+        # schema 0.1 validates and the validator treats this as a
+        # documented degenerate field.
+        if E_i is None:
+            kinetic = np.zeros(graph.n_edges, dtype=np.float64)
+        else:
+            kinetic = buckyball_observables.edge_kinetic(E_i).detach().cpu().numpy()
         frames.append({
             "t": float(result["times"][i]),
             "step": int(result["steps"][i]),
@@ -271,57 +376,91 @@ def main() -> int:
     cross_P_history: List[float] = []
     if not args.no_cross_check:
         t0 = _phase(f"microcanonical cross-check leapfrog x{args.cross_check_steps}")
-        U_x = U_init_t.detach().clone()
-        E_x = E_init_t.detach().clone()
-        for s in range(args.cross_check_steps):
-            U_x, E_x = buckyball_integrator.leapfrog_step(U_x, E_x, args.dt, graph, args.beta)
-            if s % args.measure_every == 0:
-                Uf = buckyball_action.all_face_holonomies(U_x, graph)
-                cross_P_history.append(float(Uf[:, 0].mean()))
+        if args.use_gigi:
+            from inertia_damping import gigi_orchestrator as _gigi
+            xcheck_out = _gigi.microcanonical_xcheck_via_gigi(
+                gigi_client, args, gigi_lattice_name,
+            )
+            cross_P_history = list(xcheck_out["P_time_chain"])
+        else:
+            U_x = U_init_t.detach().clone()
+            E_x = E_init_t.detach().clone()
+            for s in range(args.cross_check_steps):
+                U_x, E_x = buckyball_integrator.leapfrog_step(U_x, E_x, args.dt, graph, args.beta)
+                if s % args.measure_every == 0:
+                    Uf = buckyball_action.all_face_holonomies(U_x, graph)
+                    cross_P_history.append(float(Uf[:, 0].mean()))
         _done("microcanonical cross-check", t0)
 
     # --- 7. Canonical heatbath ensemble at beta for cross-check ----------
     canonical_P_history: List[float] = []
+    gigi_snapshot_receipt: Optional[Dict[str, Any]] = None
     if not args.no_cross_check:
         t0 = _phase(f"canonical heatbath @ beta={args.beta}: "
                     f"{args.canonical_therm} therm + {args.canonical_sweeps} measure")
-        therm_result = buckyball_heatbath.thermalize(
-            graph, args.beta,
-            n_sweeps=args.canonical_therm,
-            n_measure=args.canonical_sweeps,
-            n_measure_every=2,
-            seed=args.seed + 100,
-        )
+        if args.use_gigi:
+            from inertia_damping import gigi_orchestrator as _gigi
+            therm_result = _gigi.canonical_heatbath_via_gigi(
+                gigi_client, args, gigi_lattice_name,
+            )
+        else:
+            therm_result = buckyball_heatbath.thermalize(
+                graph, args.beta,
+                n_sweeps=args.canonical_therm,
+                n_measure=args.canonical_sweeps,
+                n_measure_every=2,
+                seed=args.seed + 100,
+            )
         canonical_P_history = list(therm_result["P_history"])
         print(f"  canonical <P> = {therm_result['P_mean']:.6f} "
               f"+/- {therm_result['P_sem']:.6f} over {therm_result['n_samples']} samples",
               flush=True)
         _done("canonical heatbath", t0)
 
+        # --- 7b. Optional SNAPSHOT GAUGE_FIELD U_canonical PERSIST ----
+        # When --use-gigi + --gigi-snapshot are set, fire SNAPSHOT on
+        # the post-heatbath canonical buffer. Records sha256 +
+        # wal_offset into the sidecar (Phase F1 asserts equality).
+        if args.use_gigi and args.gigi_snapshot:
+            from inertia_damping import gigi_orchestrator as _gigi
+            t0_snap = _phase("gigi-snapshot (SNAPSHOT GAUGE_FIELD U_canonical PERSIST)")
+            gigi_snapshot_receipt = _gigi.snapshot_canonical_via_gigi(gigi_client)
+            print(f"  snapshot sha256: {gigi_snapshot_receipt.get('snapshot_sha256')}",
+                  flush=True)
+            _done("gigi-snapshot", t0_snap)
+
     # --- 8. beta-scan -----------------------------------------------------
     beta_scan: List[Dict[str, float]] = []
     if not args.no_beta_scan:
         betas = [float(x.strip()) for x in args.beta_scan.split(",") if x.strip()]
         t0 = _phase(f"beta-scan over {betas}")
-        for b in betas:
-            print(f"  beta = {b}", flush=True)
-            res = buckyball_heatbath.thermalize(
-                graph, b,
-                n_sweeps=200,
-                n_measure=600,
-                n_measure_every=2,
-                seed=args.seed + int(round(b * 1000)),
-            )
-            P_exact = ym_exact.exact_mean_plaquette_su2_buckyball(b)
-            beta_scan.append({
-                "beta": b,
-                "P_measured": float(res["P_mean"]),
-                "P_sem": float(res["P_sem"]),
-                "P_exact": float(P_exact),
-                "P_history": [float(x) for x in res["P_history"]],
-            })
-            print(f"    <P>_meas = {res['P_mean']:.6f}  <P>_exact = {P_exact:.6f}  "
-                  f"gap = {abs(res['P_mean']-P_exact):.3e}", flush=True)
+        if args.use_gigi:
+            from inertia_damping import gigi_orchestrator as _gigi
+            beta_scan = _gigi.beta_scan_via_gigi(gigi_client, args, gigi_lattice_name)
+            for row in beta_scan:
+                gap = abs(row["P_measured"] - row["P_exact"])
+                print(f"  beta = {row['beta']}  <P>_meas = {row['P_measured']:.6f}  "
+                      f"<P>_exact = {row['P_exact']:.6f}  gap = {gap:.3e}", flush=True)
+        else:
+            for b in betas:
+                print(f"  beta = {b}", flush=True)
+                res = buckyball_heatbath.thermalize(
+                    graph, b,
+                    n_sweeps=200,
+                    n_measure=600,
+                    n_measure_every=2,
+                    seed=args.seed + int(round(b * 1000)),
+                )
+                P_exact = ym_exact.exact_mean_plaquette_su2_buckyball(b)
+                beta_scan.append({
+                    "beta": b,
+                    "P_measured": float(res["P_mean"]),
+                    "P_sem": float(res["P_sem"]),
+                    "P_exact": float(P_exact),
+                    "P_history": [float(x) for x in res["P_history"]],
+                })
+                print(f"    <P>_meas = {res['P_mean']:.6f}  <P>_exact = {P_exact:.6f}  "
+                      f"gap = {abs(res['P_mean']-P_exact):.3e}", flush=True)
         _done("beta-scan", t0)
 
     # --- 8b. beta-envelope local-stability sweep -------------------------
@@ -333,6 +472,24 @@ def main() -> int:
     if not args.no_cross_check and not args.no_beta_envelope:
         env_betas = [float(x.strip()) for x in args.beta_envelope.split(",") if x.strip()]
         t0 = _phase(f"beta-envelope sweep over {env_betas}")
+        if args.use_gigi:
+            from inertia_damping import gigi_orchestrator as _gigi
+            beta_envelope_history = _gigi.beta_envelope_via_gigi(
+                gigi_client, args, gigi_lattice_name,
+            )
+            for row in beta_envelope_history:
+                print(f"  envelope beta = {row['beta']}  drift={row['energy_drift_max']:.2e}  "
+                      f"G_max={row['gauss_max_across_window']:.2e}  "
+                      f"xcheck={row['crosscheck_gap']:.2e}  MW={row['migdal_gap']:.2e}  "
+                      f"regime={row['regime']}", flush=True)
+            env_size = len(json.dumps(beta_envelope_history))
+            assert env_size < ENVELOPE_MAX_SIDECAR_BYTES, (
+                f"beta_envelope_history JSON would be {env_size} bytes, "
+                f"exceeding cap {ENVELOPE_MAX_SIDECAR_BYTES}. Reduce envelope size."
+            )
+            _done(f"beta-envelope (gigi; size {env_size} B / cap {ENVELOPE_MAX_SIDECAR_BYTES})", t0)
+            # Skip the Python kernel branch below.
+            env_betas = []
         rng_state_pre = torch.get_rng_state()  # phase 9 must not be affected
         for b in env_betas:
             print(f"  envelope beta = {b}", flush=True)
@@ -417,7 +574,17 @@ def main() -> int:
     # a label-permutation null. Gate fails on FAIL real-accuracy, FAIL
     # permutation, OR FAIL single-feature ablation (gauge-leak).
     sector_classifier_state: Optional[Dict[str, Any]] = None
-    if args.sector_classifier and not args.no_cross_check and not args.no_sector_classifier:
+    if args.use_gigi and args.sector_classifier and not args.no_sector_classifier:
+        # Spec § open Q on phase 4: GIGI's SYMPLECTIC_FLOW returns the
+        # FINAL U buffer only, not per-snapshot. sector_classifier
+        # consumes result['U_traj'] per-frame; with --use-gigi every
+        # entry is the same final-U, which would make the classifier
+        # gate vacuous. Skip with a clear warning instead of producing
+        # a misleading PASS.
+        print("sector classifier skipped: --use-gigi does not yet expose "
+              "per-snapshot U buffers; gate is vacuous on a degenerate "
+              "U_traj. See spec § open Q on phase 4.", flush=True)
+    elif args.sector_classifier and not args.no_cross_check and not args.no_sector_classifier:
         from inertia_damping import sector_classifier as _sc
         t0 = _phase("sector-classifier (band discrimination)")
         rng_state_pre = torch.get_rng_state()
@@ -446,11 +613,18 @@ def main() -> int:
     # --- 9. Write sidecar -------------------------------------------------
     t0 = _phase("write sidecar")
     sidecar_path = run_dir / "final_state.npz"
+    # --use-gigi: E_final is None (no introspect_e_field on the wire).
+    # Write a zero placeholder of the right shape so the sidecar key
+    # stays present and downstream consumers (validator) don't break.
+    if result.get("E_final") is not None:
+        e_final_np = result["E_final"].detach().cpu().numpy().astype(np.float64)
+    else:
+        e_final_np = np.zeros((graph.n_edges, 4), dtype=np.float64)
     sidecar_kwargs: Dict[str, Any] = {
         "U_init": U_init_t.detach().cpu().numpy().astype(np.float64),
         "E_init": E_init_t.detach().cpu().numpy().astype(np.float64),
         "U_final": result["U_final"].detach().cpu().numpy().astype(np.float64),
-        "E_final": result["E_final"].detach().cpu().numpy().astype(np.float64),
+        "E_final": e_final_np,
         "code_commit": code_commit,
         "wall_time_seconds": time.time() - t_total,
         "heatbath_canonical_beta": args.beta,
@@ -471,6 +645,14 @@ def main() -> int:
         sidecar_kwargs["microcanonical_long_P_history"] = np.asarray(
             cross_P_history, dtype=np.float64,
         )
+    # --use-gigi + --gigi-snapshot: persist the SNAPSHOT receipt so F1
+    # can assert buffer-SHA equality across same-seed runs.
+    if gigi_snapshot_receipt is not None:
+        for key in ("snapshot_sha256", "snapshot_wal_offset",
+                    "snapshot_n_edges", "snapshot_repr_dim"):
+            val = gigi_snapshot_receipt.get(key)
+            if val is not None:
+                sidecar_kwargs[key] = val
     np.savez(sidecar_path, **sidecar_kwargs)
     print(f"  wrote {sidecar_path}", flush=True)
     _done("write sidecar", t0)

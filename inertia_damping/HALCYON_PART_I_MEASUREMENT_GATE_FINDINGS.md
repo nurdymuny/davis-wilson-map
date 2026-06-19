@@ -17,8 +17,8 @@ Coverage 100.0% — every gauge-field phase of run_validation_report.py has a GQ
 
 ## Coverage receipt
 
-- Orchestrator total LOC (run_validation_report.py): 459
-- Collapsible to GQL (Parts I-III): 264 LOC
+- Orchestrator total LOC (run_validation_report.py): 598
+- Collapsible to GQL (Parts I-III): 357 LOC
 - Python-only (Part IV-blocked): 0 LOC
 - **Coverage**: **100.0%** of the GIGI-collapsible work
 
@@ -27,27 +27,28 @@ Coverage 100.0% — every gauge-field phase of run_validation_report.py has a GQ
 | Phase | LOC | Status | Maps to / Blocked by |
 |---|---|---|---|
 | `build_graph` | 5 | collapsible | declare_lattice (Part I) |
-| `heatbath_thermalize x` | 6 | collapsible | gibbs_sample (Part III) |
-| `initialize_E_canonical (CG project)` | 12 | collapsible | declare_e_field INIT MAXWELL_BOLTZMANN (Part IV) |
-| `leapfrog x` | 25 | collapsible | symplectic_flow with PROJECT_GAUSS (Part IV) |
-| `dump_trajectory` | 38 | collapsible | introspect_gauge_field + serialize (Part II) |
-| `microcanonical cross-check leapfrog x` | 11 | collapsible | symplectic_flow long trajectory (Part IV) |
-| `canonical heatbath @ beta=` | 17 | collapsible | gibbs_sample with MEASURE (Part III) |
-| `beta-scan over` | 24 | collapsible | gibbs_sample loop over β (Part III) |
-| `beta-envelope sweep over` | 74 | collapsible | symplectic_flow loop over beta (Part IV) |
+| `heatbath_thermalize x` | 13 | collapsible | gibbs_sample (Part III) |
+| `initialize_E_canonical (CG project)` | 27 | collapsible | declare_e_field INIT MAXWELL_BOLTZMANN (Part IV) |
+| `leapfrog x` | 41 | collapsible | symplectic_flow with PROJECT_GAUSS (Part IV) |
+| `dump_trajectory` | 41 | collapsible | introspect_gauge_field + serialize (Part II) |
+| `microcanonical cross-check leapfrog x` | 19 | collapsible | symplectic_flow long trajectory (Part IV) |
+| `canonical heatbath @ beta=` | 22 | collapsible | gibbs_sample with MEASURE (Part III) |
+| `gigi-snapshot (SNAPSHOT GAUGE_FIELD U_canonical PERSIST)` | 8 | uncategorized | (unmapped) |
+| `beta-scan over` | 32 | collapsible | gibbs_sample loop over β (Part III) |
+| `beta-envelope sweep over` | 95 | collapsible | symplectic_flow loop over beta (Part IV) |
 | `sector-classifier (band discrimination)` | 22 | collapsible | Q_SURROGATE observable + external classifier (Part III) |
-| `write sidecar` | 30 | collapsible | introspect_gauge_field (Part II) |
+| `write sidecar` | 40 | collapsible | introspect_gauge_field (Part II) |
 | `generate_report` | 67 | validator_external | stays Python by design (validator-independence) |
 
 ---
 
 ## Performance receipt
 
-- Substrate wall (50-sweep thermalization): 4.849s
-- Python leapfrog wall (50-step trajectory): 9.139s
-- Total: 13.988s
-- **Python leapfrog share**: **65.3%**
-- Substrate share: 34.7%
+- Substrate wall (50-sweep thermalization): 5.658s
+- Python leapfrog wall (50-step trajectory): 9.670s
+- Total: 15.328s
+- **Python leapfrog share**: **63.1%**
+- Substrate share: 36.9%
 
 Note: numbers measured against MockGIGIClient (kernel-
 backed). Real GIGI's Rust engine should be faster on the

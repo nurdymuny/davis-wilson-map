@@ -572,6 +572,17 @@ class LiveGIGIClient:
             raise RuntimeError(f"SYMPLECTIC_FLOW returned no rows: {body!r}")
         row = rows[0]
 
+        # Production gigi-stream returns CamelCase column names per the
+        # V.0 dispatch (MeanPlaquette / QSurrogate / HTotal /
+        # GaussResidualMax); snake_case + ObservableId.value forms kept
+        # as fallbacks for older/local engines. Mirrors the same pattern
+        # in gibbs_sample (commit 3f2652a).
+        camel_map = {
+            ObservableId.MEAN_PLAQUETTE: "MeanPlaquette",
+            ObservableId.Q_SURROGATE: "QSurrogate",
+            ObservableId.H_TOTAL: "HTotal",
+            ObservableId.GAUSS_RESIDUAL_MAX: "GaussResidualMax",
+        }
         snake_map = {
             ObservableId.MEAN_PLAQUETTE: "mean_plaquette",
             ObservableId.Q_SURROGATE: "q_surrogate",
@@ -580,9 +591,10 @@ class LiveGIGIClient:
         }
         history: Dict[str, np.ndarray] = {}
         for obs in measure:
+            camel = camel_map.get(obs)
             snake = snake_map.get(obs)
             chain = None
-            for key in (snake, obs.value):
+            for key in (camel, snake, obs.value):
                 if key and key in row:
                     chain = row[key]
                     break
