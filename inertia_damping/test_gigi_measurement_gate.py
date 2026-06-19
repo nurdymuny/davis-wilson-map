@@ -85,19 +85,19 @@ PHASE_MAP: List[Dict] = [
     {"prefix": "sector-classifier",
      "status": "collapsible",
      "gigi": "Q_SURROGATE observable + external classifier (Part III)"},
-    # Python-only: blocked on Part IV (SYMPLECTIC_FLOW)
+    # Part IV is live as of 2026-06-18 — these collapse too
     {"prefix": "initialize_E_canonical",
-     "status": "python_only",
-     "gigi_blocker": "Part IV (E-field initialization, Lie algebra)"},
+     "status": "collapsible",
+     "gigi": "declare_e_field INIT MAXWELL_BOLTZMANN (Part IV)"},
     {"prefix": "leapfrog",
-     "status": "python_only",
-     "gigi_blocker": "Part IV (SYMPLECTIC_FLOW)"},
+     "status": "collapsible",
+     "gigi": "symplectic_flow with PROJECT_GAUSS (Part IV)"},
     {"prefix": "microcanonical cross-check",
-     "status": "python_only",
-     "gigi_blocker": "Part IV (SYMPLECTIC_FLOW)"},
+     "status": "collapsible",
+     "gigi": "symplectic_flow long trajectory (Part IV)"},
     {"prefix": "beta-envelope",
-     "status": "python_only",
-     "gigi_blocker": "Part IV (envelope needs SYMPLECTIC_FLOW per beta)"},
+     "status": "collapsible",
+     "gigi": "symplectic_flow loop over beta (Part IV)"},
     # Out-of-scope: report generation stays Python (the falsifiability
     # validator, per HALCYON_TO_GIGI_REPLY § 0 non-ask).
     {"prefix": "generate_report",
@@ -332,28 +332,39 @@ def test_M_decision_rendered_to_findings_doc(
     coverage_pct = coverage_receipt["coverage_percent"]
     python_share = performance_receipt["python_leapfrog_share_pct"]
 
-    if coverage_pct >= 75.0 and python_share < 30.0:
-        decision = "DEFER Part IV"
+    if coverage_pct >= 90.0:
+        decision = "ARCHITECTURAL UNIFICATION COMPLETE"
+        rationale = (
+            f"Coverage {coverage_pct:.1f}% — every gauge-field phase of "
+            f"run_validation_report.py has a GQL home on the GIGI substrate "
+            f"(Parts I + II + III + IV all live). The only residual Python "
+            f"is the falsifiability validator (per the original letter's "
+            f"non-ask, deliberately external). No further GIGI parts are "
+            f"required for the substrate-consolidation strategy. The next "
+            f"sprint is the Halcyon-side embedded PyO3 binding swap to "
+            f"unblock the production validator's perf budget."
+        )
+    elif coverage_pct >= 75.0 and python_share < 30.0:
+        decision = "DEFER next Part"
         rationale = (
             f"Coverage {coverage_pct:.1f}% >= 75% AND Python leapfrog "
             f"share {python_share:.1f}% < 30%. The Python integrator "
-            f"is acceptable and the engineering-cost ratio of "
-            f"SYMPLECTIC_FLOW (2-3x P0+P1.1 per the engine-owner "
-            f"reply) does not justify the spend."
+            f"is acceptable; the next sprint's engineering cost does not "
+            f"justify the spend."
         )
     elif coverage_pct < 50.0:
-        decision = "REOPEN scope — Parts I-III did not collapse cleanly"
+        decision = "REOPEN scope"
         rationale = (
             f"Coverage {coverage_pct:.1f}% is below the 50% floor. "
             f"The substrate ask was wrong-shaped or the implementation "
-            f"is incomplete. Diagnose before deciding on Part IV."
+            f"is incomplete. Diagnose before deciding on the next Part."
         )
     else:
-        decision = "SHIP Part IV"
+        decision = "SHIP next Part"
         rationale = (
             f"Coverage {coverage_pct:.1f}% or Python share "
             f"{python_share:.1f}% put us outside the DEFER zone. "
-            f"Part IV (SYMPLECTIC_FLOW) earns its sprint."
+            f"The next GIGI Part earns its sprint."
         )
 
     # Render the findings doc

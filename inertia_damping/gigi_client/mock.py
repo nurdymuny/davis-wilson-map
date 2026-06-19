@@ -24,6 +24,8 @@ import numpy as np
 import torch
 
 from inertia_damping.gigi_client.protocol import (
+    EFieldHandle,
+    EFieldInit,
     GaugeFieldHandle,
     GaugeFieldInit,
     GibbsSampleResult,
@@ -31,6 +33,9 @@ from inertia_damping.gigi_client.protocol import (
     HolonomyResult,
     LatticeSpec,
     ObservableId,
+    ProjectGaussConfig,
+    SymplecticFlowDiagnostics,
+    SymplecticFlowResult,
 )
 
 
@@ -53,6 +58,8 @@ class MockGIGIClient:
     def __init__(self):
         self._lattices: Dict[str, "_LatticeState"] = {}
         self._fields: Dict[str, _GaugeFieldState] = {}
+        self._e_fields: Dict[str, "_EFieldState"] = {}
+        self._run_counter: int = 0
 
     # =================================================================
     # Part I: LATTICE + generalized HOLONOMY
@@ -308,6 +315,200 @@ class MockGIGIClient:
         )
 
     # =================================================================
+    # Part IV: E_FIELD + SYMPLECTIC_FLOW + (U, E) observables
+    # =================================================================
+    def declare_e_field(
+        self,
+        name: str,
+        gauge_field: str,
+        init: EFieldInit,
+        beta: Optional[float] = None,
+        seed: Optional[int] = None,
+        from_field: Optional[str] = None,
+    ) -> EFieldHandle:
+        """``E_FIELD name ON GAUGE_FIELD U INIT <init> [SEED s];``
+
+        ZERO              -> q0=0 everywhere, no seed.
+        MAXWELL_BOLTZMANN -> Maxwell-Boltzmann Lie sample at β. SEED
+                            required; mock delegates to
+                            buckyball_integrator.initialize_E_canonical.
+        FROM              -> clone an existing E field.
+        """
+        from inertia_damping import buckyball_integrator
+
+        u_state = self._field_or_raise(gauge_field)
+        lat = self._lattices[u_state.handle.lattice_name]
+
+        if init == EFieldInit.ZERO:
+            buf = torch.zeros((lat.graph.n_edges, 4), dtype=torch.float64)
+        elif init == EFieldInit.MAXWELL_BOLTZMANN:
+            if seed is None:
+                raise ValueError("INIT MAXWELL_BOLTZMANN requires SEED")
+            if beta is None:
+                raise ValueError("INIT MAXWELL_BOLTZMANN requires BETA")
+            gen_E = torch.Generator()
+            gen_E.manual_seed(int(seed))
+            E = buckyball_integrator.initialize_E_canonical(
+                lat.graph, float(beta),
+                generator=gen_E, project_gauss=True, U=u_state.link_buffer,
+            )
+            buf = E.detach().clone()
+        elif init == EFieldInit.FROM_FIELD:
+            if from_field is None or from_field not in self._e_fields:
+                raise ValueError(f"INIT FROM requires a registered source; got {from_field!r}")
+            buf = self._e_fields[from_field].buffer.detach().clone()
+        else:
+            raise NotImplementedError(f"E_FIELD INIT {init}")
+
+        handle = EFieldHandle(
+            name=name,
+            source_gauge_field=gauge_field,
+            source_lattice=u_state.handle.lattice_name,
+            init_kind=init,
+            init_beta=beta,
+            init_seed=seed,
+            init_from=from_field,
+        )
+        self._e_fields[name] = _EFieldState(handle=handle, buffer=buf)
+        return handle
+
+    def introspect_e_field(self, name: str) -> np.ndarray:
+        if name not in self._e_fields:
+            raise ValueError(f"E_FIELD {name!r} not declared")
+        return self._e_fields[name].buffer.detach().cpu().numpy().astype(np.float64)
+
+    def select_h_total(self, gauge_field: str, e_field: str) -> float:
+        from inertia_damping import buckyball_integrator
+        u_state = self._field_or_raise(gauge_field)
+        if e_field not in self._e_fields:
+            raise ValueError(f"E_FIELD {e_field!r} not declared")
+        e_state = self._e_fields[e_field]
+        lat = self._lattices[u_state.handle.lattice_name]
+        H, _K, _V = buckyball_integrator.compute_hamiltonian(
+            u_state.link_buffer, e_state.buffer, lat.graph, beta=1.0,
+        )
+        return float(H)
+
+    def select_gauss_residual_max(
+        self,
+        gauge_field: str,
+        e_field: str,
+        reduction: str = "covariant",
+    ) -> float:
+        from inertia_damping import buckyball_integrator
+        u_state = self._field_or_raise(gauge_field)
+        if e_field not in self._e_fields:
+            raise ValueError(f"E_FIELD {e_field!r} not declared")
+        e_state = self._e_fields[e_field]
+        lat = self._lattices[u_state.handle.lattice_name]
+        G = buckyball_integrator.compute_gauss_residual(
+            e_state.buffer, u_state.link_buffer, lat.graph,
+        )
+        return float(G.abs().max())
+
+    def symplectic_flow(
+        self,
+        field: str,
+        e_field: str,
+        beta: float,
+        dt: float,
+        n_steps: int,
+        project_gauss: Optional[ProjectGaussConfig] = ProjectGaussConfig.default(),
+        measure_every: int = 1,
+        measure: Sequence[ObservableId] = (),
+        seed: Optional[int] = None,
+    ) -> SymplecticFlowResult:
+        """``SYMPLECTIC_FLOW`` — leapfrog with covariant Gauss projection.
+
+        Delegates to buckyball_observables.integrate_with_states (the
+        Halcyon kernel that produced the v1.2 production canonical).
+        ``project_gauss=None`` disables projection; a struct enables it
+        with the given tolerances.
+        """
+        from inertia_damping import buckyball_observables, buckyball_integrator
+
+        u_state = self._field_or_raise(field)
+        if e_field not in self._e_fields:
+            raise ValueError(f"E_FIELD {e_field!r} not declared")
+        e_state = self._e_fields[e_field]
+        lat = self._lattices[u_state.handle.lattice_name]
+
+        U_init = u_state.link_buffer.detach().clone()
+        E_init = e_state.buffer.detach().clone()
+        H_init_tuple = buckyball_integrator.compute_hamiltonian(
+            U_init, E_init, lat.graph, beta=float(beta),
+        )
+        H_init = float(H_init_tuple[0])
+
+        res = buckyball_observables.integrate_with_states(
+            U_init, E_init,
+            dt=float(dt), n_steps=int(n_steps), graph=lat.graph, beta=float(beta),
+            measure_every=max(1, int(measure_every)),
+            include_initial=False,
+        )
+        # Mutate the source U + E in place to match the GIGI semantics
+        # (the flow mutates the source U in place; E is replaced).
+        u_state.link_buffer = res["U_final"]
+        e_state.buffer = res["E_final"]
+
+        # Diagnostics
+        Hs = np.asarray(res["H_history"], dtype=np.float64)
+        max_energy_drift_rel = float(np.abs((Hs - H_init) / H_init).max()) \
+            if H_init != 0.0 else 0.0
+        G_final = buckyball_integrator.compute_gauss_residual(
+            res["E_final"], res["U_final"], lat.graph,
+        )
+        gauss_residual_max = float(G_final.abs().max())
+
+        # Measurement history
+        history: Dict[str, np.ndarray] = {}
+        n_records = len(res["U_traj"])
+        for obs in measure:
+            chain = np.zeros(n_records, dtype=np.float64)
+            for i in range(n_records):
+                U_i = res["U_traj"][i]
+                E_i = res["E_traj"][i]
+                if obs == ObservableId.MEAN_PLAQUETTE:
+                    chain[i] = float(buckyball_observables._plaquette_mean_from_U(
+                        U_i, lat.graph,
+                    ))
+                elif obs == ObservableId.Q_SURROGATE:
+                    chain[i] = float(buckyball_observables.Q_surrogate(
+                        U_i, lat.graph,
+                    ))
+                elif obs == ObservableId.H_TOTAL:
+                    H_i, _K, _V = buckyball_integrator.compute_hamiltonian(
+                        U_i, E_i, lat.graph, beta=float(beta),
+                    )
+                    chain[i] = float(H_i)
+                elif obs == ObservableId.GAUSS_RESIDUAL_MAX:
+                    G_i = buckyball_integrator.compute_gauss_residual(
+                        E_i, U_i, lat.graph,
+                    )
+                    chain[i] = float(G_i.abs().max())
+                else:
+                    raise ValueError(f"unsupported observable {obs}")
+            history[obs.value] = chain
+
+        self._run_counter += 1
+        diagnostics = SymplecticFlowDiagnostics(
+            run_id=f"mock-symplectic-{self._run_counter:06d}",
+            beta=float(beta),
+            dt=float(dt),
+            n_steps_completed=int(n_steps),
+            cg_iterations_per_step_p99=float(res.get("cg_iter_p99", 0.0)),
+            max_energy_drift_rel=max_energy_drift_rel,
+            gauss_residual_max=gauss_residual_max,
+            seed=int(seed) if seed is not None else None,
+        )
+        return SymplecticFlowResult(
+            final_field=u_state.handle,
+            final_e_field=e_state.handle,
+            measurement_history=history,
+            diagnostics=diagnostics,
+        )
+
+    # =================================================================
     # Helpers
     # =================================================================
     def _field_or_raise(self, name: str) -> _GaugeFieldState:
@@ -320,6 +521,16 @@ class MockGIGIClient:
 class _LatticeState:
     spec: LatticeSpec
     graph: Any                  # buckyball_graph.Graph; opaque to the mock
+
+
+@dataclass
+class _EFieldState:
+    """In-memory mirror of what the GIGI engine holds for a registered
+    E_FIELD. The buffer is (n_edges, 4) row-major su(2) Lie algebra
+    elements with q0 = 0."""
+
+    handle: EFieldHandle
+    buffer: torch.Tensor
 
 
 # ---------------------------------------------------------------------

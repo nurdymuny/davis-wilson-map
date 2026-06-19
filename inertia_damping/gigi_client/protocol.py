@@ -113,6 +113,84 @@ class GibbsSampleResult:
     diagnostics: Dict[str, Any] = field(default_factory=dict)
 
 
+class EFieldInit(str, Enum):
+    """E_FIELD INIT clause (Part IV).
+
+    ZERO              every Lie-row is (0,0,0,0). No seed required.
+    MAXWELL_BOLTZMANN per-edge Lie sample with σ = sqrt(1/(β·1.5)).
+                      SEED mandatory.
+    FROM_FIELD        clone an already-registered E field's buffer.
+    """
+
+    ZERO = "ZERO"
+    MAXWELL_BOLTZMANN = "MAXWELL_BOLTZMANN"
+    FROM_FIELD = "FROM"
+
+
+@dataclass(frozen=True)
+class EFieldHandle:
+    """Handle returned by ``DECLARE E_FIELD``."""
+
+    name: str
+    source_gauge_field: str
+    source_lattice: str
+    init_kind: EFieldInit
+    init_beta: Optional[float] = None
+    init_seed: Optional[int] = None
+    init_from: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class ProjectGaussConfig:
+    """PROJECT_GAUSS struct clause for SYMPLECTIC_FLOW (Part IV, Q3).
+
+    Defaults match GIGI's release-profile production canonical:
+    ``{ tikhonov: 1e-14, cg_tol: 1e-10, cg_max_iter: 200 }``.
+    """
+
+    tikhonov: float = 1e-14
+    cg_tol: float = 1e-10
+    cg_max_iter: int = 200
+
+    @classmethod
+    def default(cls) -> "ProjectGaussConfig":
+        return cls()
+
+
+@dataclass
+class SymplecticFlowDiagnostics:
+    """Per-trajectory receipts from a SYMPLECTIC_FLOW call.
+
+    cg_iterations_per_step_p99 is a *diagnostic*, not a regression
+    gate (CG iteration count varies with β at fixed seed per the A2
+    contract).
+    """
+
+    run_id: str
+    beta: float
+    dt: float
+    n_steps_completed: int
+    cg_iterations_per_step_p99: float
+    max_energy_drift_rel: float
+    gauss_residual_max: float
+    seed: Optional[int] = None
+
+
+@dataclass
+class SymplecticFlowResult:
+    """Output of ``SYMPLECTIC_FLOW`` (Part IV).
+
+    The flow mutates the source U field in place; ``final_field`` is
+    the echoed handle. Measurement chains live in
+    ``measurement_history`` keyed by ObservableId.value.
+    """
+
+    final_field: GaugeFieldHandle
+    final_e_field: EFieldHandle
+    measurement_history: Dict[str, np.ndarray]
+    diagnostics: SymplecticFlowDiagnostics
+
+
 @dataclass(frozen=True)
 class BitIdentityContract:
     """Receipt for what same-seed re-runs must reproduce, per A2.

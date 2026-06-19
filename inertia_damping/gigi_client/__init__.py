@@ -33,6 +33,11 @@ from inertia_damping.gigi_client.protocol import (
     ObservableId,
     GibbsSampleResult,
     HolonomyResult,
+    EFieldInit,
+    EFieldHandle,
+    ProjectGaussConfig,
+    SymplecticFlowDiagnostics,
+    SymplecticFlowResult,
 )
 from inertia_damping.gigi_client.client import GIGIClient
 from inertia_damping.gigi_client.mock import MockGIGIClient
@@ -49,4 +54,9 @@ __all__ = [
     "GIGIClient",
     "MockGIGIClient",
     "LiveGIGIClient",
+    "EFieldInit",
+    "EFieldHandle",
+    "ProjectGaussConfig",
+    "SymplecticFlowDiagnostics",
+    "SymplecticFlowResult",
 ]

@@ -40,6 +40,8 @@ from typing import Any, Dict, List, Optional, Sequence
 import numpy as np
 
 from inertia_damping.gigi_client.protocol import (
+    EFieldHandle,
+    EFieldInit,
     GaugeFieldHandle,
     GaugeFieldInit,
     GibbsSampleResult,
@@ -47,6 +49,9 @@ from inertia_damping.gigi_client.protocol import (
     HolonomyResult,
     LatticeSpec,
     ObservableId,
+    ProjectGaussConfig,
+    SymplecticFlowDiagnostics,
+    SymplecticFlowResult,
 )
 
 DEFAULT_GIGI_URL = "http://localhost:3142"
@@ -424,6 +429,189 @@ class LiveGIGIClient:
                 "beta": float(row.get("beta", beta)),
                 "seed": int(row.get("seed", seed)),
             },
+        )
+
+    # =================================================================
+    # Part IV: E_FIELD + SYMPLECTIC_FLOW + (U, E) observables via /v1/gql
+    # =================================================================
+    def declare_e_field(
+        self,
+        name: str,
+        gauge_field: str,
+        init: EFieldInit,
+        beta: Optional[float] = None,
+        seed: Optional[int] = None,
+        from_field: Optional[str] = None,
+    ) -> EFieldHandle:
+        """``E_FIELD name ON GAUGE_FIELD U INIT <init> [SEED s];``"""
+        if init == EFieldInit.ZERO:
+            init_clause = "ZERO"
+        elif init == EFieldInit.MAXWELL_BOLTZMANN:
+            if beta is None:
+                raise ValueError("INIT MAXWELL_BOLTZMANN requires BETA")
+            if seed is None:
+                raise ValueError("INIT MAXWELL_BOLTZMANN requires SEED")
+            init_clause = f"MAXWELL_BOLTZMANN BETA {beta}"
+        elif init == EFieldInit.FROM_FIELD:
+            if from_field is None:
+                raise ValueError("INIT FROM requires source")
+            init_clause = f"FROM_FIELD {from_field}"
+        else:
+            raise NotImplementedError(f"E_FIELD INIT {init}")
+        seed_clause = f" SEED {int(seed)}" if seed is not None else ""
+        query = (
+            f"E_FIELD {name} ON GAUGE_FIELD {gauge_field} "
+            f"INIT {init_clause}{seed_clause};"
+        )
+        _ = self._gql_query(query)
+        return EFieldHandle(
+            name=name,
+            source_gauge_field=gauge_field,
+            source_lattice="",  # not returned by the engine; reserved
+            init_kind=init,
+            init_beta=beta,
+            init_seed=seed,
+            init_from=from_field,
+        )
+
+    def select_h_total(self, gauge_field: str, e_field: str) -> float:
+        body = self._gql_query(
+            f"SELECT H_TOTAL OF ({gauge_field}, {e_field});"
+        )
+        return self._scalar_from_rows(body, "h_total", "H_TOTAL")
+
+    def select_gauss_residual_max(
+        self,
+        gauge_field: str,
+        e_field: str,
+        reduction: str = "covariant",
+    ) -> float:
+        body = self._gql_query(
+            f"SELECT GAUSS_RESIDUAL_MAX OF ({gauge_field}, {e_field});"
+        )
+        return self._scalar_from_rows(
+            body, "gauss_residual_max", "GAUSS_RESIDUAL_MAX",
+        )
+
+    def symplectic_flow(
+        self,
+        field: str,
+        e_field: str,
+        beta: float,
+        dt: float,
+        n_steps: int,
+        project_gauss: Optional[ProjectGaussConfig] = None,
+        measure_every: int = 1,
+        measure: Sequence[ObservableId] = (),
+        seed: Optional[int] = None,
+    ) -> SymplecticFlowResult:
+        """``POST /v1/gql`` carrying a ``SYMPLECTIC_FLOW`` statement.
+
+        Returns the Rows envelope lifted into a SymplecticFlowResult.
+        """
+        if project_gauss is None:
+            pg_clause = " PROJECT_GAUSS FALSE"
+        else:
+            pg_clause = (
+                " PROJECT_GAUSS { "
+                f"tikhonov: {project_gauss.tikhonov}, "
+                f"cg_tol: {project_gauss.cg_tol}, "
+                f"cg_max_iter: {project_gauss.cg_max_iter}"
+                " }"
+            )
+        obs_clause = ""
+        if measure:
+            obs_tokens = []
+            for obs in measure:
+                if obs == ObservableId.MEAN_PLAQUETTE:
+                    obs_tokens.append("MEAN(PLAQUETTE)")
+                elif obs == ObservableId.Q_SURROGATE:
+                    obs_tokens.append("Q_SURROGATE")
+                elif obs == ObservableId.H_TOTAL:
+                    obs_tokens.append("H_TOTAL")
+                elif obs == ObservableId.GAUSS_RESIDUAL_MAX:
+                    obs_tokens.append("GAUSS_RESIDUAL_MAX")
+                else:
+                    raise ValueError(f"observable {obs} not in Part IV grammar")
+            obs_clause = f" MEASURE ({', '.join(obs_tokens)})"
+        seed_clause = f" SEED {int(seed)}" if seed is not None else ""
+        query = (
+            f"SYMPLECTIC_FLOW {field}"
+            f" FROM (U={field}, E={e_field})"
+            f" BETA {beta}"
+            f" DT {dt}"
+            f" N_STEPS {n_steps}"
+            f"{pg_clause}"
+            f" MEASURE_EVERY {measure_every}"
+            f"{obs_clause}"
+            f"{seed_clause};"
+        )
+        body = self._gql_query(query)
+        rows = body.get("rows", body) if isinstance(body, dict) else body
+        if isinstance(rows, dict):
+            rows = rows.get("rows", [rows])
+        if not rows:
+            raise RuntimeError(f"SYMPLECTIC_FLOW returned no rows: {body!r}")
+        row = rows[0]
+
+        snake_map = {
+            ObservableId.MEAN_PLAQUETTE: "mean_plaquette",
+            ObservableId.Q_SURROGATE: "q_surrogate",
+            ObservableId.H_TOTAL: "h_total",
+            ObservableId.GAUSS_RESIDUAL_MAX: "gauss_residual_max",
+        }
+        history: Dict[str, np.ndarray] = {}
+        for obs in measure:
+            snake = snake_map.get(obs)
+            chain = None
+            for key in (snake, obs.value):
+                if key and key in row:
+                    chain = row[key]
+                    break
+            if chain is None:
+                raise RuntimeError(
+                    f"observable {obs} missing from response; keys: {list(row.keys())}"
+                )
+            history[obs.value] = np.asarray(chain, dtype=np.float64)
+
+        u_handle = GaugeFieldHandle(
+            name=field, lattice_name="", group=Group.SU2, repr_dim=4,
+            init_kind=GaugeFieldInit.IDENTITY,
+        )
+        e_handle = EFieldHandle(
+            name=e_field, source_gauge_field=field, source_lattice="",
+            init_kind=EFieldInit.MAXWELL_BOLTZMANN,
+        )
+        diagnostics = SymplecticFlowDiagnostics(
+            run_id=str(row.get("run_id", "")),
+            beta=float(row.get("beta", beta)),
+            dt=float(row.get("dt", dt)),
+            n_steps_completed=int(row.get("n_steps_completed", n_steps)),
+            cg_iterations_per_step_p99=float(row.get("cg_iterations_per_step_p99", 0.0)),
+            max_energy_drift_rel=float(row.get("max_energy_drift_rel", 0.0)),
+            gauss_residual_max=float(row.get("gauss_residual_max", 0.0)),
+            seed=int(row["seed"]) if row.get("seed") is not None else None,
+        )
+        return SymplecticFlowResult(
+            final_field=u_handle,
+            final_e_field=e_handle,
+            measurement_history=history,
+            diagnostics=diagnostics,
+        )
+
+    def _scalar_from_rows(self, body: Any, snake: str, ucase: str) -> float:
+        rows = body.get("rows", body) if isinstance(body, dict) else body
+        if isinstance(rows, dict):
+            rows = rows.get("rows", [rows])
+        if not rows:
+            raise RuntimeError(f"empty response; expected scalar {ucase}")
+        row = rows[0]
+        for key in (snake, ucase, "value"):
+            if key in row:
+                return float(row[key])
+        raise RuntimeError(
+            f"scalar response missing expected key ({snake} or {ucase} or value); "
+            f"keys: {list(row.keys())}"
         )
 
     def _gql_query(self, query: str) -> Any:
