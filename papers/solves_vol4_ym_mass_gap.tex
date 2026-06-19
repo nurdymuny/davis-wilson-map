@@ -309,7 +309,18 @@ GIGI_URL=https://gigi-stream.fly.dev \
 
 \textbf{What the verifier emits:} the canonical tail-mean $\langle P \rangle_{\mathrm{tail}}$, the delta from the Halcyon spine, the tolerance ($3 \sigma$ + absorption margin), \textsc{pass}/\textsc{fail}, the thermalization wall-clock, and a SHA-256 of the full 200-sample measurement chain. A reader citing the chapter's spine independently of Halcyon's deployed report can cite the verifier's SHA-256 instead --- the chain is the cryptographic witness for any independently derived numerical claim. The script source is in \texttt{inertia\_damping/scripts/verify\_canonical\_receipt.py} and is exercised by \texttt{test\_gigi\_live\_phase\_d\_public\_receipt.py} in CI when the engine is reachable.
 
-\textbf{Persistence note:} GIGI's WAL persists only the \texttt{LATTICE} and \texttt{GAUGE\_FIELD} declarations (op codes \texttt{0x09} and \texttt{0x0A}); the thermalized state is intentionally not persisted. Every verification run thermalizes from scratch in roughly thirty seconds. That is the right design: thermalization is cheap, and re-deriving the canonical from first principles is a stronger receipt than serving a cached buffer.
+\textbf{Cross-team handshake receipt (2026-06-19).} Fired against \texttt{gigi-stream.fly.dev} image \texttt{deployment-01KVG9H0E7TGGVM8HT2N2M1RA3} (Gigi's P-1 + V.0b + V.1 deploy):
+\begin{verbatim}
+tail_mean              = 0.5121834
+halcyon_spine_P        = 0.5068472
+delta_from_spine       = 0.005336    (inside 0.04 tolerance)
+band_pass              = TRUE
+thermalization_wall    = 0.82 s
+P_chain_sha256         = bfb6c90c15ac17c967db1165ef36e07d257f35b2965a0ad1474d66cc6daf4d77
+\end{verbatim}
+This is the chapter's first production-engine receipt; the SHA-256 above is the citation handle for any independently derived numerical claim referencing this spine. The Halcyon-side regression contract is \texttt{test\_gigi\_live\_phase\_b.py::test\_G\_LIVE\_B2\_production\_thermalization\_pass\_criterion}, which passes against the same endpoint in roughly 13 seconds wall.
+
+\textbf{Persistence note.} GIGI's WAL currently persists only the \texttt{LATTICE} and \texttt{GAUGE\_FIELD} declarations (op codes \texttt{0x09} and \texttt{0x0A}); the thermalized state is intentionally not persisted at this writing. Every verification run re-derives the canonical from scratch in roughly $0.82$\,s on the production Rust engine. A snapshot WAL op (\texttt{OP\_GAUGE\_FIELD\_SNAPSHOT}, \texttt{0x0B}) and a \texttt{SNAPSHOT GAUGE\_FIELD U PERSIST;} verb are in flight on the engine side under sprint Part V (see \texttt{theory/halcyon/HALCYON\_PART\_V\_SNAPSHOT\_GATES.md}); once they land, the verifier accepts a \texttt{--snapshot} flag and the citation handle promotes from the chain SHA to the buffer SHA --- the same hex string, but with a WAL replay contract behind it.
 
 \textbf{What a pass means and does not mean:} a pass on A.1, A.2, A.3, and A.4 establishes that the live engine, the kernel mock, the Halcyon harness, and any public verifier hitting the substrate URL all agree on the worked example at $\beta = 2.5$ to within the documented blocked-SEM band. It does \textbf{not} extend the strong-coupling mass-gap proof to the continuum; the single open inequality identified in v6 is untouched by any of these receipts, and is so marked.
 
