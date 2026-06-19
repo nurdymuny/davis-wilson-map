@@ -28,6 +28,16 @@ The contracts pinned here:
              walker; all 32 face holonomies = identity quaternion.
              Pins the Part I gold-walker receipt across the engine
              boundary.
+
+  G_LIVE_F   PLAQUETTE per_face / mean / sum on IDENTITY (via Part
+             III's new GET /v1/gauge_field/{name}/plaquette route).
+             Identity field => Re tr(I)/2 = 1.0 per face.
+  G_LIVE_G   Q_SURROGATE on IDENTITY (via GET
+             /v1/gauge_field/{name}/q_surrogate). Identity field =>
+             arccos(1) = 0 on every face => Q = 0.
+  G_LIVE_H   Batched observables read (via POST
+             /v1/gauge_field/{name}/observables). Returns a dict
+             keyed by observable name.
 """
 from __future__ import annotations
 
@@ -45,6 +55,7 @@ from inertia_damping.gigi_client import (
     Group,
     LatticeSpec,
     LiveGIGIClient,
+    ObservableId,
 )
 
 
@@ -274,3 +285,83 @@ def test_G_LIVE_E_face_walker_on_live_identity_buffer(
         "the buffer (signs / row order / repr_dim packing) or the live "
         "engine's IDENTITY init disagrees with the kernel convention."
     ))
+
+
+# ---------------------------------------------------------------------
+# G_LIVE_F — PLAQUETTE via Part III HTTP route on IDENTITY
+# ---------------------------------------------------------------------
+def test_G_LIVE_F_plaquette_on_identity(
+    live_client: LiveGIGIClient,
+    buckyball_spec: LatticeSpec,
+):
+    """PLAQUETTE on identity: per-face values all 1.0; mean = 1.0;
+    sum = F = 32. Pins the Part III HTTP read route's contract."""
+    live_client.declare_lattice(buckyball_spec)
+    live_client.declare_gauge_field(
+        name="U_pq_live",
+        lattice_name=buckyball_spec.name,
+        group=Group.SU2,
+        init=GaugeFieldInit.IDENTITY,
+    )
+    per_face = live_client.select_plaquette("U_pq_live", reduction="per_face")
+    assert per_face.shape == (32,)
+    np.testing.assert_allclose(per_face, np.ones(32), atol=1e-14, err_msg=(
+        "Live PLAQUETTE per_face on IDENTITY ≠ 1.0 everywhere. "
+        "Either Re tr(U_f)/2 isn't normalized as Halcyon expects, or "
+        "the face-cycle walker disagrees on identity-init."
+    ))
+    mean_p = live_client.select_plaquette("U_pq_live", reduction="mean")
+    assert mean_p == pytest.approx(1.0, abs=1e-14)
+    sum_p = live_client.select_plaquette("U_pq_live", reduction="sum")
+    assert sum_p == pytest.approx(32.0, abs=1e-12)
+
+
+# ---------------------------------------------------------------------
+# G_LIVE_G — Q_SURROGATE via Part III HTTP route on IDENTITY
+# ---------------------------------------------------------------------
+def test_G_LIVE_G_q_surrogate_on_identity(
+    live_client: LiveGIGIClient,
+    buckyball_spec: LatticeSpec,
+):
+    """Q_SURROGATE on identity = 0 (arccos(1)=0 on every face).
+    Pins the live engine's clamp-before-arccos against Halcyon's
+    A1 spec."""
+    live_client.declare_lattice(buckyball_spec)
+    live_client.declare_gauge_field(
+        name="U_qs_live",
+        lattice_name=buckyball_spec.name,
+        group=Group.SU2,
+        init=GaugeFieldInit.IDENTITY,
+    )
+    q = live_client.select_observable("U_qs_live", ObservableId.Q_SURROGATE)
+    assert q == pytest.approx(0.0, abs=1e-12), (
+        f"Q_SURROGATE on IDENTITY = {q}, expected 0.0. The live engine's "
+        f"clamp-before-arccos may be off-by-FP, or the face holonomies "
+        f"aren't perfectly identity (orientation-sign bug in face cycles)."
+    )
+
+
+# ---------------------------------------------------------------------
+# G_LIVE_H — Batched observables endpoint
+# ---------------------------------------------------------------------
+def test_G_LIVE_H_observables_batch(
+    live_client: LiveGIGIClient,
+    buckyball_spec: LatticeSpec,
+):
+    """POST /v1/gauge_field/{name}/observables returns a dict keyed by
+    observable name. On identity: mean_plaquette=1, sum_plaquette=32,
+    q_surrogate=0."""
+    live_client.declare_lattice(buckyball_spec)
+    live_client.declare_gauge_field(
+        name="U_batch_live",
+        lattice_name=buckyball_spec.name,
+        group=Group.SU2,
+        init=GaugeFieldInit.IDENTITY,
+    )
+    body = live_client.select_observables_batch(
+        "U_batch_live",
+        ["mean_plaquette", "sum_plaquette", "q_surrogate"],
+    )
+    assert body["mean_plaquette"] == pytest.approx(1.0, abs=1e-14)
+    assert body["sum_plaquette"] == pytest.approx(32.0, abs=1e-12)
+    assert body["q_surrogate"] == pytest.approx(0.0, abs=1e-12)

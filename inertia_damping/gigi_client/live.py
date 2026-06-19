@@ -248,18 +248,93 @@ class LiveGIGIClient:
         return buf
 
     # =================================================================
-    # Part III: not yet on the HTTP surface
+    # Part III: HTTP read routes + GIBBS_SAMPLE via POST /v1/gql
     # =================================================================
-    def select_plaquette(self, field_name: str, reduction: str = "per_face"):
-        raise NotImplementedError(
-            "PLAQUETTE is Part III. For Phase A, compute it kernel-side from "
-            "the buffer returned by introspect_gauge_field(...)."
-        )
+    def select_plaquette(
+        self,
+        field_name: str,
+        reduction: str = "per_face",
+    ) -> "np.ndarray | float":
+        """``GET /v1/gauge_field/{name}/plaquette?reduction=...``
 
-    def select_observable(self, field_name: str, observable: ObservableId) -> float:
-        raise NotImplementedError(
-            "Observable battery is Part III. For Phase A, compute kernel-side."
+        per_face -> shape (n_faces,) of Re tr(U_f) / 2
+        mean / sum -> scalar reductions
+        """
+        import requests
+        if reduction not in ("per_face", "mean", "sum"):
+            raise ValueError(
+                f"unknown reduction {reduction!r}; expected per_face / mean / sum"
+            )
+        resp = requests.get(
+            f"{self.base_url}/v1/gauge_field/{field_name}/plaquette",
+            params={"reduction": reduction},
+            timeout=self.timeout_s,
         )
+        if not resp.ok:
+            raise RuntimeError(
+                f"GET .../plaquette failed: {resp.status_code} {resp.text}"
+            )
+        body = resp.json()
+        if reduction == "per_face":
+            return np.asarray(body["values"], dtype=np.float64)
+        return float(body["value"])
+
+    def select_observable(
+        self,
+        field_name: str,
+        observable: ObservableId,
+    ) -> float:
+        """``GET /v1/gauge_field/{name}/q_surrogate`` for Q_SURROGATE.
+
+        For MEAN_PLAQUETTE this delegates to select_plaquette(reduction='mean').
+        H_TOTAL / GAUSS_RESIDUAL_MAX raise because they require an E field
+        (Part IV).
+        """
+        import requests
+        if observable == ObservableId.Q_SURROGATE:
+            resp = requests.get(
+                f"{self.base_url}/v1/gauge_field/{field_name}/q_surrogate",
+                timeout=self.timeout_s,
+            )
+            if not resp.ok:
+                raise RuntimeError(
+                    f"GET .../q_surrogate failed: {resp.status_code} {resp.text}"
+                )
+            return float(resp.json()["value"])
+        if observable == ObservableId.MEAN_PLAQUETTE:
+            return float(self.select_plaquette(field_name, reduction="mean"))
+        if observable == ObservableId.H_TOTAL:
+            raise ValueError(
+                "H_TOTAL requires an E field; not available until Part IV "
+                "(SYMPLECTIC_FLOW)."
+            )
+        if observable == ObservableId.GAUSS_RESIDUAL_MAX:
+            raise ValueError(
+                "GAUSS_RESIDUAL_MAX requires (U, E) state; Part IV not shipped."
+            )
+        raise ValueError(f"unknown observable {observable}")
+
+    def select_observables_batch(
+        self,
+        field_name: str,
+        observables: Sequence[str],
+    ) -> Dict[str, float]:
+        """``POST /v1/gauge_field/{name}/observables`` — batched read.
+
+        Accepts ``["mean_plaquette", "sum_plaquette", "q_surrogate"]`` and
+        returns a dict keyed by observable name.
+        """
+        import requests
+        resp = requests.post(
+            f"{self.base_url}/v1/gauge_field/{field_name}/observables",
+            json={"observables": list(observables)},
+            timeout=self.timeout_s,
+        )
+        if not resp.ok:
+            raise RuntimeError(
+                f"POST .../observables failed: {resp.status_code} {resp.text}"
+            )
+        return resp.json()
 
     def gibbs_sample(
         self,
@@ -270,11 +345,102 @@ class LiveGIGIClient:
         measure: Sequence[ObservableId] = (),
         seed: Optional[int] = None,
     ) -> GibbsSampleResult:
-        raise NotImplementedError(
-            "GIBBS_SAMPLE is Part III — not yet shipped on the GIGI HTTP "
-            "surface. This is the gating event for testing the THERMALIZATION "
-            "algorithm against the real engine."
+        """``POST /v1/gql`` carrying a ``GIBBS_SAMPLE`` statement.
+
+        This IS the Phase B verb: the thermalization algorithm runs on
+        GIGI's Rust engine. Measurement chains come back as one column
+        per observable in the Rows response.
+        """
+        if seed is None:
+            raise ValueError("GIBBS_SAMPLE requires SEED (bit-identity contract)")
+        # Build the GQL surface form
+        obs_clause = ""
+        if measure:
+            obs_tokens = []
+            for obs in measure:
+                if obs == ObservableId.MEAN_PLAQUETTE:
+                    obs_tokens.append("MEAN(PLAQUETTE)")
+                elif obs == ObservableId.Q_SURROGATE:
+                    obs_tokens.append("Q_SURROGATE")
+                else:
+                    raise ValueError(
+                        f"observable {obs} not on the GQL surface for Part III; "
+                        "MEAN_PLAQUETTE and Q_SURROGATE are available"
+                    )
+            obs_clause = f" MEASURE ({', '.join(obs_tokens)})"
+        query = (
+            f"GIBBS_SAMPLE {field_name}"
+            f" BETA {beta}"
+            f" N_SWEEPS {n_sweeps}"
+            f" MEASURE_EVERY {measure_every}"
+            f"{obs_clause}"
+            f" SEED {int(seed)};"
         )
+        body = self._gql_query(query)
+        # The executor returns Rows = [{field, seed, beta, n_sweeps_completed,
+        # <observable_label>: Vector}]. Pull the one row.
+        rows = body.get("rows", body) if isinstance(body, dict) else body
+        if isinstance(rows, dict):
+            rows = rows.get("rows", [rows])
+        if not rows:
+            raise RuntimeError(
+                f"GIBBS_SAMPLE returned no rows; full response: {body!r}"
+            )
+        row = rows[0]
+        history: Dict[str, np.ndarray] = {}
+        for obs in measure:
+            # Try both label conventions: ObservableId.value (e.g. "MEAN(PLAQUETTE)")
+            # and the snake_case label the GIGI executor emits.
+            snake = {
+                ObservableId.MEAN_PLAQUETTE: "mean_plaquette",
+                ObservableId.Q_SURROGATE: "q_surrogate",
+            }.get(obs)
+            chain = None
+            for key in (snake, obs.value):
+                if key and key in row:
+                    chain = row[key]
+                    break
+            if chain is None:
+                raise RuntimeError(
+                    f"observable {obs} missing from response row; keys: "
+                    f"{list(row.keys()) if isinstance(row, dict) else row}"
+                )
+            history[obs.value] = np.asarray(chain, dtype=np.float64)
+        # Reconstruct a stub handle for the response
+        handle = GaugeFieldHandle(
+            name=field_name,
+            lattice_name="",            # not provided in the Rows response
+            group=Group.SU2,
+            repr_dim=4,
+            init_kind=GaugeFieldInit.IDENTITY,
+            init_seed=None,
+            init_from=None,
+        )
+        return GibbsSampleResult(
+            final_field=handle,
+            measurement_history=history,
+            diagnostics={
+                "n_sweeps_completed": int(row.get("n_sweeps_completed", n_sweeps)),
+                "beta": float(row.get("beta", beta)),
+                "seed": int(row.get("seed", seed)),
+            },
+        )
+
+    def _gql_query(self, query: str) -> Any:
+        """``POST /v1/gql`` with a GQL statement string. Returns the
+        parsed JSON response."""
+        import requests
+        resp = requests.post(
+            f"{self.base_url}/v1/gql",
+            json={"query": query},
+            timeout=self.timeout_s,
+        )
+        if not resp.ok:
+            raise RuntimeError(
+                f"POST /v1/gql failed: {resp.status_code} {resp.text} "
+                f"(query: {query!r})"
+            )
+        return resp.json()
 
     # =================================================================
     # Internals
