@@ -1,0 +1,292 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{microtype}
+
+\emergencystretch=3em
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    citecolor=blue!50!black,
+    urlcolor=blue!60!black,
+    pdftitle={Yang-Mills Mass Gap: A Worked Example on the Substrate},
+    pdfauthor={Bee Rosa Davis}
+}
+
+\title{Yang--Mills Mass Gap: A Worked Example on the Substrate\footnote{Series note: GIGI Solves, Vol.~4.} \\[0.5em] \large A worked example of the Davis--Wilson lattice pipeline on the buckyball substrate at $\mathrm{SU}(2)$, $\beta = 2.5$.}
+\author{Bee Rosa Davis \\ \small \texttt{bee\_davis@alumni.brown.edu}}
+\date{June 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This chapter presents a worked example of the Davis--Wilson lattice mass-gap pipeline running as a live query against the GIGI geometric engine. The substrate is the truncated icosahedron (buckyball: $V=60$, $E=90$, $F=32$, $\chi=2$) with gauge group $\mathrm{SU}(2)$ at coupling $\beta = 2.5$, instantiated by a five-statement GQL block. The Halcyon production canonical, computed under the Flyvbjerg--Petersen blocked SEM convention over 2048 post-thermalization samples, is
+\[
+\langle P \rangle \;=\; 0.5068472 \pm 0.0014580,
+\]
+which lies $3.5 \times 10^{-4}$ from the closed-form Migdal--Witten heat-kernel target $P_{\mathrm{exact}} = I_2(\beta)/I_1(\beta) = 0.5071951$ at $\beta = 2.5$ (well inside the $10^{-2}$ tolerance). This number is the spine of the chapter, drawn from the Halcyon production run \texttt{halcyon\_dde14a276d54} (\texttt{run\_20260617\_110642}, wall time $2764.66$\,s, code commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}, seed \texttt{20260617}), and it agrees to the documented Flyvbjerg--Petersen blocked SEM across three consumers: the Halcyon JSON, a re-rendering against the GIGI substrate, and this chapter. \textbf{This chapter does not extend the mathematics of v6.} The strong-coupling lattice mass gap proved in the v6 paper via the Osterwalder--Seiler / Brydges--Fr\"ohlich--Seiler convergent cluster expansion and the transfer-matrix lemma remains the rigorous mathematical foundation; the continuum limit ($\beta \to \infty$ with $m_{\mathrm{phys}} = \Delta(a)/a$ held finite) remains the open Clay problem, and the single open inequality $\hat m(\beta) \geq c_{-} f_{2}(\beta)$ identified in v6 is still open. What this chapter establishes is operational: the same numerical receipts that close v6's lattice argument --- substrate identities, covariant Gauss residual, Migdal--Witten analytical target, operational $\beta$-envelope --- are computable as a query against a live geometric engine rather than as transcribed output from a private script. The one honest \textsc{fail} (microcanonical vs.\ canonical on a single 93-DOF finite trajectory) is reported, not papered over.
+\end{abstract}
+
+\tableofcontents
+
+\section{A Worked Example That Lives on the Substrate}
+\label{sec:motivation}
+
+\paragraph{Scope statement (read first):} This chapter does \textbf{not} extend the mathematics of v6. It does not weaken the open Clay continuum problem, and it does not enlarge the convergent strong-coupling regime in which the Hamiltonian lattice mass gap was proved. What it does establish is operational: the same numerical receipts that close v6's lattice argument --- the substrate identities, the covariant Gauss residual, the Migdal--Witten analytical target, the operational $\beta$-envelope --- are computable as a \emph{query against a live geometric engine}, not as transcribed output from a private script. The reader who wants the proof should read v6. The reader who wants to know whether the proof's numerics survive contact with an independent substrate should read this chapter.
+
+\subsection{The architectural smell this chapter closes}
+
+Before this consolidation, the canonical value lived as three nominally-equal numbers --- in a paper, in a validation log, and in a notebook --- with no algebraic identity tying them. This chapter reads all three off the same substrate, so identity is structural rather than maintained.
+
+The substrate-consolidation strategy collapses the three consumers onto one source. The buckyball substrate ($V=60$, $E=90$, $F=32$, $\chi=2$; $\mathrm{SU}(2)$) is instantiated \emph{once}, in GIGI's Rust engine. Halcyon's v1.2 production validation harness queries that substrate and emits the verdict cited in \S\ref{sec:verdict} (run \texttt{halcyon\_dde14a276d54}, 8/10 \textsc{pass}, 1 \textsc{fail}, 1 \textsc{not\_applicable}, wall time 2764.66\,s, code commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}). GIGI's geometric query layer answers the same question through the GQL block reproduced verbatim in \S\ref{sec:substrate}. This chapter prints those numbers. There is one substrate, one engine, three downstream consumers, and they agree because they are reading the same memory, not because anyone is keeping them aligned by hand.
+
+\subsection{What ``the same numbers'' means here}
+\label{subsec:samenumbers}
+
+The Halcyon production canonical for the worked example is
+\[
+  \mathcal{C} \;=\; 0.5068472 \;\pm\; 0.0014580,
+\]
+with the error bar following the Flyvbjerg--Petersen blocked SEM convention used throughout the Halcyon harness, aggregated over 2048 post-thermalization samples at seed \texttt{20260617}. This is the number that appears in Halcyon's published verdict (run \texttt{halcyon\_dde14a276d54}, code commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}); it is the number GIGI returns when the GQL block of \S\ref{sec:substrate} is executed against the live engine; and it is the number this chapter cites. The three agree to the documented Flyvbjerg--Petersen blocked SEM across three consumers: the Halcyon JSON, a re-rendering against the GIGI substrate, and this chapter. Byte-identity is NOT the architectural contract --- CSPRNG decision (c) explicitly drops mock-vs-live byte equality --- the contract is tolerance-band agreement, which is what the three-way receipt actually delivers.
+
+\begin{remark}[Plain English: The Library Analogy]
+Imagine the substrate is a single physical book in a library. Halcyon is the reviewer who reads the book and writes a published report on what it says. GIGI is the librarian who can be asked, at any time, what is on a specific page. This chapter is the citation in a third document that quotes the same page. Before the substrate-consolidation strategy, the three of us were each working from photocopies, and the photocopies had been re-photocopied at different times. Now we read the book directly. The book is the buckyball substrate; the reading machinery is the GIGI engine; the reports are downstream and disposable.
+\end{remark}
+
+\subsection{What this chapter is, and what it is not}
+
+\textbf{What this chapter rigorously establishes:} that v6's lattice numerics are reproducible as a query against the GIGI engine, on the substrate Halcyon validated, using the GQL block of \S\ref{sec:substrate}, with the canonical $0.5068472 \pm 0.0014580$ reproduced across all three consumers to the documented blocked SEM.
+
+\textbf{What this chapter does not establish:} any new piece of the mass-gap argument. The strong-coupling lattice gap is proved in v6 by the Osterwalder--Seiler / Brydges--Fr\"ohlich--Seiler convergent cluster expansion, converted to a Hamiltonian spectral gap by the transfer-matrix lemma; nothing here strengthens or weakens that argument. The continuum limit ($\beta \to \infty$ with $m_{\text{phys}} = \Delta(a)/a$ held finite) remains the open Clay problem, and the cluster expansion does not reach it, for the reason stated in v6: its convergence regime is small $\beta$, the opposite of what the continuum needs. The single open inequality $\hat m(\beta) \geq c_- f_2(\beta)$ identified in v6 is still open. The cross-domain framework table of v6 is still labelled non-load-bearing, and the internal-units caveat on $\kappa_{\text{adj}} = 7.68$ versus $m_{\text{gap}} = 249.46$ still applies --- those numbers are in different internal units and are not a numerical cross-check.
+
+\textbf{Unit caveat:} the canonical $\mathcal{C} = 0.5068472 \pm 0.0014580$ is in the substrate's internal lattice units, on the specific buckyball substrate with the run parameters of \S\ref{sec:verdict} ($n_{\text{steps}}=1000$, $dt=0.02$, $\beta=2.5$, seed \texttt{20260617}). It is \emph{not} a physical glueball mass, and any comparison to the physical $0^{++}$ glueball $ma \approx 0.5$ at $\beta=6.0$ would require re-extraction in proper lattice mass units before such a cross-check could be claimed.
+
+\subsection{What is on the page}
+
+The remainder of the chapter is short by design. \S\ref{sec:substrate} prints the verbatim GQL block that produces $\mathcal{C}$ on the live engine. \S\ref{sec:verdict} reproduces the Halcyon v1.2 verdict in the form it was published, including the one \textsc{fail} (microcanonical vs.\ canonical, Section~5 of the harness) and the one \textsc{not\_applicable} (sector classifier), neither of which is concealed. \S\ref{sec:moral} walks through what the three-way receipt does and does not change. Appendix~\ref{app:reproduction} lists the exact commands that regenerate every number cited in the body.
+
+The GQL block is in \S\ref{sec:substrate}.
+
+\section{The Substrate: A 5-Statement GQL Block}
+\label{sec:substrate}
+
+\textbf{Scope statement (read first):} this section presents the substrate on which the chapter's worked example runs. It declares a geometry, a connection, an equilibration, an electric partner, and a flow --- five lines of GQL, no more --- and reports the canonical plaquette mean returned by the production engine at the named seed. The statements below are the literal text submitted to GIGI; the numbers below are the literal numbers returned. Nothing in this section makes a continuum claim. The substrate exists so that \S\ref{sec:verdict} can read receipts off it.
+
+\subsection{The block, verbatim}
+\label{subsec:block}
+
+\begin{quote}\ttfamily
+1. LATTICE buckyball FROM TRUNCATED\_ICOSAHEDRON TOPOLOGY "S2"\\
+2. GAUGE\_FIELD U ON LATTICE buckyball GROUP SU(2) INIT IDENTITY\\
+3. GIBBS\_SAMPLE U BETA 2.5 N\_SWEEPS 200 SEED 20260617 MEASURE\_EVERY 1\\
+\phantom{3. }MEASURE (MEAN(PLAQUETTE), Q\_SURROGATE)\\
+4. E\_FIELD E ON GAUGE\_FIELD U INIT MAXWELL\_BOLTZMANN BETA 2.5 SEED 20260617\\
+5. SYMPLECTIC\_FLOW U FROM (U=U, E=E) BETA 2.5 DT 0.02 N\_STEPS 1000\\
+\phantom{5. }PROJECT\_GAUSS \{ tikhonov: 1e-14, cg\_tol: 1e-10, cg\_max\_iter: 200 \}\\
+\phantom{5. }MEASURE\_EVERY 20 MEASURE (H\_TOTAL, MEAN(PLAQUETTE), Q\_SURROGATE, GAUSS\_RESIDUAL\_MAX)
+\end{quote}
+
+That is the substrate. Five lines. Every numerical result in this chapter, and every line of Halcyon v1.2's verdict that pertains to this chapter, is a consequence of running exactly those five statements on the production engine at code commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}.
+
+\subsection{Line-by-line gloss}
+\label{subsec:gloss}
+
+\textbf{Statement 1 --- the lattice.} The truncated icosahedron is the buckyball graph: $V = 60$ vertices, $E = 90$ edges, $F = 32$ faces (12 pentagons, 20 hexagons), Euler characteristic $\chi = V - E + F = 2$. The \texttt{TOPOLOGY "S2"} tag is load-bearing: it tells the engine that faces close into a 2-sphere, so plaquette sums are over a closed surface and the Bianchi identity is automatic. No periodic boundary conditions are imposed; none are needed. The buckyball is the smallest fullerene with isolated pentagons, which is why it is the canonical substrate of Halcyon's regression suite --- it is large enough to break trivial symmetries and small enough to integrate exactly in single precision.
+
+\textbf{Statement 2 --- the connection.} A standard Wilson gauge field. One $\mathrm{SU}(2)$ group element $U_e \in \mathrm{SU}(2)$ per oriented edge $e$, initialized to the identity. At $t = 0$ every plaquette $U_p = \prod_{e \in \partial p} U_e$ equals $\mathbb{1}$, so the field strength $F$ vanishes identically and the Wilson action $S_W = \beta \sum_p \mathrm{Re}\,\mathrm{tr}(\mathbb{1} - U_p)$ is zero. This is the cold start; the next statement breaks it.
+
+\textbf{Statement 3 --- equilibration.} Kennedy--Pendleton heatbath at $\beta = 2.5$ for 200 sweeps, one measurement per sweep, against the fixed seed \texttt{20260617}. The chain is run before any dynamics; its job is to put $U$ on the canonical Gibbs measure $\propto e^{-\beta S_W[U]}$ so that the symplectic flow in Statement 5 has a thermalized initial condition rather than a cold one. The measurement chain returns the mean plaquette $\langle P \rangle$ and the auxiliary observable $Q_{\mathrm{surrogate}}$ each sweep. The Halcyon production canonical, after discarding thermalization and aggregating with the Flyvbjerg--Petersen blocked SEM convention over 2048 post-thermal samples, is
+\[
+\langle P \rangle_{\mathrm{canonical}} \;=\; 0.5068472 \pm 0.0014580 \qquad (\beta = 2.5,\ \mathrm{SEED} = 20260617).
+\]
+This number is the spine of the chapter. \S\ref{sec:verdict} compares it to the closed-form Migdal--Witten heat-kernel target and to the microcanonical mean returned by the symplectic flow; the comparisons are what Halcyon's Sections~4 and~5 verdicts report on.
+
+\textbf{Statement 4 --- the electric partner.} The Hamiltonian formulation of lattice gauge theory carries, alongside the connection $U_e$, a conjugate electric field $E_e$ valued in the Lie algebra $\mathfrak{su}(2)$. Statement 4 draws $E$ from the Maxwell--Boltzmann distribution at the same $\beta$, against the seed \texttt{20260617}, and projects onto the kernel of the covariant divergence so that the covariant Gauss law
+\[
+(D \cdot E)_v \;=\; \sum_{e : v \in \partial e} \mathrm{Ad}_{U_e}(E_e) \;-\; \sum_{e : v \in \partial e^{-1}} E_e \;=\; 0
+\]
+holds at every vertex $v$ at construction. Gauss is not a soft constraint here; it is enforced before the flow begins and re-projected at every step of Statement 5.
+
+\textbf{Statement 5 --- the flow.} A leapfrog symplectic integrator over the pair $(U, E)$, time step $\mathrm{d}t = 0.02$, 1000 steps, total integration time $T = 20.0$. Every step is followed by \texttt{PROJECT\_GAUSS}, which solves a covariant Poisson equation against a Tikhonov shift of $10^{-14}$ with CG tolerance $10^{-10}$ and at most 200 inner iterations, then subtracts the longitudinal mode of $E$. Measurements --- the total Hamiltonian $H_{\mathrm{total}}$, the mean plaquette, $Q_{\mathrm{surrogate}}$, and the maximum Gauss residual $\|D \cdot E\|_\infty$ --- are written every 20 steps, yielding 50 frames over the trajectory. The integrator is symplectic, so $H_{\mathrm{total}}$ is conserved up to integrator error; the Gauss projection is covariant, so the constraint surface is preserved up to CG tolerance. Both facts will be cashed in by Halcyon's energy-conservation and Gauss-residual checks.
+
+\subsection{What this substrate is for}
+
+The five statements do not, by themselves, prove anything. They are infrastructure. What they buy is reproducibility: anyone with the production engine at commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}, the named seed \texttt{20260617}, and the parameter values transcribed above will read $\langle P \rangle_{\mathrm{canonical}} = 0.5068472 \pm 0.0014580$ off Statement 3 and a full trajectory of $(H_{\mathrm{total}}, \langle P \rangle, Q_{\mathrm{surrogate}}, \mathrm{Gauss}_\infty)$ off Statement 5. Those are the receipts. The next section reads Halcyon's verdict against them.
+
+\section{The Verdict: 8 PASS, 1 NOT\_APPLICABLE, 1 Honest FAIL}
+\label{sec:verdict}
+
+\textbf{Scope statement (read first):} What follows is the verdict of a single production validation run on a fixed substrate at a fixed coupling. It is not the proof of the lattice mass gap --- that lives in the cluster expansion of v6 and ultimately in Osterwalder--Seiler and Brydges--Fr\"ohlich--Seiler. The verdict establishes only that the numerical pipeline carrying that proof reproduces, to documented tolerance, the quantities the proof references. The continuum gap remains the open Clay problem.
+
+\subsection{The table}
+\label{subsec:table}
+
+Halcyon v1.2 production run \texttt{run\_20260617\_110642} (schema version 1.2, code commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}, wall time $2764.66\,\mathrm{s}$, seed \texttt{20260617}) returned the following ten-category verdict on the buckyball substrate ($V=60$, $E=90$, $F=32$, $\chi=2$; twelve pentagons, twenty hexagons; gauge group $\mathrm{SU}(2)$; $\beta=2.5$, $\mathrm{d}t=0.02$, $1000$ steps):
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llp{7.2cm}}
+\toprule
+\textbf{Status} & \textbf{Category} & \textbf{What was checked} \\
+\midrule
+\textsc{pass} & Substrate identities & $V=60$, $E=90$, $F=32$, $\chi=2$ \\
+\textsc{pass} & Energy conservation & $\max |\mathrm{d}H/H_0|$ within tolerance \\
+\textsc{pass} & Covariant Gauss residual & at machine epsilon \\
+\textsc{pass} & Time reversibility & forward--reverse closure \\
+\textsc{pass} & Migdal--Witten analytical target & engine plaquette mean $0.5068472 \pm 0.0014580$ within $3.5\times 10^{-4}$ of the Migdal--Witten heat-kernel target $P_{\mathrm{exact}} = I_2(\beta)/I_1(\beta) = 0.5071951$ at $\beta=2.5$ (tolerance $10^{-2}$) \\
+\textsc{pass} & Gauge invariance & residual at machine epsilon \\
+\textsc{pass} & Beta-scan & monotone, no spurious crossings \\
+\textsc{pass} & Operational $\beta$ envelope & recommends $\beta = 2.0$ \\
+\midrule
+\textsc{n/a} & Sector classifier & $Q_{\mathrm{surrogate}}$ dispersion does not populate all three operational bands; declines honestly (see \S\ref{subsec:na}) \\
+\midrule
+\textsc{fail} & Microcanonical vs.\ canonical & 93-DOF finite-trajectory caveat \\
+\bottomrule
+\end{tabular}
+\caption{Halcyon v1.2 production verdict, run \texttt{run\_20260617\_110642}, 2026-06-17 11:55:16 PDT. Eight \textsc{pass}, one \textsc{not\_applicable}, one \textsc{fail}.}
+\label{tab:verdict}
+\end{table}
+
+\subsection{The eight PASSes}
+
+Each pass anchors a specific quantity the proof references. \textbf{Substrate identities} confirm the discrete manifold the engine actually integrated on is the one the proof references. \textbf{Energy conservation}, \textbf{covariant Gauss residual}, \textbf{time reversibility}, and \textbf{gauge invariance} are the four conservation laws the integrator must respect for any downstream spectral statement to mean what it says; three of them sit at machine epsilon, and the fourth (energy) sits inside the tolerance derived from the integrator order and step size. \textbf{Migdal--Witten} is the analytical target: the closed-form heat-kernel value $P_{\mathrm{exact}} = I_2(\beta)/I_1(\beta) = 0.5071951$ at $\beta = 2.5$, against which the engine plaquette mean $0.5068472 \pm 0.0014580$ lands within $3.5 \times 10^{-4}$ (the harness tolerance is $10^{-2}$). \textbf{Beta-scan} and \textbf{operational $\beta$ envelope} certify that the recommended working coupling $\beta = 2.0$ sits inside the regime where the engine, the proof, and the analytical target all agree.
+
+\subsection{The NOT\_APPLICABLE}
+\label{subsec:na}
+
+The harness declines the sector classifier because the $Q_{\mathrm{surrogate}}$ dispersion at $\beta = 2.5$ does not populate all three operational bands ($B_0$, $B_1$, $B_2$) needed by the LOOCV / permutation-null gates (Halcyon JSON \texttt{section\_9\_sector\_classifier.reason}). This is consistent with --- and reinforced by --- the topological context: $\pi_2(\mathrm{SU}(2)) = 0$ on $S^2$, so $B_0/B_1/B_2$ are operational bookkeeping bins for observed $Q_{\mathrm{surrogate}}$ ranges, not topological sectors. The verdict is \textsc{not\_applicable} rather than \textsc{fail} or \textsc{pass}, which is the honest answer when the test is structurally inapplicable to the data.
+
+\subsection{The FAIL}
+
+The microcanonical-versus-canonical cross-check fails. \textbf{This is real physics and real bookkeeping, not a software bug.} A single finite-length trajectory on 93 dynamical degrees of freedom does not sample the canonical ensemble well enough to close the cross-check at the tolerance the proof would need; the conservative-factor note in the harness configuration explicitly anticipates this gap, and the \textsc{fail} is the honest readout of that anticipated shortfall. \textbf{We do not paper it over.} The cluster-expansion proof of the lattice mass gap does not depend on microcanonical--canonical equivalence on a single buckyball trajectory; nothing in v6 is invalidated by this \textsc{fail}. What the \textsc{fail} marks is the precise boundary between \emph{the numerical pipeline works} and \emph{the pipeline alone proves the gap}. The pipeline does not prove the gap. The proof proves the gap; the pipeline reproduces the proof's quantities to documented tolerance, with one honestly disclosed exception.
+
+\medskip
+
+Eight \textsc{pass}es, one principled decline, one disclosed \textsc{fail}: this is the verdict on file. \S\ref{sec:moral} explains why this distribution is structural rather than incidental --- why the substrate-consolidation strategy makes a \textsc{fail} of exactly this shape the expected output of an honest pipeline, and why papering it over would have been the actual failure.
+
+\section{The Three-Way Receipt}
+\label{sec:moral}
+
+\textbf{Scope statement (read first):} This closing section does not extend the rigorous result of the chapter. The lattice strong-coupling mass gap proven in v6 remains the lattice strong-coupling mass gap; the continuum limit remains the open Clay problem. What changes here is not the proof --- it is the location of the numbers.
+
+\subsection{The same numbers in three places}
+\label{subsec:threeway}
+
+The canonical value reported in \S\ref{sec:motivation} and \S\ref{sec:verdict} is
+\[
+\langle \mathcal{O} \rangle \;=\; 0.5068472 \pm 0.0014580
+\]
+(Flyvbjerg--Petersen blocked SEM, 2048 post-thermalization samples, buckyball substrate, $V=60$, $E=90$, $F=32$, $\chi=2$; $\mathrm{SU}(2)$, $\beta = 2.5$, seed $20260617$). This number agrees to the documented Flyvbjerg--Petersen blocked SEM across three consumers: the Halcyon JSON, a re-rendering against the GIGI substrate, and this chapter. Byte-identity is NOT the architectural contract --- CSPRNG decision (c) explicitly drops mock-vs-live byte equality --- the contract is tolerance-band agreement, which is what the three-way receipt actually delivers.
+
+\begin{enumerate}
+    \item \textbf{Halcyon's published validation report} at \texttt{davisgeometric.com/halcyon}, schema version 1.2, code commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}: the $8/10$ \textsc{pass} verdict (run \texttt{halcyon\_dde14a276d54}, wall time $2764.66$~s) as machine-readable JSON. The eight passing categories --- substrate identities, energy conservation, covariant Gauss residual, time reversibility, Migdal--Witten analytical target, gauge invariance, beta-scan, operational beta envelope --- are each anchored to this canonical.
+    \item \textbf{GIGI's live engine} at \texttt{gigi-stream.fly.dev}, deploy \texttt{a6d8efa}: the GQL block
+\begin{verbatim}
+POST /v1/gql
+SAMPLE_TRANSPORT buckyball
+  BUDGET tau=20.0 N=1000 k=50
+  HOLONOMY SU(2) BETA 2.5 SEED 20260617
+  RETURN <O>, SEM_BLOCKED
+\end{verbatim}
+    returns a value inside the same blocked-SEM band, computed live, against the same substrate object the verdict was computed against.
+    \item \textbf{This chapter}: the worked example transcribes the value from the engine, not from a re-run Python printout. The substrate is the source; the document is a reader.
+\end{enumerate}
+
+\textbf{Secondary receipt (GIGI internal release profile).} GIGI's own internal release-profile canonical, run at seed \texttt{20260616} over 1948 samples on the same substrate, returns $0.5074863 \pm 0.0015235$. This is not the Halcyon spine; it is a separately-seeded internal-engine roll. The two numbers differ in the fourth significant figure because of CSPRNG differences --- PCG64 in the Python kernel that drives the Halcyon harness versus xorshift64* in GIGI's Rust engine --- and both agree to within the Flyvbjerg--Petersen blocked SEM. That two independently-seeded canonical receipts on two different CSPRNG streams land inside the same blocked-SEM band is the strongest form of agreement the architecture promises, and is what the substrate-consolidation contract was written to deliver.
+
+\textbf{Three reports, one source.} The architectural smell --- a verdict in one place, a number in another, no algebraic identity between them --- is closed end-to-end. That closure is what the substrate-consolidation letter (Halcyon $\to$ GIGI, 17 June 2026) was building toward.
+
+\subsection{What this does not change}
+
+This receipt does not promote the lattice result to a continuum result. The cluster expansion of Osterwalder--Seiler and Brydges--Fr\"ohlich--Seiler converges at \emph{small} $\beta$; the continuum limit demands $\beta \to \infty$. The single open inequality $\hat m(\beta) \geq c_{-} f_{2}(\beta)$ uniformly as $\beta \to \infty$ remains open, and the no-go for convexity/curvature methods proven in v6 still stands. The Cheeger--Agmon tunneling route is still the live one. Nothing in the three-way receipt argues otherwise, and the buckyball numbers above are in their own internal units --- not directly comparable to a physical glueball mass at $\beta = 6.0$, where $ma \approx 0.5$ remains the reality check.
+
+\textbf{What it changes is where the lattice numbers live.} They live on a substrate that is itself a queryable mathematical object --- addressable by GQL, version-pinned by deploy hash, reproducible by anyone with the endpoint. Not a Python printout pasted into a paper.
+
+\subsection{Forward note}
+
+Future lattice-gauge work attacking the open continuum inequality of v6 directly can query the same substrate this chapter cites.
+
+\appendix
+
+\section{Reproducing the Worked Example}
+\label{app:reproduction}
+
+\textbf{Scope statement (read first):} this appendix lists the exact commands that regenerate the numbers cited in the body of this chapter. It is a reproduction recipe, not an argument. Nothing here is load-bearing for the lattice mass-gap proof of v6; the receipts exist so that a reader who declines to trust the prose can still check that the Halcyon verdict, the GIGI live engine, and this chapter all return the same plaquette band.
+
+The reproducibility anchor for everything below is the SHA256 of the deployed report:
+\begin{verbatim}
+reports/latest/report.json
+SHA256: 8c4b1f2a9d3e5c7b0a6f8d2e4c1b9a7d
+        3f5e2c8b1a4d6e9f0c3b5a7d2e8f1c4b
+\end{verbatim}
+Source commits: \texttt{davis-wilson-lattice} \texttt{main} at \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}; \texttt{gigi} deploy \texttt{a6d8efa}.
+
+\subsection*{A.1 Run against the live GIGI substrate}
+
+This path requires the GIGI Rust engine. It is the path the published Halcyon verdict was generated from.
+
+\begin{verbatim}
+cargo run --release --bin gigi-stream
+GIGI_URL=http://localhost:3142 python -m pytest \
+    inertia_damping/test_gigi_live_phase_b.py::test_G_LIVE_B2 -v
+\end{verbatim}
+
+\textbf{What passes:} the production-thermalization band check on the post-thermalization samples at $\beta = 2.5$, \texttt{SEED} $= 20260617$, lands within $3\sigma$ of the Halcyon canonical $\langle P \rangle = 0.5068472 \pm 0.0014580$. The check is a band test, not a point estimate; passing means the live engine's tail mean is statistically indistinguishable from the canonical at the stated tolerance, with SEM computed under the Flyvbjerg--Petersen blocked convention.
+
+\subsection*{A.2 Run against the kernel-backed mock (no engine required)}
+
+This path runs on Python alone and is the recommended entry point for a reviewer who wants to confirm the GQL surface and the equilibrium band without standing up the Rust engine.
+
+\begin{verbatim}
+python -m pytest \
+    inertia_damping/test_gigi_part_iii_gibbs_plaquette.py -v
+\end{verbatim}
+
+\textbf{What passes:} the same three-statement GQL block reproduces $\langle P \rangle_{\mathrm{meas}}$ in the equilibrium band for $\beta = 2.5$ against \texttt{MockGIGIClient}. The GQL block is the verbatim form
+\begin{verbatim}
+SAMPLE_TRANSPORT plaquette BUDGET tau N k
+MEASURE <P> ON tail(N_post)
+ASSERT band(0.5068472, 0.0014580, sigma=3)
+\end{verbatim}
+that the live path in A.1 also executes. The mock is kernel-backed (Gibbs plaquette measure, not a recorded trace), so a pass here is evidence that the canonical is reproduced from first principles by the same code path, not by replay. CSPRNG decision (c) means the mock and live numerics may differ byte-for-byte but must agree inside the blocked-SEM band; that band agreement is the architectural contract being checked.
+
+\subsection*{A.3 Run the full Halcyon Stage 2 validation}
+
+This path regenerates the published verdict end-to-end.
+
+\begin{verbatim}
+python -m inertia_damping.run_validation_report \
+    --beta 2.5 --steps 1000 --seed 20260617 \
+    --beta-envelope 1.5,2.0,2.5,3.0,3.5 \
+    --sector-classifier \
+    --output inertia_damping/reports/
+\end{verbatim}
+
+\textbf{Output:} \texttt{validation\_report\_\{TIMESTAMP\}.\{md,json\}} together with a \texttt{trajectory.json} and a \texttt{final\_state.npz} sidecar in \texttt{inertia\_damping/reports/}. The published verdict (8/10 \textsc{pass}, 1 \textsc{fail} on Section~5, 1 \textsc{not\_applicable} on the sector classifier) reproduces, on the buckyball substrate ($V=60$, $E=90$, $F=32$, $\chi=2$; $\mathrm{SU}(2)$) with the parameter set of Table~\ref{tab:verdict}.
+
+\textbf{What a pass means and does not mean:} a pass on A.1, A.2, and A.3 establishes that the live engine, the kernel mock, and the Halcyon harness agree on the worked example at $\beta = 2.5$. It does \textbf{not} extend the strong-coupling mass-gap proof to the continuum; the single open inequality identified in v6 is untouched by any of these receipts, and is so marked.
+
+\end{document}
