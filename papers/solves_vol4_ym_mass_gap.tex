@@ -215,7 +215,17 @@ SAMPLE_TRANSPORT buckyball
     \item \textbf{This chapter}: the worked example transcribes the value from the engine, not from a re-run Python printout. The substrate is the source; the document is a reader.
 \end{enumerate}
 
-\textbf{Secondary receipt (GIGI internal release profile).} GIGI's own internal release-profile canonical, run at seed \texttt{20260616} over 1948 samples on the same substrate, returns $0.5074863 \pm 0.0015235$. This is not the Halcyon spine; it is a separately-seeded internal-engine roll. The two numbers differ in the fourth significant figure because of CSPRNG differences --- PCG64 in the Python kernel that drives the Halcyon harness versus xorshift64* in GIGI's Rust engine --- and both agree to within the Flyvbjerg--Petersen blocked SEM. That two independently-seeded canonical receipts on two different CSPRNG streams land inside the same blocked-SEM band is the strongest form of agreement the architecture promises, and is what the substrate-consolidation contract was written to deliver.
+\textbf{Secondary receipt (GIGI internal release profile).} GIGI's own internal release-profile canonical, run at seed \texttt{20260616} over 1948 samples on the same substrate, returns $0.5074863 \pm 0.0015235$. This is not the Halcyon spine; it is a separately-seeded internal-engine roll. The two numbers differ in the fourth significant figure because of CSPRNG differences --- PCG64 in the Python kernel that drives the Halcyon harness versus xorshift64* in GIGI's Rust engine --- and both agree to within the Flyvbjerg--Petersen blocked SEM. That two independently-seeded canonical receipts on two \emph{independent} CSPRNG streams land inside the same blocked-SEM band is the strongest form of \emph{scientific} agreement the architecture promises --- two independent witnesses converging on the same physics --- and is what the substrate-consolidation contract was written to deliver.
+
+\begin{remark}[Optional matched-RNG receipt]
+\label{rmk:matched-rng}
+The default contract above is statistical: two independent CSPRNGs agreeing to within the blocked SEM. This is the right contract for the science --- a bug in one CSPRNG cannot hide in the other. For readers who want the strongest possible form of \emph{engineering} agreement, the architecture additionally supports a matched-RNG mode in which Halcyon ports GIGI's xorshift64* and Marsaglia rejection sampler verbatim and uses them in place of NumPy's PCG64. At the same seed the resulting field-initialization buffer is \emph{byte-identical}: every one of the $90 \times 4$ \texttt{f64} values in the HAAR\_RANDOM gauge buffer (and the MAXWELL\_BOLTZMANN $E$ buffer at fixed $\beta$) matches the live engine bit for bit. The receipt lives at
+\begin{verbatim}
+inertia_damping/test_gigi_matched_rng.py::
+    test_G_MATCH_LIVE_E_haar_byte_identical_to_live
+\end{verbatim}
+Scope: only the random field initializers are byte-matched. The dynamical paths --- \texttt{GIBBS\_SAMPLE} via Kennedy--Pendleton heatbath and \texttt{SYMPLECTIC\_FLOW} via the covariant-Gauss leapfrog --- still run through their kernel implementations and remain statistical receipts. The matched-RNG mode is intentionally opt-in; it does not replace the default two-independent-witnesses contract because doing so would weaken the scientific receipt rather than strengthen it.
+\end{remark}
 
 \textbf{Three reports, one source.} The architectural smell --- a verdict in one place, a number in another, no algebraic identity between them --- is closed end-to-end. That closure is what the substrate-consolidation letter (Halcyon $\to$ GIGI, 17 June 2026) was building toward.
 
