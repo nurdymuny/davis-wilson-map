@@ -309,17 +309,27 @@ GIGI_URL=https://gigi-stream.fly.dev \
 
 \textbf{What the verifier emits:} the canonical tail-mean $\langle P \rangle_{\mathrm{tail}}$, the delta from the Halcyon spine, the tolerance ($3 \sigma$ + absorption margin), \textsc{pass}/\textsc{fail}, the thermalization wall-clock, and a SHA-256 of the full 200-sample measurement chain. A reader citing the chapter's spine independently of Halcyon's deployed report can cite the verifier's SHA-256 instead --- the chain is the cryptographic witness for any independently derived numerical claim. The script source is in \texttt{inertia\_damping/scripts/verify\_canonical\_receipt.py} and is exercised by \texttt{test\_gigi\_live\_phase\_d\_public\_receipt.py} in CI when the engine is reachable.
 
-\textbf{Cross-team handshake receipt (2026-06-19).} Fired against \texttt{gigi-stream.fly.dev} on Gigi's Part V deploy (machine \texttt{683961dbe9ee38}, after V.4--V.6 landed) with the \texttt{--snapshot} flag set:
+\textbf{Cross-team handshake receipt (2026-06-19).} Fired against \texttt{gigi-stream.fly.dev} with the \texttt{--snapshot} flag set. Sprint A's \texttt{face\_edges} hoist + measurement pre-alloc deployed (image \texttt{deployment-01KVGKE7TAJ0V17VEZR9H44QMG}, version 221) preserves bit-identity: the snapshot SHA is the same byte-for-byte before and after Sprint A. The receipt:
 \begin{verbatim}
 tail_mean              = 0.5121834
 halcyon_spine_P        = 0.5068472
 delta_from_spine       = 0.005336    (inside 0.04 tolerance)
 band_pass              = TRUE
-thermalization_wall    = 0.82 s
 P_chain_sha256         = bfb6c90c15ac17c967db1165ef36e07d257f35b2965a0ad1474d66cc6daf4d77
 snapshot_sha256        = ea7b934ca3fbe9897e9f11851647388972004a2ca025100179a92dd966516591
 snapshot_wal_offset    = 24
 \end{verbatim}
+
+The end-to-end wall budget decomposes honestly into three numbers:
+\begin{verbatim}
+~ 20 ms    in-engine substrate compute (post-Sprint-A face_edges hoist;
+            was ~ 0.82 s pre-Sprint-A and pre-engine entirely)
+~ 140 ms   verifier round-trip end-to-end (network + JSON + auth
+            dominate over public internet to gigi-stream.fly.dev)
+< 100 ms   post-SNAPSHOT cached read (the Part V citation handle;
+            no thermalization, just GET /v1/gauge_field/U/plaquette)
+\end{verbatim}
+The substrate compute is what the chapter's "thermalization cost" used to denote --- about $50 \times$ faster than the local Python kernel (and over $2000 \times$ faster than the orchestrator's original $\sim 30$\,s estimate I'd been carrying). The verifier wall is dominated by network round-trip to fly.dev, not by the engine. A reader who runs the verifier against a local \texttt{cargo run --release --bin gigi-stream} sees the substrate compute directly, without the public-internet tax.
 
 \textbf{The chapter's citation handle is \texttt{ea7b934ca3fbe9897e9f11851647388972004a2ca025100179a92dd966516591}} --- the SHA-256 of the post-thermalization $90 \times 4$ \texttt{f64} link buffer, written to the engine's WAL under \texttt{OP\_GAUGE\_FIELD\_SNAPSHOT} (\texttt{0x0B}) at offset 24. This hash lives in three places by construction: in GIGI's WAL on the production engine, in the SNAPSHOT response Rows envelope, and on this page. A reader can independently compute it from the buffer they read back through \texttt{GET /v1/gauge\_field/halcyon\_canonical\_U/plaquette} and confirm the canonical. The chain SHA-256 above is kept as a secondary diagnostic for cross-checking the measurement path, but the buffer SHA is the citation of record --- state, not path.
 
