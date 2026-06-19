@@ -297,6 +297,20 @@ python -m inertia_damping.run_validation_report \
 
 \textbf{Output:} \texttt{validation\_report\_\{TIMESTAMP\}.\{md,json\}} together with a \texttt{trajectory.json} and a \texttt{final\_state.npz} sidecar in \texttt{inertia\_damping/reports/}. The published verdict (8/10 \textsc{pass}, 1 \textsc{fail} on Section~5, 1 \textsc{not\_applicable} on the sector classifier) reproduces, on the buckyball substrate ($V=60$, $E=90$, $F=32$, $\chi=2$; $\mathrm{SU}(2)$) with the parameter set of Table~\ref{tab:verdict}.
 
-\textbf{What a pass means and does not mean:} a pass on A.1, A.2, and A.3 establishes that the live engine, the kernel mock, and the Halcyon harness agree on the worked example at $\beta = 2.5$. It does \textbf{not} extend the strong-coupling mass-gap proof to the continuum; the single open inequality identified in v6 is untouched by any of these receipts, and is so marked.
+\subsection*{A.4 Run the public-receipt verifier against any GIGI substrate}
+
+A single command points the chapter receipt at any running gigi-stream --- a local dev server, a tunneled engine, or the production endpoint at \texttt{gigi-stream.fly.dev}. The verifier fires the five-statement block, parses the measurement chain, and reports the tail-mean canonical with a 3$\sigma$ band check against the Halcyon spine.
+
+\begin{verbatim}
+GIGI_URL=https://gigi-stream.fly.dev \
+  python -m inertia_damping.scripts.verify_canonical_receipt \
+    --api-key $GIGI_API_KEY
+\end{verbatim}
+
+\textbf{What the verifier emits:} the canonical tail-mean $\langle P \rangle_{\mathrm{tail}}$, the delta from the Halcyon spine, the tolerance ($3 \sigma$ + absorption margin), \textsc{pass}/\textsc{fail}, the thermalization wall-clock, and a SHA-256 of the full 200-sample measurement chain. A reader citing the chapter's spine independently of Halcyon's deployed report can cite the verifier's SHA-256 instead --- the chain is the cryptographic witness for any independently derived numerical claim. The script source is in \texttt{inertia\_damping/scripts/verify\_canonical\_receipt.py} and is exercised by \texttt{test\_gigi\_live\_phase\_d\_public\_receipt.py} in CI when the engine is reachable.
+
+\textbf{Persistence note:} GIGI's WAL persists only the \texttt{LATTICE} and \texttt{GAUGE\_FIELD} declarations (op codes \texttt{0x09} and \texttt{0x0A}); the thermalized state is intentionally not persisted. Every verification run thermalizes from scratch in roughly thirty seconds. That is the right design: thermalization is cheap, and re-deriving the canonical from first principles is a stronger receipt than serving a cached buffer.
+
+\textbf{What a pass means and does not mean:} a pass on A.1, A.2, A.3, and A.4 establishes that the live engine, the kernel mock, the Halcyon harness, and any public verifier hitting the substrate URL all agree on the worked example at $\beta = 2.5$ to within the documented blocked-SEM band. It does \textbf{not} extend the strong-coupling mass-gap proof to the continuum; the single open inequality identified in v6 is untouched by any of these receipts, and is so marked.
 
 \end{document}
