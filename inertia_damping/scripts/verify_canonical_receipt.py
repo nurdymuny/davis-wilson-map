@@ -119,7 +119,9 @@ def verify(
     """
     headers: Dict[str, str] = {"Accept": "application/json"}
     if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
+        # gigi-stream auth is `X-API-Key` header (see
+        # gigi/src/bin/gigi_stream.rs line ~1172).
+        headers["X-API-Key"] = api_key
 
     persist_clause = " PERSIST" if persist else ""
 
