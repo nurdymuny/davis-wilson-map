@@ -42,6 +42,14 @@ from inertia_damping.gigi_client.protocol import (
 from inertia_damping.gigi_client.client import GIGIClient
 from inertia_damping.gigi_client.mock import MockGIGIClient
 from inertia_damping.gigi_client.live import LiveGIGIClient
+from inertia_damping.gigi_client.matched_mock import MatchedRNGMockGIGIClient
+from inertia_damping.gigi_client.matched_rng import (
+    XorshiftSmallRng,
+    haar_random_su2,
+    maxwell_boltzmann_su2,
+    haar_random_links,
+    maxwell_boltzmann_links,
+)
 
 __all__ = [
     "Group",
@@ -59,4 +67,10 @@ __all__ = [
     "ProjectGaussConfig",
     "SymplecticFlowDiagnostics",
     "SymplecticFlowResult",
+    "MatchedRNGMockGIGIClient",
+    "XorshiftSmallRng",
+    "haar_random_su2",
+    "maxwell_boltzmann_su2",
+    "haar_random_links",
+    "maxwell_boltzmann_links",
 ]
