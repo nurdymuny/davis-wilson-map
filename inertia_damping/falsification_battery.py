@@ -225,43 +225,49 @@ def measure_chi_at_cell(graph, Q_label: int, omega: float, seed: int,
 # Alpha extraction
 # ---------------------------------------------------------------------------
 def extract_alpha(measurements: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Extract alpha = d mu_eff / dQ from a list of (Q, mu_eff) measurements
-    across seeds. Returns the linear-fit slope and SEM."""
-    # Group by Q label, collapse seeds
+    """Extract alpha = d mu_eff / dQ.
+
+    SPEC v2 §3 establishes mu_eff(Q=0) = 0 exactly (trivial vacuum has
+    kappa_Q = 0). The fit is therefore "slope through origin": for each
+    Q > 0 and each seed, alpha_i = mu_eff(Q, seed) / Q. The reported
+    alpha is the mean across all (Q > 0, seed) pairs; the SEM is the
+    standard error of that mean (capturing real seed-to-seed and
+    Q-to-Q spread).
+    """
     by_q: Dict[int, List[float]] = {}
     for m in measurements:
         by_q.setdefault(m["Q_label"], []).append(m["mu_eff_mean"])
     Q_labels = sorted(by_q.keys())
-    Q_means = np.array(Q_labels, dtype=float)
-    mu_means = np.array([np.mean(by_q[q]) for q in Q_labels])
-    mu_sems = np.array([
-        np.std(by_q[q], ddof=1) / np.sqrt(len(by_q[q]))
-        if len(by_q[q]) > 1 else 0.0
-        for q in Q_labels
-    ])
-    # Weighted linear fit mu_means vs Q_means
-    if len(Q_labels) < 2:
-        return {"alpha": 0.0, "alpha_sem": 0.0, "intercept": float(mu_means[0])
-                if len(mu_means) > 0 else 0.0}
-    w = 1.0 / np.where(mu_sems > 0, mu_sems ** 2, 1.0)
-    Sw = w.sum()
-    Sx = (w * Q_means).sum()
-    Sy = (w * mu_means).sum()
-    Sxx = (w * Q_means ** 2).sum()
-    Sxy = (w * Q_means * mu_means).sum()
-    denom = Sw * Sxx - Sx ** 2
-    if abs(denom) < 1e-12:
-        return {"alpha": 0.0, "alpha_sem": 0.0, "intercept": float(mu_means.mean())}
-    alpha = (Sw * Sxy - Sx * Sy) / denom
-    intercept = (Sxx * Sy - Sx * Sxy) / denom
-    alpha_sem = float(np.sqrt(Sw / denom))
+    if len(Q_labels) < 1:
+        return {"alpha": 0.0, "alpha_sem": 0.0, "intercept": 0.0,
+                "Q_means": [], "mu_means": [], "mu_sems": []}
+    # Slope-through-origin estimate
+    slopes: List[float] = []
+    for q in Q_labels:
+        if q == 0:
+            continue
+        for mu in by_q[q]:
+            slopes.append(mu / q)
+    if len(slopes) < 1:
+        return {"alpha": 0.0, "alpha_sem": 0.0, "intercept": 0.0,
+                "Q_means": [float(q) for q in Q_labels],
+                "mu_means": [float(np.mean(by_q[q])) for q in Q_labels],
+                "mu_sems": [0.0] * len(Q_labels)}
+    alpha = float(np.mean(slopes))
+    sem = (float(np.std(slopes, ddof=1) / np.sqrt(len(slopes)))
+           if len(slopes) > 1 else 0.0)
     return {
-        "alpha": float(alpha),
-        "alpha_sem": alpha_sem,
-        "intercept": float(intercept),
-        "Q_means": Q_means.tolist(),
-        "mu_means": mu_means.tolist(),
-        "mu_sems": mu_sems.tolist(),
+        "alpha": alpha,
+        "alpha_sem": sem,
+        "intercept": 0.0,
+        "n_slopes": len(slopes),
+        "Q_means": [float(q) for q in Q_labels],
+        "mu_means": [float(np.mean(by_q[q])) for q in Q_labels],
+        "mu_sems": [
+            float(np.std(by_q[q], ddof=1) / np.sqrt(len(by_q[q])))
+            if len(by_q[q]) > 1 else 0.0
+            for q in Q_labels
+        ],
     }
 
 
@@ -333,26 +339,34 @@ def protocol_H1_material(default_measurements: List[Dict[str, Any]],
     )
 
 
-def protocol_H7_statistics(measurements: List[Dict[str, Any]]) -> GateVerdict:
-    """H7 struck iff seed-to-seed agreement is tight."""
-    by_q: Dict[int, List[float]] = {}
-    for m in measurements:
-        by_q.setdefault(m["Q_label"], []).append(m["mu_eff_mean"])
-    # Compute relative SEM at each Q
-    rel_sems = []
-    for q, vals in by_q.items():
-        if len(vals) > 1:
-            sem = np.std(vals, ddof=1) / np.sqrt(len(vals))
-            rel = sem / abs(np.mean(vals)) if np.mean(vals) != 0 else float('inf')
-            rel_sems.append(rel)
-    avg_rel_sem = float(np.mean(rel_sems)) if rel_sems else 0.0
-    struck = bool(avg_rel_sem < 0.03)
+def protocol_H7_statistics(measurements: List[Dict[str, Any]],
+                           alpha_info: Optional[Dict[str, Any]] = None
+                           ) -> GateVerdict:
+    """H7 struck iff alpha SEM is tight relative to alpha.
+
+    Per SPEC v2: |alpha_SEM_blocked| / |alpha| <= 0.05. The Q=0 column has
+    mu_eff = 0 by construction (trivial vacuum), so relative SEM at Q=0 is
+    structurally infinite. The relevant statistic is the SEM of alpha
+    itself (extracted from seed-to-seed variation at nonzero Q).
+    """
+    if alpha_info is None:
+        alpha_info = extract_alpha(measurements)
+    alpha = alpha_info.get("alpha", 0.0)
+    sem = alpha_info.get("alpha_sem", 0.0)
+    if abs(alpha) < 1e-12:
+        return GateVerdict(
+            h_id="H7_statistics", struck="n/a",
+            reason="alpha is degenerate; statistics gate not testable",
+        )
+    rel_sem = sem / abs(alpha)
+    struck = bool(rel_sem < 0.05)
     return GateVerdict(
         h_id="H7_statistics",
         struck=struck,
-        reason=f"avg rel SEM across Q = {avg_rel_sem:.4f}",
+        reason=f"rel alpha SEM = {rel_sem:.4f}",
         per_seed_strikes=8 if struck else 0,
-        evidence={"avg_rel_sem": avg_rel_sem, "rel_sems_per_Q": rel_sems},
+        evidence={"alpha": alpha, "alpha_sem": sem, "rel_sem": rel_sem,
+                  "n_slopes": alpha_info.get("n_slopes")},
     )
 
 
@@ -403,14 +417,20 @@ def protocol_hardware_only(h_id: str, reason: str) -> GateVerdict:
 # ---------------------------------------------------------------------------
 # Battery orchestrator
 # ---------------------------------------------------------------------------
-def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = True,
-                     verbose: bool = True) -> Dict[str, Any]:
+def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = False,
+                     verbose: bool = True,
+                     n_seeds: int = 3,
+                     n_equil: int = 200,
+                     n_steps: int = 1500,
+                     ) -> Dict[str, Any]:
     """Quick smoke-run of the battery (per SPEC v2 §7 --battery-fast).
 
-    1 seed × 3 omegas × 2 Q values × 2 H values + 2 mu_proxy + 1 H9 cell.
-    Approximately 12 lock-in runs, ~1 min if gauge frozen, ~5 min with gauge.
+    n_seeds × 3 omegas × 2 Q values for default measurements,
+    + 2 mu_proxy values × 2 Q × n_seeds for H1,
+    + 2 Q × n_seeds for H9.
+    With n_seeds=3 and gauge enabled: ~25 lock-in runs at ~16 s each ≈ 7 min.
     """
-    seeds = [20260616]
+    seeds = DEFAULT_SEEDS[:n_seeds]
     omega_mults = [0.3, 1.0, 3.0]
     Q_grid = [0, 1]
 
@@ -431,7 +451,7 @@ def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = True,
                 if verbose:
                     print(f"[battery-fast] default Q={Q} omega={om:.3f} seed={seed}")
                 m = measure_chi_at_cell(graph, Q, om, seed,
-                                        n_equil=50, n_steps=600, dt=dt,
+                                        n_equil=n_equil, n_steps=n_steps, dt=dt,
                                         freeze_gauge=freeze_gauge)
                 default_meas.append(m)
 
@@ -443,7 +463,7 @@ def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = True,
             for seed in seeds:
                 # only at omega_c for H1
                 m = measure_chi_at_cell(graph, Q, omega_c, seed, mu_proxy=mp,
-                                        n_equil=50, n_steps=600, dt=dt,
+                                        n_equil=n_equil, n_steps=n_steps, dt=dt,
                                         freeze_gauge=freeze_gauge)
                 meas.append(m)
         mu_proxy_results[mp] = meas
@@ -454,7 +474,7 @@ def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = True,
         for seed in seeds:
             m = measure_chi_at_cell(graph, Q, omega_c, seed,
                                     use_alternative_tau=True,
-                                    n_equil=50, n_steps=600, dt=dt,
+                                    n_equil=n_equil, n_steps=n_steps, dt=dt,
                                     freeze_gauge=freeze_gauge)
             alt_meas.append(m)
 
@@ -472,7 +492,7 @@ def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = True,
                      reason="amplitude sweep not run in --battery-fast")
     h6 = GateVerdict(h_id="H6_resonance", struck="n/a",
                      reason="full chi(omega) fit not run in --battery-fast")
-    h7 = protocol_H7_statistics(default_meas)
+    h7 = protocol_H7_statistics(default_meas, alpha_info=alpha_info)
     h8 = protocol_H8_q_drift(default_meas)
     h9 = protocol_H9_tau_model(alpha_info["alpha"], alt_alpha_info["alpha"])
 

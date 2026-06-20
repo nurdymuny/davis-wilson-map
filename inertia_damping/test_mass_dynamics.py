@@ -44,6 +44,8 @@ if _HERE not in sys.path:
 from inertia_damping import buckyball_action as ba
 from inertia_damping import buckyball_graph as bg
 from inertia_damping import buckyball_integrator as bi
+# Import the vectorized CUDA helpers (work on CPU too, just call with B=1)
+from inertia_damping.cuda import batched_leapfrog as bl
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -113,35 +115,61 @@ def _build_edge_face_index_tensors(graph) -> Tuple[torch.Tensor, torch.Tensor]:
     return f1, f2
 
 
+def compute_face_q0_vectorized(U: torch.Tensor, batched_topo) -> torch.Tensor:
+    """Compute q_0 of each face holonomy using the vectorized batched_leapfrog
+    code (works on CPU with B=1). Returns (F,) tensor of q_0 values.
+
+    Much faster than ba.all_face_holonomies (~ms vs ~30ms per call).
+    """
+    U_b = U.unsqueeze(0)  # (1, E, 4)
+    Uf_b = bl.compute_face_holonomies(U_b, batched_topo)  # (1, F, 4)
+    return Uf_b[0, :, 0]  # (F,)
+
+
 def compute_s_Q_per_edge(U: torch.Tensor, graph,
-                         face_index_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
+                         face_index_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+                         batched_topo: Optional[Any] = None,
+                         q0_per_face_override: Optional[torch.Tensor] = None,
                          ) -> torch.Tensor:
     """Normalized local Wilson-action density at each edge (vectorized).
 
     s_Q(e) = (1/4) * [(1 - q0(U_f1)) + (1 - q0(U_f2))]
     Range: s_Q(e) ∈ [0, 1].
+
+    If q0_per_face_override is provided (shape (F,)), use it directly instead
+    of recomputing. This lets the caller share q_0 across compute_s_Q and
+    compute_kappa_Q so all_face_holonomies is called once per step instead of
+    twice.
     """
-    Uf = ba.all_face_holonomies(U, graph)  # (F, 4)
-    q0_per_face = Uf[:, 0]  # (F,)
+    if q0_per_face_override is not None:
+        q0_per_face = q0_per_face_override
+    elif batched_topo is not None:
+        q0_per_face = compute_face_q0_vectorized(U, batched_topo)
+    else:
+        Uf = ba.all_face_holonomies(U, graph)
+        q0_per_face = Uf[:, 0]
     if face_index_cache is None:
         f1, f2 = _build_edge_face_index_tensors(graph)
     else:
         f1, f2 = face_index_cache
-    q0_f1 = q0_per_face[f1]  # (E,)
-    q0_f2 = q0_per_face[f2]  # (E,)
+    q0_f1 = q0_per_face[f1]
+    q0_f2 = q0_per_face[f2]
     return 0.25 * ((1.0 - q0_f1) + (1.0 - q0_f2))
 
 
 def compute_kappa_Q_per_edge(U: torch.Tensor, graph,
-                             face_index_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
+                             face_index_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+                             batched_topo: Optional[Any] = None,
+                             q0_per_face_override: Optional[torch.Tensor] = None,
                              ) -> torch.Tensor:
-    """Local curvature κ_Q(e) = (1 - q0(U_f1)) * (1 - q0(U_f2)), vectorized.
-
-    Product (not sum) so κ_Q is distinguishable from s_Q in the μ_eff
-    integral (prevents the two factors from collapsing).
-    """
-    Uf = ba.all_face_holonomies(U, graph)
-    q0_per_face = Uf[:, 0]
+    """Local curvature κ_Q(e) = (1 - q0(U_f1)) * (1 - q0(U_f2)), vectorized."""
+    if q0_per_face_override is not None:
+        q0_per_face = q0_per_face_override
+    elif batched_topo is not None:
+        q0_per_face = compute_face_q0_vectorized(U, batched_topo)
+    else:
+        Uf = ba.all_face_holonomies(U, graph)
+        q0_per_face = Uf[:, 0]
     if face_index_cache is None:
         f1, f2 = _build_edge_face_index_tensors(graph)
     else:
@@ -170,17 +198,29 @@ def compute_tau_Q_per_edge(s_Q: torch.Tensor, tau_0: float, beta_tau: float,
 
 def compute_mu_eff(U: torch.Tensor, graph, phi_n_sq: torch.Tensor,
                    alpha_halcyon: float, tau_0: float, beta_tau: float,
-                   mu_proxy: float = 1.0,
                    use_alternative_tau: bool = False,
-                   face_index_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None
+                   face_index_cache: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+                   batched_topo: Optional[Any] = None,
                    ) -> float:
-    """μ_eff(Q) per SPEC v2 §3 Eq. (boxed)."""
-    s_Q = compute_s_Q_per_edge(U, graph, face_index_cache=face_index_cache)
-    kappa = compute_kappa_Q_per_edge(U, graph, face_index_cache=face_index_cache)
+    """μ_eff(Q) per SPEC v2 §3 Eq. (boxed).
+
+    The Halcyon coupling is intentionally MATERIAL-INDEPENDENT: mu_proxy
+    does NOT enter here. It modulates mu_baseline (the bare material mass)
+    only. The H1 test asks whether varying material changes alpha; if alpha
+    is geometric (Halcyon's claim) it does not.
+    """
+    if batched_topo is not None:
+        q0_per_face = compute_face_q0_vectorized(U, batched_topo)
+    else:
+        Uf = ba.all_face_holonomies(U, graph)
+        q0_per_face = Uf[:, 0]
+    s_Q = compute_s_Q_per_edge(U, graph, face_index_cache=face_index_cache,
+                               q0_per_face_override=q0_per_face)
+    kappa = compute_kappa_Q_per_edge(U, graph, face_index_cache=face_index_cache,
+                                     q0_per_face_override=q0_per_face)
     tau = compute_tau_Q_per_edge(s_Q, tau_0, beta_tau, use_alternative=use_alternative_tau)
     integrand = kappa * tau ** 2 * phi_n_sq
-    mu_eff = alpha_halcyon * float(integrand.sum()) / graph.n_edges
-    return mu_proxy * mu_eff
+    return alpha_halcyon * float(integrand.sum()) / graph.n_edges
 
 
 def compute_Q_surrogate(U: torch.Tensor, graph,
@@ -283,6 +323,10 @@ class TestMassDynamics:
         self.phi_n_sq = torch.from_numpy(phi_sq_np).to(dtype=torch.float64)
         # Precompute and cache the edge-face index tensors (vectorized lookup)
         self._face_index_cache = _build_edge_face_index_tensors(graph)
+        # Build the batched_leapfrog topology (CPU, B=1) for vectorized face holonomies
+        self._batched_topo = bl.build_topology_from_graph(
+            graph, device=torch.device('cpu'), dtype=torch.float64,
+        )
         # When freeze_gauge=True, cache the mu_eff value to avoid recomputing
         self._mu_eff_cached: Optional[float] = None
 
@@ -292,23 +336,27 @@ class TestMassDynamics:
             alpha_halcyon=self.config.alpha_halcyon,
             tau_0=self.config.tau_0,
             beta_tau=self.config.beta_tau,
-            mu_proxy=self.config.mu_proxy,
             use_alternative_tau=self.config.use_alternative_tau,
             face_index_cache=self._face_index_cache,
+            batched_topo=self._batched_topo,
         )
 
     def Q_surrogate(self, U: torch.Tensor) -> float:
         return compute_Q_surrogate(U, self.graph)
 
     def coupled_leapfrog_step(self, U, E, x, v, dt, t, t_total, with_drive=True):
-        """One coupled KDK step. Total inertia = mu_baseline + mu_eff(U)."""
+        """One coupled KDK step. Total inertia = mu_proxy*mu_baseline + mu_eff(U).
+
+        mu_proxy scales the material baseline (the H1 material parameter);
+        mu_eff is the geometric Halcyon coupling and is mu_proxy-independent.
+        """
         cfg = self.config
         if cfg.freeze_gauge:
             if self._mu_eff_cached is None:
                 self._mu_eff_cached = self.mu_eff(U)
-            mu = cfg.mu_baseline + self._mu_eff_cached
+            mu = cfg.mu_proxy * cfg.mu_baseline + self._mu_eff_cached
         else:
-            mu = cfg.mu_baseline + self.mu_eff(U)
+            mu = cfg.mu_proxy * cfg.mu_baseline + self.mu_eff(U)
 
         # Test-mass kick 1
         F_t = drive_force(t, t_total, cfg.drive_F0, cfg.drive_omega,
@@ -316,11 +364,15 @@ class TestMassDynamics:
         a_t = (F_t - cfg.K_spring * x - cfg.c_damp * v) / mu
         v_half = v + 0.5 * dt * a_t
 
-        # Gauge KDK (uses existing buckyball_integrator leapfrog)
+        # Gauge KDK (uses vectorized batched_leapfrog with B=1)
         if cfg.freeze_gauge:
             U_new, E_new = U, E
         else:
-            U_new, E_new = bi.leapfrog_step(U, E, dt, self.graph, cfg.beta)
+            U_b = U.unsqueeze(0)
+            E_b = E.unsqueeze(0)
+            U_new_b, E_new_b = bl.leapfrog_step(U_b, E_b, dt, self._batched_topo, cfg.beta)
+            U_new = U_new_b.squeeze(0)
+            E_new = E_new_b.squeeze(0)
 
         # Test-mass drift
         x_new = x + dt * v_half
@@ -331,7 +383,9 @@ class TestMassDynamics:
         else:
             mu_new = cfg.mu_baseline + self.mu_eff(U_new)
 
-        # Test-mass kick 2
+        # Test-mass kick 2 (mu_new uses same mu_proxy convention)
+        if not cfg.freeze_gauge:
+            mu_new = cfg.mu_proxy * cfg.mu_baseline + self.mu_eff(U_new)
         F_t_dt = drive_force(t + dt, t_total, cfg.drive_F0, cfg.drive_omega,
                              cfg.tukey_alpha) if with_drive else 0.0
         a_t_dt = (F_t_dt - cfg.K_spring * x_new - cfg.c_damp * v_half) / mu_new

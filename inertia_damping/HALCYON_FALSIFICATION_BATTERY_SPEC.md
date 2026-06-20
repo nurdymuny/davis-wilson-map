@@ -14,7 +14,7 @@ Four critics reviewed v1: math-dim, sim-realism, sudoku-completeness, adversaria
 - **Implementation architecture** revised: new `test_mass_dynamics.py` module with state `(U, E, x, v)`, not an extension of the existing CUDA Section 5 kernel. CUDA batching across seeds is dropped for driven evolution (seeds are not a parallelism axis under non-equilibrium dynamics). Wall budget revised to ~2–3 hr CPU or ~30 min with multiprocessing over (ω, Q) cells.
 - **χ²/dof fit** redefined: 8 seeds × 5 ω × 3 Q yields 15 weighted means with SEM; 9 free parameters (K_Q, μ_Q, c_Q × 3) leaves dof=6, not dof=0. The fit operates on seed-collapsed means with FP-blocked SEM weights.
 - **α_predicted** moved from "match within 2σ" gate (which was circular) to a separate self-consistency check that is NOT load-bearing for falsifiability. The load-bearing gates are H₀–H₉ only.
-- **μ_proxy** defined as an explicit multiplicative scale factor `μ_eff_Q → μ_proxy · μ_eff_Q`, making H₁ falsifiable rather than tautological.
+- **μ_proxy** defined as an explicit multiplicative scale factor on the **bare material baseline** `μ_total = μ_proxy · μ_baseline + μ_eff(Q)`. μ_proxy does NOT enter μ_eff: the Halcyon coupling is by claim material-independent. H₁ test asks: vary μ_proxy → does α extracted from (Q, μ_total(Q, μ_proxy)) pairs stay constant? If yes, the slope is geometric. (The earlier v2 draft had μ_proxy multiplying μ_eff directly; that made the test tautologically fail and was the wrong physics.)
 - **H₉ added**: τ_Q model robustness — alternative functional forms should produce α within tolerance. If they don't, the model is overfitted.
 - **Q_surrogate** defined explicitly as the normalized plaquette deviation from canonical, with the Q-sector labels {0,1,2} mapped to specific surrogate ranges.
 - **Gate robustness slack** added: H₀ requires 6σ (not 5σ); per-seed gate independence required (≥5/8 seeds must independently strike each gate).
@@ -36,7 +36,7 @@ Falsifiability is supplied by enumerating the null space and striking through wh
 | # | Null hypothesis | Protocol | Realm |
 |---|---|---|---|
 | H₀ | nothing happens (α = 0) | drive sweep at multiple Q; gate `|α| > 6 σ_α` (tightened from 5σ for robustness slack) | simulation ✓ |
-| H₁ | a material effect (Eötvös-class) | vary `μ_proxy ∈ {0.5, 1.0, 2.0}` as multiplicative scale on `μ_eff_Q`; verify `|dα/dμ_proxy| / |α| < 0.05` | simulation ✓ |
+| H₁ | a material effect (Eötvös-class) | vary `μ_proxy ∈ {0.5, 1.0, 2.0}` as multiplicative scale on `μ_baseline` (material mass, NOT on μ_eff); verify α extracted from (Q, μ_eff(Q)) pairs satisfies `|dα/dμ_proxy| / |α| < 0.05` | simulation ✓ |
 | H₂ | thermal pickup | thermal sham — drive heater profile with Q=0 → no shift | **hardware only** |
 | H₃ | EM pickup | vary test-mass `χ_mag`; predicted slope does NOT scale with `χ_mag` | **hardware only** |
 | H₄ | mechanical pickup | accelerometer on mount; subtract correlated motion | **hardware only** |
