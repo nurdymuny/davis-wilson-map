@@ -1,0 +1,28 @@
+{
+  "schema_version": "section5_cuda_sweep_v1",
+  "device": "cuda",
+  "cuda_device_name": "NVIDIA GeForce RTX 5070 Laptop GPU",
+  "beta": 2.5,
+  "dt": 0.01,
+  "n_steps_max": 16000,
+  "checkpoints": [
+    1000,
+    2000,
+    4000,
+    8000,
+    16000
+  ],
+  "seeds": [
+    20260616,
+    20260617,
+    20260618,
+    20260619,
+    20260620,
+    20260621,
+    20260622,
+    20260623
+  ],
+  "n_sidecars": 40,
+  "wall_total_s": 1322.3741369247437,
+  "wall_leapfrog_s": 161.51822328567505
+}

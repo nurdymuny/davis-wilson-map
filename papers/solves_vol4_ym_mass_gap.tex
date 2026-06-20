@@ -4,6 +4,7 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{enumitem}
@@ -183,6 +184,8 @@ The harness declines the sector classifier because the $Q_{\mathrm{surrogate}}$ 
 
 The microcanonical-versus-canonical cross-check fails. \textbf{This is real physics and real bookkeeping, not a software bug.} A single finite-length trajectory on 93 dynamical degrees of freedom does not sample the canonical ensemble well enough to close the cross-check at the tolerance the proof would need; the conservative-factor note in the harness configuration explicitly anticipates this gap, and the \textsc{fail} is the honest readout of that anticipated shortfall. \textbf{We do not paper it over.} The cluster-expansion proof of the lattice mass gap does not depend on microcanonical--canonical equivalence on a single buckyball trajectory; nothing in v6 is invalidated by this \textsc{fail}. What the \textsc{fail} marks is the precise boundary between \emph{the numerical pipeline works} and \emph{the pipeline alone proves the gap}. The pipeline does not prove the gap. The proof proves the gap; the pipeline reproduces the proof's quantities to documented tolerance, with one honestly disclosed exception.
 
+\textbf{The closure-study receipt (v1.2.1).} The conjecture that the \textsc{fail} would close under longer trajectories has now been tested directly. A 40-trajectory sweep over $N_{\mathrm{steps}} \in \{1000, 2000, 4000, 8000, 16000\}$ (a $16\times$ range) crossed with eight independent seeds, fired as a single batched CUDA pass through \texttt{inertia\_damping.cuda.batched\_leapfrog} on an NVIDIA Blackwell GPU, returns verdict \textsc{NO\_CLOSURE} with the gap falling 9\,\% from $0.1748$ ($N=1000$) to $0.1598$ ($N=16000$) and then \emph{flatlining}: the asymptotic shrinkage rate would not reach the $0.02$ tolerance until $N \sim 10^{10}$ steps. The mean plaquette under the symplectic flow converges to $\langle P\rangle_{\mathrm{time}} \approx 0.66$ across all eight seeds (Flyvbjerg--Petersen blocking regime transitions from \texttt{no\_plateau} at $N=1000$ to \texttt{plateau} at $N=16000$, with $n_{\mathrm{eff}}$ growing from $7.8$ to $125$); the canonical heatbath converges to $\langle P\rangle_{\mathrm{heatbath}} \approx 0.506$. \textbf{Shell $\ne$ ensemble at the buckyball's finite size:} each symplectic trajectory's energy shell has a time-averaged plaquette that differs structurally from the Boltzmann average over all energy shells. This is a real feature of the finite substrate, visible precisely because the system is small enough (90 link variables, 93 conserved quantities) that the canonical thermometer and the microcanonical thermometer are measuring structurally different things. The full receipt is at \texttt{inertia\_damping/reports/section5\_sweep\_cuda/SECTION5\_CLOSURE\_RECEIPT.md}; the load-bearing artefact is \texttt{section5\_closure.json}, SHA-256 \texttt{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}, with 40 per-trajectory sidecars and matplotlib figures alongside.
+
 \medskip
 
 Eight \textsc{pass}es, one principled decline, one disclosed \textsc{fail}: this is the verdict on file. \S\ref{sec:moral} explains why this distribution is structural rather than incidental --- why the substrate-consolidation strategy makes a \textsc{fail} of exactly this shape the expected output of an honest pipeline, and why papering it over would have been the actual failure.
@@ -338,5 +341,42 @@ The Halcyon-side regression contracts are \texttt{test\_gigi\_live\_phase\_b.py:
 \textbf{Persistence note.} The thermalized state is now durably persisted under \texttt{OP\_GAUGE\_FIELD\_SNAPSHOT} (\texttt{0x0B}). \texttt{LATTICE} and \texttt{GAUGE\_FIELD} declarations (\texttt{0x09} and \texttt{0x0A}) persist as before; the new op records the SU(2) link buffer as little-endian \texttt{f64} bytes alongside a SHA-256 the replay path verifies against on next \texttt{Engine::open}. Bare \texttt{SNAPSHOT GAUGE\_FIELD U;} parse-errors --- only \texttt{SNAPSHOT GAUGE\_FIELD U PERSIST;} is legal --- so the day a future \texttt{TRANSIENT} variant lands, zero existing callers change meaning. See \texttt{theory/halcyon/HALCYON\_PART\_V\_SNAPSHOT\_GATES.md} for the spec.
 
 \textbf{What a pass means and does not mean:} a pass on A.1, A.2, A.3, and A.4 establishes that the live engine, the kernel mock, the Halcyon harness, and any public verifier hitting the substrate URL all agree on the worked example at $\beta = 2.5$ to within the documented blocked-SEM band. It does \textbf{not} extend the strong-coupling mass-gap proof to the continuum; the single open inequality identified in v6 is untouched by any of these receipts, and is so marked.
+
+\subsection*{A.5 The Section 5 closure study (v1.2.1)}
+
+The v1.2 Section 5 \textsc{fail} (microcanonical vs.\ canonical, $\S$\ref{sec:verdict}) was tagged in the original verdict as a 93-DOF finite-trajectory caveat. The v1.2.1 closure study tests that conjecture directly: \emph{does the gap close as the trajectory length grows?}
+
+\textbf{Method.} 40 symplectic trajectories, $N_{\mathrm{steps}} \in \{1000, 2000, 4000, 8000, 16000\}$ (a $16\times$ range) crossed with eight independent seeds. Each trajectory's time-averaged plaquette is compared against a fresh per-seed canonical heatbath (200-sweep thermalization + 2000-sweep measurement). The leapfrog physics is bit-equivalent to the CPU Python kernel to float-64 precision (max $|\Delta P_{\mathrm{history}}| = 4.4\times10^{-16}$ over a validation run; see \texttt{inertia\_damping/cuda/test\_validate\_against\_cpu\_kernel.py}). All 8 seeds run as a single batched pass on an NVIDIA Blackwell RTX 5070 in $161\,\mathrm{s}$; the CPU heatbath adds $\sim 19\,\mathrm{min}$, for a total wall of $\sim 22\,\mathrm{min}$ versus the $\sim 13\,\mathrm{hr}$ projected for the original fly.io-routed orchestration.
+
+\textbf{Verdict: NO\_CLOSURE.} The gap drops 9\,\% across the full $16\times$ refinement and then flatlines:
+\begin{center}
+\begin{tabular}{r|rrrr}
+\toprule
+$N_{\mathrm{steps}}$ & mean gap & SEM of mean & max gap & PASS / 8 \\
+\midrule
+1000   & 0.1748 & 0.0091 & 0.2126 & 0/8 \\
+2000   & 0.1665 & 0.0083 & 0.2020 & 0/8 \\
+4000   & 0.1607 & 0.0089 & 0.2007 & 0/8 \\
+8000   & 0.1600 & 0.0087 & 0.1997 & 0/8 \\
+16000  & 0.1598 & 0.0090 & 0.2025 & 0/8 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Every one of the 40 trajectories returns \textsc{fail}; the linear extrapolation at the asymptotic shrinkage rate would not reach the $0.02$ tolerance until $N \sim 10^{10}$ steps. The trajectories themselves \emph{do} converge: the Flyvbjerg--Petersen blocking regime transitions from \texttt{no\_plateau} at $N = 1000$ to \texttt{plateau} at $N = 16000$, with $n_{\mathrm{eff}}$ growing from $7.8$ to $125$. The time-average is well-defined; it simply equals $\langle P\rangle_{\mathrm{time}} \approx 0.66$, not $\langle P\rangle_{\mathrm{heatbath}} \approx 0.506$.
+
+\textbf{Physical reading.} Shell $\ne$ ensemble at the buckyball's finite size. Each symplectic trajectory's energy shell has a time-averaged plaquette $\approx 0.66$; the canonical Boltzmann average over all energy shells weighted by their density of states gives $\approx 0.506$. The cross-check is not a check on whether the integrator is correct (it is --- the eight v1.2 PASSes establish that); it is a probe of the gap between microcanonical and canonical equilibrium at the buckyball's $V = 60$ / $E = 90$ scale. That gap is $\approx 0.16$, stable under $16\times$ refinement of trajectory length, and is the open caveat the chapter carries.
+
+\textbf{Reproducibility.}
+\begin{verbatim}
+python -m inertia_damping.scripts.section5_cuda_sweep
+python -m inertia_damping.scripts.section5_closure_analysis \
+    --sweep-root inertia_damping/reports/section5_sweep_cuda
+\end{verbatim}
+
+The artefact of record is \texttt{inertia\_damping/reports/section5\_sweep\_cuda/section5\_closure.json},
+SHA-256 \texttt{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}.
+The polished narrative is \texttt{SECTION5\_CLOSURE\_RECEIPT.md} alongside, with
+40 per-trajectory sidecars (each carrying the full Section 5 schema) and two matplotlib figures
+(\texttt{section5\_gap\_vs\_nsteps.pdf}, \texttt{section5\_pt\_vs\_ph.pdf}).
 
 \end{document}
