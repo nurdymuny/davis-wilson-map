@@ -1,0 +1,133 @@
+{
+  "section_11_falsification_battery": {
+    "available": true,
+    "mode": "battery-fast",
+    "alpha_measured": 5.915239426424406e-05,
+    "alpha_sem_blocked": 3.7870398829681976e-06,
+    "alpha_predicted_self_consistency": null,
+    "alpha_predicted_independent": null,
+    "alpha_predicted_note": "self-consistency check not run in --battery-fast",
+    "sector_separation": {
+      "passed": true,
+      "min_separation_sigma": 37.51982963129101,
+      "pairwise_sigmas": [
+        37.51982963129101
+      ],
+      "Q_means": {
+        "0": 0.971608832807571,
+        "1": 0.6499896801873979
+      },
+      "Q_sems": {
+        "0": 0.0,
+        "1": 0.00857197795887504
+      }
+    },
+    "battery": {
+      "H0_nothing": {
+        "h_id": "H0_nothing",
+        "struck": true,
+        "reason": "alpha=5.9152e-05, sigma=3.7870e-06, |alpha|/sigma=15.62",
+        "per_seed_strikes": 8,
+        "evidence": {
+          "alpha": 5.915239426424406e-05,
+          "alpha_sem": 3.7870398829681976e-06,
+          "alpha_over_sem": 15.619691392814625
+        }
+      },
+      "H1_material": {
+        "h_id": "H1_material",
+        "struck": true,
+        "reason": "d alpha/d mu_proxy = -1.6694e-06, rel = 0.0282",
+        "per_seed_strikes": 8,
+        "evidence": {
+          "d_alpha_d_mu_proxy": -1.6693688123243717e-06,
+          "d_alpha_d_mu_proxy_rel": 0.028221491844725846,
+          "alphas_by_proxy": {
+            "1.0": 5.915239426424406e-05,
+            "0.5": 6.142606307216613e-05,
+            "2.0": 5.86342129733276e-05
+          }
+        }
+      },
+      "H2_thermal": {
+        "h_id": "H2_thermal",
+        "struck": "n/a",
+        "reason": "simulation has no thermal DOF",
+        "per_seed_strikes": 0,
+        "evidence": {}
+      },
+      "H3_em_pickup": {
+        "h_id": "H3_em_pickup",
+        "struck": "n/a",
+        "reason": "simulation has no EM DOF",
+        "per_seed_strikes": 0,
+        "evidence": {}
+      },
+      "H4_mechanical": {
+        "h_id": "H4_mechanical",
+        "struck": "n/a",
+        "reason": "rigid substrate, no mount DOF",
+        "per_seed_strikes": 0,
+        "evidence": {}
+      },
+      "H5_amplitude": {
+        "h_id": "H5_amplitude",
+        "struck": "n/a",
+        "reason": "amplitude sweep not run in --battery-fast",
+        "per_seed_strikes": 0,
+        "evidence": {}
+      },
+      "H6_resonance": {
+        "h_id": "H6_resonance",
+        "struck": "n/a",
+        "reason": "full chi(omega) fit not run in --battery-fast",
+        "per_seed_strikes": 0,
+        "evidence": {}
+      },
+      "H7_statistics": {
+        "h_id": "H7_statistics",
+        "struck": false,
+        "reason": "rel alpha SEM = 0.0640",
+        "per_seed_strikes": 0,
+        "evidence": {
+          "alpha": 5.915239426424406e-05,
+          "alpha_sem": 3.7870398829681976e-06,
+          "rel_sem": 0.06402175144510347,
+          "n_slopes": 24
+        }
+      },
+      "H8_q_drift": {
+        "h_id": "H8_q_drift",
+        "struck": true,
+        "reason": "mean rel Q drift = 0.0170; max = 0.0426",
+        "per_seed_strikes": 8,
+        "evidence": {
+          "mean_rel_drift": 0.017013393951069586,
+          "max_rel_drift": 0.04258887359300656
+        }
+      },
+      "H9_tau_model": {
+        "h_id": "H9_tau_model",
+        "struck": true,
+        "reason": "alpha_default=5.9152e-05, alpha_alt=5.7658e-05, rel diff=0.0253",
+        "per_seed_strikes": 8,
+        "evidence": {
+          "alpha_default": 5.915239426424406e-05,
+          "alpha_alt": 5.765829844134298e-05,
+          "rel_diff": 0.02525841669614752
+        }
+      }
+    },
+    "completion_count": 4,
+    "applicable_count": 5,
+    "completion_invariant_simulation": "4/5 simulatable nulls struck",
+    "hardware_only_nulls": [
+      "H2_thermal",
+      "H3_em_pickup",
+      "H4_mechanical"
+    ],
+    "ergodicity_caveat": "Battery operates within the microcanonical energy shell. Per SECTION5_CLOSURE_RECEIPT, the buckyball substrate exhibits a ~16% irreducible shell-vs-ensemble gap. PASS does NOT imply thermodynamic equilibrium.",
+    "sudoku_verdict": "FAIL_NULL_SURVIVES",
+    "interpretation": "Battery did not pass; see individual gate verdicts."
+  }
+}
