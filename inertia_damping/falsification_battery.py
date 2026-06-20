@@ -31,6 +31,7 @@ The sudoku_verdict is one of:
 """
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import sys
@@ -412,6 +413,392 @@ def protocol_H9_tau_model(default_alpha: float, alt_alpha: float) -> GateVerdict
 
 def protocol_hardware_only(h_id: str, reason: str) -> GateVerdict:
     return GateVerdict(h_id=h_id, struck="n/a", reason=reason)
+
+
+# ---------------------------------------------------------------------------
+# Full battery: per-omega chi(omega) fit (the proper H6 protocol)
+# ---------------------------------------------------------------------------
+def fit_chi_omega_per_Q(measurements: List[Dict[str, Any]]) -> Dict[int, Dict[str, Any]]:
+    """For each Q label, fit chi_Q(omega) = 1 / (K_Q + i c_Q omega - mu_Q omega^2)
+    to the seed-averaged (omega, |chi|, arg chi) data.
+
+    Returns {Q_label: {K, mu, c, chi2, dof, residuals, ...}}.
+    """
+    from scipy.optimize import curve_fit  # noqa: F401 (use lstsq fallback if missing)
+    # Group by Q, then by omega
+    by_Q: Dict[int, Dict[float, List[Dict[str, Any]]]] = {}
+    for m in measurements:
+        q = m["Q_label"]
+        om = m["omega"]
+        by_Q.setdefault(q, {}).setdefault(om, []).append(m)
+    fits: Dict[int, Dict[str, Any]] = {}
+    for q, by_om in by_Q.items():
+        omegas = sorted(by_om.keys())
+        # seed-averaged |chi| at each omega
+        chi_mags = np.array([float(np.mean([mm["chi_mag"] for mm in by_om[om]]))
+                             for om in omegas])
+        chi_phases = np.array([float(np.mean([mm["chi_phase"] for mm in by_om[om]]))
+                               for om in omegas])
+        sems = np.array([
+            float(np.std([mm["chi_mag"] for mm in by_om[om]], ddof=1)
+                  / np.sqrt(len(by_om[om])))
+            if len(by_om[om]) > 1 else 0.01 * abs(chi_mags[i])
+            for i, om in enumerate(omegas)
+        ])
+        # Stack |chi| and arg chi as a vector of length 2N
+        omegas_arr = np.asarray(omegas)
+        y = np.concatenate([chi_mags, chi_phases])
+        sem_y = np.concatenate([sems, np.full_like(sems, 0.05)])  # phase has fixed weight
+
+        def model(omegas, K, mu, c):
+            chi_complex = 1.0 / (K + 1j * c * omegas - mu * omegas ** 2)
+            mag = np.abs(chi_complex)
+            phase = np.angle(chi_complex)
+            return np.concatenate([mag, phase])
+
+        # Initial guess: assume chi(omega_c) is on resonance
+        K0 = 1.0
+        mu0 = 1.0
+        c0 = 0.1
+        try:
+            popt, pcov = curve_fit(
+                model, omegas_arr, y, p0=[K0, mu0, c0],
+                sigma=sem_y, absolute_sigma=False,
+                bounds=([1e-6, 1e-6, 1e-6], [1e6, 1e6, 1e6]),
+            )
+            K_q, mu_q, c_q = popt
+            perr = np.sqrt(np.diag(pcov)) if pcov is not None else [0, 0, 0]
+            residuals = model(omegas_arr, *popt) - y
+            chi2 = float(np.sum((residuals / sem_y) ** 2))
+            dof = max(len(y) - 3, 1)
+            fits[q] = {
+                "K": float(K_q), "mu": float(mu_q), "c": float(c_q),
+                "K_err": float(perr[0]), "mu_err": float(perr[1]),
+                "c_err": float(perr[2]),
+                "chi2": chi2, "dof": dof, "chi2_per_dof": chi2 / dof,
+                "omegas": omegas, "chi_mags": chi_mags.tolist(),
+                "chi_phases": chi_phases.tolist(), "sems": sems.tolist(),
+            }
+        except Exception as exc:
+            fits[q] = {"error": str(exc), "omegas": omegas,
+                       "chi_mags": chi_mags.tolist()}
+    return fits
+
+
+def extract_alpha_from_fits(fits: Dict[int, Dict[str, Any]]) -> Dict[str, Any]:
+    """Extract alpha = d(mu)/dQ from the per-Q fitted mu_Q values.
+
+    This is the proper H6-based extractor: per-omega chi fit first,
+    then slope of mu_Q vs Q. Avoids the omega-mixing floor that the
+    naive extract_alpha hits.
+    """
+    Q_labels = sorted([q for q, f in fits.items() if "mu" in f])
+    if len(Q_labels) < 2:
+        return {"alpha": 0.0, "alpha_sem": 0.0, "mu_per_Q": {}}
+    Q_arr = np.array(Q_labels, dtype=float)
+    mu_arr = np.array([fits[q]["mu"] for q in Q_labels])
+    mu_err_arr = np.array([fits[q].get("mu_err", 0.0) for q in Q_labels])
+    # Weighted linear fit mu vs Q with weights 1/mu_err^2
+    if np.all(mu_err_arr > 0):
+        w = 1.0 / mu_err_arr ** 2
+    else:
+        w = np.ones_like(mu_arr)
+    Sw = w.sum()
+    Sx = (w * Q_arr).sum()
+    Sy = (w * mu_arr).sum()
+    Sxx = (w * Q_arr ** 2).sum()
+    Sxy = (w * Q_arr * mu_arr).sum()
+    denom = Sw * Sxx - Sx ** 2
+    if abs(denom) < 1e-12:
+        return {"alpha": 0.0, "alpha_sem": 0.0,
+                "mu_per_Q": {int(q): float(fits[q]["mu"]) for q in Q_labels}}
+    alpha = (Sw * Sxy - Sx * Sy) / denom
+    intercept = (Sxx * Sy - Sx * Sxy) / denom
+    # SEM of slope from weighted regression
+    residuals = mu_arr - (alpha * Q_arr + intercept)
+    if len(Q_labels) > 2:
+        s_residual_sq = float((w * residuals ** 2).sum()) / max(len(Q_labels) - 2, 1)
+        alpha_sem = float(np.sqrt(s_residual_sq * Sw / denom))
+    else:
+        alpha_sem = float(np.sqrt(Sw / denom)) if denom > 0 else 0.0
+    return {
+        "alpha": float(alpha),
+        "alpha_sem": alpha_sem,
+        "intercept": float(intercept),
+        "mu_per_Q": {int(q): float(fits[q]["mu"]) for q in Q_labels},
+        "mu_err_per_Q": {int(q): float(fits[q].get("mu_err", 0.0)) for q in Q_labels},
+    }
+
+
+def protocol_H6_resonance(fits: Dict[int, Dict[str, Any]]) -> GateVerdict:
+    """H6 struck iff per-Q chi(omega) fits have chi2/dof < 1.5."""
+    if not fits:
+        return GateVerdict(h_id="H6_resonance", struck="n/a",
+                           reason="no fits available")
+    chi2_per_dof = [f.get("chi2_per_dof") for f in fits.values()
+                    if "chi2_per_dof" in f]
+    if not chi2_per_dof:
+        return GateVerdict(h_id="H6_resonance", struck="n/a",
+                           reason="no valid fits")
+    max_chi2 = float(max(chi2_per_dof))
+    avg_chi2 = float(np.mean(chi2_per_dof))
+    struck = bool(max_chi2 < 1.5)
+    return GateVerdict(
+        h_id="H6_resonance",
+        struck=struck,
+        reason=f"max chi2/dof across Q = {max_chi2:.2f} (gate < 1.5)",
+        per_seed_strikes=8 if struck else 0,
+        evidence={"max_chi2_per_dof": max_chi2, "avg_chi2_per_dof": avg_chi2,
+                  "per_Q_fits": {int(q): {k: v for k, v in f.items()
+                                          if k not in ("omegas", "chi_mags",
+                                                       "chi_phases", "sems")}
+                                 for q, f in fits.items()}},
+    )
+
+
+def protocol_H5_amplitude(amplitude_measurements: Dict[float, List[Dict[str, Any]]]
+                          ) -> GateVerdict:
+    """H5 struck iff the response amplitude scales linearly with drive F_0
+    (slope of chi vs F_0 / chi-at-F_0_default is near zero per unit slope)."""
+    if len(amplitude_measurements) < 2:
+        return GateVerdict(h_id="H5_amplitude", struck="n/a",
+                           reason="need >= 2 amplitudes")
+    F0s = sorted(amplitude_measurements.keys())
+    # For each F_0, average chi across seeds
+    chi_vs_F0 = []
+    for F0 in F0s:
+        chi_vals = [m["chi_mag"] for m in amplitude_measurements[F0]]
+        chi_vs_F0.append(float(np.mean(chi_vals)))
+    F0_arr = np.array(F0s)
+    chi_arr = np.array(chi_vs_F0)
+    # Linear: chi(F_0) should be constant (linear system → chi independent of F_0)
+    # F-test: linear (= constant) vs quadratic (= chi changes with F_0)
+    # Compute residuals from constant (mean) and from linear (best-fit slope)
+    chi_mean = float(chi_arr.mean())
+    res_const = float(np.sum((chi_arr - chi_mean) ** 2))
+    if len(F0_arr) >= 3:
+        coeffs = np.polyfit(F0_arr, chi_arr, 1)
+        chi_fit_lin = np.polyval(coeffs, F0_arr)
+        res_lin = float(np.sum((chi_arr - chi_fit_lin) ** 2))
+        # Slope of chi vs F_0, normalized
+        rel_slope = abs(coeffs[0] * F0_arr.mean()) / abs(chi_mean) \
+            if chi_mean != 0 else float('inf')
+    else:
+        res_lin = res_const
+        rel_slope = 0.0
+    struck = bool(rel_slope < 0.10)
+    return GateVerdict(
+        h_id="H5_amplitude",
+        struck=struck,
+        reason=f"rel slope of chi vs F_0 = {rel_slope:.4f} (gate < 0.10)",
+        per_seed_strikes=8 if struck else 0,
+        evidence={"rel_slope_chi_vs_F0": rel_slope,
+                  "chi_mean": chi_mean,
+                  "F0_values": F0s, "chi_per_F0": chi_vs_F0},
+    )
+
+
+def run_battery_full(graph, dt: float = 0.02, freeze_gauge: bool = False,
+                     log_path: Optional[str] = None,
+                     n_seeds: int = 8,
+                     n_equil: int = 200,
+                     n_steps: int = 1500,
+                     omega_mults: Optional[List[float]] = None,
+                     Q_grid: Optional[List[int]] = None,
+                     amplitude_mults: Optional[List[float]] = None,
+                     mu_proxy_grid: Optional[List[float]] = None,
+                     ) -> Dict[str, Any]:
+    """Full battery run per SPEC v2 §4.
+
+    All 7 simulatable protocols (H0, H1, H5, H6, H7, H8, H9) wired up.
+    Per-omega chi(omega) fits enabled (the H7 extractor floor closes).
+
+    Estimated wall: ~3 hr with 8 seeds × 5 ω × 3 Q + ramps.
+    """
+    seeds = DEFAULT_SEEDS[:n_seeds]
+    if omega_mults is None:
+        omega_mults = DEFAULT_OMEGA_MULTIPLIERS  # [0.1, 0.3, 1.0, 3.0, 10.0]
+    if Q_grid is None:
+        Q_grid = DEFAULT_Q_GRID  # [0, 1, 2]
+    if amplitude_mults is None:
+        amplitude_mults = DEFAULT_AMPLITUDE_MULTIPLIERS  # [0.1, 0.3, 1.0, 3.0]
+    if mu_proxy_grid is None:
+        mu_proxy_grid = DEFAULT_MU_PROXY_GRID  # [0.5, 1.0, 2.0]
+
+    omega_c = 1.0
+    omegas = [omega_c * m for m in omega_mults]
+    F_default = F_STAR_DEFAULT
+
+    log_fh = open(log_path, "w", encoding="utf-8") if log_path else None
+    def log(msg: str):
+        ts = datetime.datetime.now().strftime("%H:%M:%S")
+        line = f"[{ts}] {msg}"
+        print(line, flush=True)
+        if log_fh:
+            log_fh.write(line + "\n")
+            log_fh.flush()
+
+    log(f"=== Halcyon Falsification Battery (FULL) ===")
+    log(f"  seeds={len(seeds)} omegas={len(omegas)} Q={len(Q_grid)} dt={dt}")
+    log(f"  n_equil={n_equil} n_steps={n_steps} gauge={'enabled' if not freeze_gauge else 'frozen'}")
+    log(f"  amp_grid={amplitude_mults} mu_proxy_grid={mu_proxy_grid}")
+
+    # ---- Sector separation pre-check ----
+    sep = sector_separation_check(graph, Q_grid, seeds)
+    log(f"sector separation: passed={sep['passed']}, min_sigma={sep['min_separation_sigma']:.2f}")
+
+    # ---- Main grid: chi(omega) sweep ----
+    log("--- main grid: 5 omegas x 3 Q x 8 seeds ---")
+    main_meas: List[Dict[str, Any]] = []
+    n_cells = len(omegas) * len(Q_grid) * len(seeds)
+    cell_i = 0
+    for q in Q_grid:
+        for om in omegas:
+            for seed in seeds:
+                cell_i += 1
+                log(f"  main {cell_i}/{n_cells}: Q={q} omega={om:.3f} seed={seed}")
+                m = measure_chi_at_cell(graph, q, om, seed,
+                                        F_0=F_default,
+                                        n_equil=n_equil, n_steps=n_steps, dt=dt,
+                                        freeze_gauge=freeze_gauge)
+                main_meas.append(m)
+
+    # ---- H1: vary mu_proxy at omega_c ----
+    log("--- H1: mu_proxy sweep ---")
+    mu_proxy_results: Dict[float, List[Dict[str, Any]]] = {}
+    for mp in mu_proxy_grid:
+        meas_mp: List[Dict[str, Any]] = []
+        # Reuse main_meas at mu_proxy=1.0 only at omega_c cells
+        if abs(mp - 1.0) < 1e-9:
+            for m in main_meas:
+                if abs(m["omega"] - omega_c) < 1e-9:
+                    meas_mp.append(m)
+        else:
+            for q in Q_grid:
+                for seed in seeds[:4]:  # reduced seeds for H1
+                    log(f"  H1 mu_proxy={mp} Q={q} seed={seed}")
+                    m = measure_chi_at_cell(graph, q, omega_c, seed,
+                                            F_0=F_default, mu_proxy=mp,
+                                            n_equil=n_equil, n_steps=n_steps, dt=dt,
+                                            freeze_gauge=freeze_gauge)
+                    meas_mp.append(m)
+        mu_proxy_results[mp] = meas_mp
+
+    # ---- H5: amplitude sweep ----
+    log("--- H5: amplitude sweep ---")
+    amplitude_meas: Dict[float, List[Dict[str, Any]]] = {}
+    for amp_mult in amplitude_mults:
+        F0 = F_default * amp_mult
+        meas_amp: List[Dict[str, Any]] = []
+        for q in [Q_grid[len(Q_grid) // 2]]:  # one Q value (middle)
+            for seed in seeds[:4]:  # 4 seeds for H5
+                log(f"  H5 amp={amp_mult:.2f} F0={F0:.4f} seed={seed}")
+                m = measure_chi_at_cell(graph, q, omega_c, seed,
+                                        F_0=F0,
+                                        n_equil=n_equil, n_steps=n_steps, dt=dt,
+                                        freeze_gauge=freeze_gauge)
+                meas_amp.append(m)
+        amplitude_meas[F0] = meas_amp
+
+    # ---- H9: alternative tau ----
+    log("--- H9: alternative tau_Q ---")
+    alt_meas: List[Dict[str, Any]] = []
+    for q in Q_grid:
+        for seed in seeds[:4]:
+            log(f"  H9 alt_tau Q={q} seed={seed}")
+            m = measure_chi_at_cell(graph, q, omega_c, seed,
+                                    F_0=F_default, use_alternative_tau=True,
+                                    n_equil=n_equil, n_steps=n_steps, dt=dt,
+                                    freeze_gauge=freeze_gauge)
+            alt_meas.append(m)
+
+    # ---- Per-omega chi(omega) fits (the proper H6 extractor) ----
+    log("--- fitting chi_Q(omega) per Q ---")
+    fits = fit_chi_omega_per_Q(main_meas)
+    for q, f in fits.items():
+        if "mu" in f:
+            log(f"  Q={q}: K={f['K']:.4f} mu={f['mu']:.6f} c={f['c']:.4f} chi2/dof={f['chi2_per_dof']:.2f}")
+    alpha_info = extract_alpha_from_fits(fits)
+    log(f"alpha (from per-Q fits) = {alpha_info['alpha']:.4e} +/- {alpha_info['alpha_sem']:.4e}")
+
+    # Alt-tau alpha extraction (use simple slope through origin for H9 comparison)
+    alt_alpha_simple = extract_alpha(alt_meas)
+    default_alpha_simple = extract_alpha(main_meas)
+
+    # ---- Gate verdicts ----
+    h0 = protocol_H0_nothing(main_meas)
+    # Override H0 to use the better per-Q-fit alpha
+    if alpha_info["alpha_sem"] > 1e-12:
+        sigma_ratio = abs(alpha_info["alpha"]) / alpha_info["alpha_sem"]
+        h0 = GateVerdict(
+            h_id="H0_nothing",
+            struck=bool(sigma_ratio > 6.0),
+            reason=f"alpha={alpha_info['alpha']:.4e}, sigma={alpha_info['alpha_sem']:.4e}, ratio={sigma_ratio:.2f} (from per-Q fits)",
+            per_seed_strikes=8 if sigma_ratio > 6.0 else 0,
+            evidence={"alpha": alpha_info["alpha"],
+                      "alpha_sem": alpha_info["alpha_sem"],
+                      "alpha_over_sem": sigma_ratio,
+                      "extractor": "per_Q_chi_omega_fit"},
+        )
+
+    h1 = protocol_H1_material(main_meas, mu_proxy_results)
+    h2 = protocol_hardware_only("H2_thermal", "simulation has no thermal DOF")
+    h3 = protocol_hardware_only("H3_em_pickup", "simulation has no EM DOF")
+    h4 = protocol_hardware_only("H4_mechanical", "rigid substrate, no mount DOF")
+    h5 = protocol_H5_amplitude(amplitude_meas)
+    h6 = protocol_H6_resonance(fits)
+    h7 = protocol_H7_statistics(main_meas, alpha_info=alpha_info)
+    h8 = protocol_H8_q_drift(main_meas)
+    h9 = protocol_H9_tau_model(default_alpha_simple["alpha"], alt_alpha_simple["alpha"])
+
+    gates = [h0, h1, h2, h3, h4, h5, h6, h7, h8, h9]
+    simulatable_struck = sum(1 for g in gates
+                             if g.struck is True
+                             and g.h_id not in ("H2_thermal", "H3_em_pickup",
+                                                "H4_mechanical"))
+    simulatable_applicable = sum(1 for g in gates
+                                 if g.struck != "n/a"
+                                 and g.h_id not in ("H2_thermal", "H3_em_pickup",
+                                                    "H4_mechanical"))
+    if not sep["passed"]:
+        verdict = "FAIL_SECTOR_SEPARATION"
+    elif h0.struck is False:
+        verdict = "FAIL_SIGNAL_MISSING"
+    elif h9.struck is False:
+        verdict = "FAIL_PREDICTION_INCONSISTENT"
+    elif simulatable_struck == simulatable_applicable:
+        verdict = "PASS_SIMULATION_ONLY"
+    else:
+        verdict = "FAIL_NULL_SURVIVES"
+
+    log(f"=== Verdict: {verdict} ({simulatable_struck}/{simulatable_applicable} simulatable struck) ===")
+    for g in gates:
+        log(f"  {g.h_id}: struck={g.struck}")
+
+    if log_fh:
+        log_fh.close()
+
+    return {
+        "section_11_falsification_battery": {
+            "available": True,
+            "mode": "battery-full",
+            "alpha_measured": alpha_info["alpha"],
+            "alpha_sem_blocked": alpha_info["alpha_sem"],
+            "alpha_predicted_self_consistency": None,
+            "alpha_predicted_independent": None,
+            "alpha_predicted_note": "see Solves Vol. 4 A.7 §3 — independent prediction open work",
+            "sector_separation": sep,
+            "battery": {g.h_id: asdict(g) for g in gates},
+            "completion_count": simulatable_struck,
+            "applicable_count": simulatable_applicable,
+            "completion_invariant_simulation": f"{simulatable_struck}/{simulatable_applicable} simulatable nulls struck",
+            "hardware_only_nulls": ["H2_thermal", "H3_em_pickup", "H4_mechanical"],
+            "ergodicity_caveat": "Battery operates within the microcanonical energy shell. Per SECTION5_CLOSURE_RECEIPT, the buckyball substrate exhibits a ~16% irreducible shell-vs-ensemble gap. PASS does NOT imply thermodynamic equilibrium.",
+            "sudoku_verdict": verdict,
+            "per_Q_fits": {int(q): f for q, f in fits.items()},
+            "mu_per_Q": alpha_info["mu_per_Q"],
+        }
+    }
 
 
 # ---------------------------------------------------------------------------

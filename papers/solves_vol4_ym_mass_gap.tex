@@ -437,7 +437,36 @@ with $\kappa_Q(e) = (1 - q_0(U_{f_1(e)}))(1 - q_0(U_{f_2(e)}))$, $\tau_Q(e) = \t
 
 \textbf{The ergodicity caveat.} Per A.5, the buckyball substrate exhibits a documented $\sim 16\%$ irreducible shell-vs-ensemble gap. The battery operates within the microcanonical energy shell sampled by the seed-and-canonical-init protocol; a \texttt{PASS\_SIMULATION\_ONLY} verdict therefore does not imply thermodynamic equilibrium. For hardware extension to a larger lattice the gap is expected to vanish under the law of large numbers and the battery must re-validate at the new scale; the SPEC does not certify cross-scale invariance.
 
-\textbf{The receipt.} The 8-seed sidecar of record is \texttt{inertia\_damping/reports/section11\_battery/battery\_fast\_20260620\_104846.json}, SHA-256 \texttt{b841ede05cffabfffbb82efc1b21b63ed9e22341125b01e3f16801d4412c789c}. The SPEC v2 design document is \texttt{inertia\_damping/HALCYON\_FALSIFICATION\_BATTERY\_SPEC.md}. Reproducibility command:
+\textbf{The receipt.} The 8-seed \texttt{--battery-fast} sidecar is \texttt{inertia\_damping/reports/section11\_battery/battery\_fast\_20260620\_104846.json}, SHA-256 \texttt{b841ede05cffabfffbb82efc1b21b63ed9e22341125b01e3f16801d4412c789c}.
+
+\subsection*{A.7.1 The full-battery follow-up: an honest falsifier of the extractor itself}
+
+The smoke results above used a slope-through-origin extractor on the internal \texttt{mu\_eff\_mean} value tracked by the simulation. That number is the model's own internal state, not the value the apparatus would observe. SPEC v2 \S4 specifies a stricter protocol --- the H$_6$ test: fit $\chi_Q(\omega) = [K_Q + i c_Q \omega - \mu_Q \omega^2]^{-1}$ per $Q$ to the lock-in-demodulated $|\chi|$ and $\arg\chi$ curves at multiple $\omega$, then extract $\alpha$ from the fitted $\mu_Q$ values. The fitted $\mu_Q$ is what a real experiment would see; the internal $\mu_{\rm eff}(U(t))$ is what only the simulator knows. The two extractors are different epistemic objects, and the SPEC's choice to make the observation-space extractor load-bearing was the right one.
+
+A full-battery run with the H$_6$ extractor wired up (sidecar \texttt{battery\_full\_20260620\_181227.json}, SHA-256 \texttt{ad33fd568f6257ff0ba98fd9d31a22403cb9915de083a6b6ca1384c49e4b49b8}, 111.2\,min wall, 5 $\omega$ $\times$ 3 $Q$ $\times$ 8 seeds main grid plus H$_1$/H$_5$/H$_9$ supplements) returned:
+
+\begin{itemize}
+    \item Sector separation: \textsc{pass} (17.83\,$\sigma$ minimum pairwise).
+    \item Per-$Q$ measured $\chi(\omega)$ curves are \emph{identical to four decimal places across $Q$}: at $\omega = \omega_c$, $|\chi|_{Q=0} = 6.0519$, $|\chi|_{Q=1} = 6.0519$, $|\chi|_{Q=2} = 6.0522$. The Halcyon-predicted shift at the SPEC's default coupling $\alpha_{\rm Halcyon} = 1.0$ (lattice units) is roughly $60\,$ppm of the baseline susceptibility --- \emph{below the measurement noise floor of the observation-space extractor}.
+    \item Sudoku verdict: \textsc{fail\_signal\_missing}. $H_0$ does not strike: $|\alpha_{\rm fitted}|/\sigma_\alpha = 0.21$, dominated by fit noise. The chapter does not claim a signal here.
+    \item $H_1$ (material): \textsc{strike} (rel slope 0.0046; geometric independence robust under this extractor too).
+    \item $H_5$ (amplitude linearity): \textsc{strike} (rel slope $\chi$ vs $F_0$ effectively 0).
+    \item $H_6$ ($\chi(\omega)$ fit quality): \textsc{not struck} ($\chi^2/\rm dof = 1.3\times 10^8$; the fit explodes because the curves cannot discriminate three $Q$ values to within their dispersion).
+    \item $H_7$ (statistics): \textsc{not struck}, rel $\alpha$-SEM $474\%$.
+    \item $H_8$ ($Q$ drift): \textsc{not struck}, mean drift 18.5\%, max 100\%. The initial $Q$-bias relaxes back toward the trivial vacuum during the longer measurement window.
+    \item $H_9$ ($\tau_Q$ model robustness): \textsc{strike} (rel diff 12.6\%, well under 20\% gate).
+\end{itemize}
+
+\textbf{The interpretation.} The smoke-mode result was \emph{internally} consistent but \emph{externally} unmeasurable at the SPEC's default coupling. The two extractors give different verdicts because they ask different questions:
+\begin{itemize}
+    \item \texttt{extract\_alpha} (slope through origin on internal $\mu_{\rm eff}$): ``Does the model's own state respond to $Q$?'' --- answer \textsc{yes} at $|\alpha|/\sigma = 15.62$.
+    \item \texttt{extract\_alpha\_from\_fits} (per-$Q$ $\chi(\omega)$ fit on observed susceptibility): ``Would a lock-in measuring the test mass see the response?'' --- answer \textsc{no} at $|\alpha|/\sigma = 0.21$.
+\end{itemize}
+Both are correctly implementing what they claim to measure. The SPEC's choice to make the observation-space extractor load-bearing is what surfaces the calibration gap: at $\alpha_{\rm Halcyon} = 1.0$, the predicted $\mu_{\rm eff}/\mu_{\rm baseline}$ ratio at $Q = 2$ is $\sim 6\times 10^{-5}$ --- too small to climb above the lock-in noise floor of a $\sim$30 time-unit driven trajectory.
+
+This is the actual scientific content of A.7.1: \emph{the battery is doing its job by failing}. A real signal needs either (a) a stronger predicted coupling --- $\alpha_{\rm Halcyon}$ calibrated from the Davis Field Equations rather than set to 1.0 by convention; (b) a longer measurement window that the gauge dynamics do not relax through (the $H_8$ drift); or (c) an actively driven $Q$ sector that the apparatus pins, not the passive initial-condition bias the simulation currently uses. All three are open work tracked outside this chapter. The simulation cannot supply the independent value of $\alpha_{\rm Halcyon}$; that comes from the Field Equations.
+
+\textbf{What this commits the chapter to.} The simulation has demonstrated that the SPEC v2 extractor discipline is operative: it refuses to score a passing verdict when the signal is below the observation floor. The four-of-five strikes in \texttt{--battery-fast} reflect internal model consistency (which is real and useful for verifying the framework's mechanics), not an observable apparatus claim. The three-of-seven strikes in the full battery reflect the apparatus-side reality at the current calibration. Both are honest readings of what each test asks. The chapter's load-bearing claim --- $\partial_Q \mu_Q \ne 0$ in observation space --- is not yet substantiated by this simulation at the SPEC's default $\alpha_{\rm Halcyon}$ and will require either re-calibration or a longer-window measurement protocol. That is the open item the next chapter version will address. The SPEC v2 design document is \texttt{inertia\_damping/HALCYON\_FALSIFICATION\_BATTERY\_SPEC.md}. Reproducibility command:
 \begin{verbatim}
 python -m inertia_damping.scripts.run_battery --fast
 \end{verbatim}
