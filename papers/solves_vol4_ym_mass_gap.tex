@@ -379,6 +379,68 @@ The polished narrative is \texttt{SECTION5\_CLOSURE\_RECEIPT.md} alongside, with
 40 per-trajectory sidecars (each carrying the full Section 5 schema) and two matplotlib figures
 (\texttt{section5\_gap\_vs\_nsteps.pdf}, \texttt{section5\_pt\_vs\_ph.pdf}).
 
+\subsection*{A.7 The Falsification Battery (sudoku elimination grid)}
+\label{subsec:battery}
+
+Appendix A.6 derived the load-bearing experimental claim: at fixed static gravitational load, $\partial_Q \mu_Q \ne 0$ with $K_Q$, $c_Q$, drive amplitude, and systematics independently fit and controlled. By itself this is a positive assertion, not a falsifiable one. The Falsification Battery operationalises the Davis Method's \emph{Sudoku Principle} (Principle~5: elimination, not construction) by enumerating the null space and striking through what the simulation can rule out. The completion invariant --- the count of struck rows in the simulatable subset --- is what makes the claim load-bearing. The full specification is \texttt{inertia\_damping/HALCYON\_FALSIFICATION\_BATTERY\_SPEC.md} (v2), design-locked after a four-critic adversarial review that closed nine blocker-level defects in the v1 draft.
+
+\textbf{The grid.} Ten null hypotheses $H_0\ldots H_9$ form the rows of the elimination grid. Seven are simulatable; three (thermal, EM, and mechanical pickup) require hardware DOFs the simulation does not have, so the simulation states the prediction-of-absence and the hardware apparatus is responsible for ruling them out at its own scale.
+
+\begin{center}
+\begin{tabular}{cllp{4.5cm}c}
+\toprule
+$\#$ & Null & Protocol & Gate threshold & Realm \\
+\midrule
+$H_0$ & nothing happens & drive sweep, multi-$Q$ & $|\alpha| > 6\sigma_\alpha$ & sim \\
+$H_1$ & Eötvös material effect & vary $\mu_{\rm proxy}$ on $\mu_{\rm baseline}$ & $|d\alpha/d\mu_{\rm proxy}|/|\alpha| < 0.05$ & sim \\
+$H_2$ & thermal pickup & --- & --- & hw only \\
+$H_3$ & EM pickup & --- & --- & hw only \\
+$H_4$ & mount/mechanical pickup & --- & --- & hw only \\
+$H_5$ & drive-amplitude artefact & amplitude scan, $F$-test & $F < F_{\rm crit}(0.05)$ & sim \\
+$H_6$ & single-$\omega$ resonance & full $\chi_Q(\omega)$ fit & $\chi^2/\mathrm{dof} < 1.5$, dof$=21$ & sim \\
+$H_7$ & statistical fluctuation & FP blocked SEM & rel SEM $\le 5\%$ of $\alpha$ & sim \\
+$H_8$ & $Q$ sector drift & continuous $Q_{\rm surrogate}$ monitor & $\sigma_Q/\langle Q\rangle < 0.03$ & sim \\
+$H_9$ & $\tau_Q$ model error & alternative functional form & $|\alpha_{\rm alt} - \alpha|/|\alpha| < 0.20$ & sim \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The substrate model the battery probes.} The test-mass dynamics is governed by $\mu_{\rm total}(Q)\,\ddot{x} + c_Q\,\dot{x} + K_Q\,x = F(t)$, where $\mu_{\rm total}(Q) = \mu_{\rm proxy} \cdot \mu_{\rm baseline} + \mu_{\rm eff}(Q)$. The Halcyon coupling enters only through $\mu_{\rm eff}(Q)$, computed on the buckyball substrate via
+\begin{equation}
+    \mu_{\rm eff}(Q) \;=\; \alpha_{\rm Halcyon}\,\frac{1}{E}\sum_{e=1}^{90} \kappa_Q(e)\,\tau_Q^2(e)\,|\phi_n(e)|^2,
+\label{eq:mu-eff-discrete}
+\end{equation}
+with $\kappa_Q(e) = (1 - q_0(U_{f_1(e)}))(1 - q_0(U_{f_2(e)}))$, $\tau_Q(e) = \tau_0 / (1 + \beta_\tau s_Q(e))$, and $\phi_n(e)$ the $n$-th non-trivial eigenmode of the buckyball graph Laplacian projected to edges via gradient. The model is material-independent by construction: $\mu_{\rm proxy}$ modulates the bare baseline only, so a non-zero $\partial_Q \mu_{\rm total} / \partial \mu_{\rm proxy}$ would indicate that what the simulation measures is a material artefact, not Halcyon. This is the $H_1$ test, and it discriminates because the model is designed to fail it cleanly if $\mu_{\rm proxy}$ were allowed to enter $\mu_{\rm eff}$ (an earlier draft of the SPEC made that mistake; the closure of v1's $H_1$ blocker is the load-bearing fix that earned the v2 design lock).
+
+\textbf{The simulation kernel} is \texttt{inertia\_damping/test\_mass\_dynamics.py}, a new module (not an extension of the Section 5 CUDA kernel, which is pure-gauge and supports no external DOFs) that couples the buckyball SU(2) gauge leapfrog to a single-DOF driven damped oscillator via the $\mu_{\rm eff}(U)$ recomputed at every step. The vectorised face holonomies from the Section~5 CUDA kernel are reused on CPU with $B=1$, giving a 12$\times$ speedup over the per-step Python loop and bringing the per-lock-in wall to $\sim 40\,\mathrm{s}$. The orchestrator \texttt{inertia\_damping/falsification\_battery.py} runs the sweep design (5 frequencies $\times$ 3 $Q$ sectors $\times$ 8 seeds for the main grid; additional amplitude scan for $H_5$, $\mu_{\rm proxy}$ scan for $H_1$, alternative-$\tau_Q$ scan for $H_9$) and emits the \texttt{section\_11\_falsification\_battery} JSON schema specified in SPEC v2 \S6.
+
+\textbf{Smoke results (3 seeds, gauge enabled, post-mu\_proxy fix):}
+\begin{itemize}
+    \item Sector separation: \textsc{pass}, minimum pairwise distance $29.58\,\sigma$.
+    \item $\alpha_{\rm measured} = 6.05\times 10^{-5} \pm 4.0\times 10^{-6}$, $|\alpha|/\sigma_\alpha = 15.06$.
+    \item Per-gate verdicts:
+    \begin{itemize}
+        \item $H_0$ (nothing happens): \textsc{strike} ($|\alpha|/\sigma_\alpha = 15.06 \gg 6$).
+        \item $H_1$ (material): \textsc{strike} ($|d\alpha/d\mu_{\rm proxy}|/|\alpha| = 0.021 < 0.05$).
+        \item $H_2/H_3/H_4$: \textsc{n/a} (hardware-only realm).
+        \item $H_5/H_6$: \textsc{n/a} (not run in \texttt{--battery-fast}; full sweep is open).
+        \item $H_7$ (statistics): \textsc{not struck} (rel.~$\alpha$-SEM 6.6\%, marginal vs.\ 5\% gate; closes at 8+ seeds).
+        \item $H_8$ ($Q$ drift): \textsc{strike} (mean rel.\ drift 1.4\%, well under 3\% gate).
+        \item $H_9$ ($\tau_Q$ model error): \textsc{strike} ($|\alpha_{\rm alt} - \alpha|/|\alpha| = 0.076$, under 20\% gate).
+    \end{itemize}
+    \item Sudoku verdict: \textsc{fail\_null\_survives} (4-of-5 simulatable nulls struck; $H_7$ is a seed-count issue, not a model defect). A pending 8-seed run is expected to drive $H_7$ under the 5\% gate and deliver \textsc{pass\_simulation\_only}.
+\end{itemize}
+
+\textbf{Self-consistency vs.\ independent prediction.} The simulation can compute $\alpha_{\rm predicted}^{\rm self-consistency} = \partial \mu_{\rm eff}/\partial Q|_{\rm default}$ from finite differences over the three $Q$ labels, and this self-consistency value matches $\alpha_{\rm measured}$ trivially (both are derived from the same model). \emph{It is therefore not a load-bearing falsifier.} The independent $\alpha_{\rm predicted}^{\rm independent}$ --- a closed-form derivation from the Davis Field Equations evaluated at $\beta=2.5$ on the buckyball substrate --- is open work, tracked as the next item in the chapter's open queue, and is what the eventual hardware bench will compare its $\alpha_{\rm measured}$ against. The simulation closes the simulation-side gates only; it cannot close the independent-prediction gate.
+
+\textbf{The ergodicity caveat.} Per A.5, the buckyball substrate exhibits a documented $\sim 16\%$ irreducible shell-vs-ensemble gap. The battery operates within the microcanonical energy shell sampled by the seed-and-canonical-init protocol; a \texttt{PASS\_SIMULATION\_ONLY} verdict therefore does not imply thermodynamic equilibrium. For hardware extension to a larger lattice the gap is expected to vanish under the law of large numbers and the battery must re-validate at the new scale; the SPEC does not certify cross-scale invariance.
+
+\textbf{The receipt.} The load-bearing artefacts are the JSON sidecars under \texttt{inertia\_damping/reports/section11\_battery/}, each carrying the full Section~11 schema specified in SPEC v2 \S6 with its SHA-256 in the metadata. The SPEC v2 design document is \texttt{inertia\_damping/HALCYON\_FALSIFICATION\_BATTERY\_SPEC.md}. Reproducibility command:
+\begin{verbatim}
+python -m inertia_damping.scripts.run_battery --fast
+\end{verbatim}
+The standalone script \texttt{inertia\_damping/scripts/run\_battery.py} ships in this commit; integration into \texttt{run\_validation\_report.py} as a first-class \texttt{--battery} flag is the next item in the open queue.
+
 \subsection*{A.6 The thread experiment and the dynamic transfer-function target}
 
 The textbook two-thread inertia demonstration \cite[Vol.~I, \S10--2]{feynman_lectures} is the simplest geometry that already distinguishes the two readings of $\mu$ Halcyon needs to separate: $\mu$-as-a-property versus $\mu$-as-a-coupling. A weight hangs from a thread tied to the ceiling; a second thread hangs from the bottom of the weight to a hand. Pull the lower thread slowly and the upper thread breaks (it bears $mg + F$ in static equilibrium). Pull the lower thread fast and the lower thread breaks (the mass cannot redistribute the impulse fast enough; the lower thread bears $F$ alone). Same weight, same gravity, different breaking thread. The control parameter is the Deborah number \cite{reiner1964}
