@@ -10,8 +10,17 @@
 \usepackage{enumitem}
 \usepackage{graphicx}
 \usepackage{microtype}
+\usepackage{seqsplit}
+\usepackage{fancyvrb}
 
 \emergencystretch=3em
+
+% Convenience: wrap long unbreakable strings (SHA-256 hex, long file paths,
+% long Python test names) inside \texttt with a per-character breakpoint
+% so they fold cleanly inside the typeset line instead of overflowing into
+% the right margin.
+\newcommand{\hexsha}[1]{\texttt{\seqsplit{#1}}}
+\newcommand{\longtt}[1]{\texttt{\seqsplit{#1}}}
 
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}[section]
@@ -99,7 +108,7 @@ The GQL block is in \S\ref{sec:substrate}.
 \subsection{The block, verbatim}
 \label{subsec:block}
 
-\begin{quote}\ttfamily
+\begin{quote}\small\ttfamily
 1. LATTICE buckyball FROM TRUNCATED\_ICOSAHEDRON TOPOLOGY "S2"\\
 2. GAUGE\_FIELD U ON LATTICE buckyball GROUP SU(2) INIT IDENTITY\\
 3. GIBBS\_SAMPLE U BETA 2.5 N\_SWEEPS 200 SEED 20260617 MEASURE\_EVERY 1\\
@@ -110,7 +119,7 @@ The GQL block is in \S\ref{sec:substrate}.
 \phantom{5. }MEASURE\_EVERY 20 MEASURE (H\_TOTAL, MEAN(PLAQUETTE), Q\_SURROGATE, GAUSS\_RESIDUAL\_MAX)
 \end{quote}
 
-That is the substrate. Five lines. Every numerical result in this chapter, and every line of Halcyon v1.2's verdict that pertains to this chapter, is a consequence of running exactly those five statements on the production engine at code commit \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}.
+That is the substrate. Five lines. Every numerical result in this chapter, and every line of Halcyon v1.2's verdict that pertains to this chapter, is a consequence of running exactly those five statements on the production engine at code commit \hexsha{74b960fa6d5f52fb47a76b80c938aeadc8a89762}.
 
 \subsection{Line-by-line gloss}
 \label{subsec:gloss}
@@ -184,7 +193,7 @@ The harness declines the sector classifier because the $Q_{\mathrm{surrogate}}$ 
 
 The microcanonical-versus-canonical cross-check fails. \textbf{This is a reproducible finite-substrate ensemble mismatch and a bookkeeping issue, not presently explained by any known software bug.} A single finite-length trajectory on 93 dynamical degrees of freedom does not sample the canonical ensemble well enough to close the cross-check at the tolerance the proof would need; the conservative-factor note in the harness configuration explicitly anticipates this gap, and the \textsc{fail} is the honest readout of that anticipated shortfall. \textbf{We do not paper it over.} The cluster-expansion proof of the lattice mass gap does not depend on microcanonical--canonical equivalence on a single buckyball trajectory; nothing in v6 is invalidated by this \textsc{fail}. What the \textsc{fail} marks is the precise boundary between \emph{the numerical pipeline works} and \emph{the pipeline alone proves the gap}. The pipeline does not prove the gap. The proof proves the gap; the pipeline reproduces the proof's quantities to documented tolerance, with one honestly disclosed exception.
 
-\textbf{The closure-study receipt (v1.2.1).} The conjecture that the \textsc{fail} would close under longer trajectories has now been tested directly. A 40-trajectory sweep over $N_{\mathrm{steps}} \in \{1000, 2000, 4000, 8000, 16000\}$ (a $16\times$ range) crossed with eight independent seeds, fired as a single batched CUDA pass through \texttt{inertia\_damping.cuda.batched\_leapfrog} on an NVIDIA Blackwell GPU, returns verdict \textsc{NO\_CLOSURE} with the gap falling 9\,\% from $0.1748$ ($N=1000$) to $0.1598$ ($N=16000$) and then \emph{flatlining}: the asymptotic shrinkage rate would not reach the $0.02$ tolerance until $N \sim 10^{10}$ steps. The mean plaquette under the symplectic flow converges to $\langle P\rangle_{\mathrm{time}} \approx 0.66$ across all eight seeds (Flyvbjerg--Petersen blocking regime transitions from \texttt{no\_plateau} at $N=1000$ to \texttt{plateau} at $N=16000$, with $n_{\mathrm{eff}}$ growing from $7.8$ to $125$); the canonical heatbath converges to $\langle P\rangle_{\mathrm{heatbath}} \approx 0.506$. \textbf{Shell $\ne$ ensemble at the buckyball's finite size:} each symplectic trajectory's energy shell has a time-averaged plaquette that differs structurally from the Boltzmann average over all energy shells. This is a reproducible feature of this finite substrate at the sizes and trajectory lengths tested --- not presently explained by any known software bug --- and is visible precisely because the system is small enough (90 link variables, 93 transverse gauge degrees of freedom) that the canonical thermometer and the microcanonical thermometer are measuring structurally different things on a single trajectory. The full receipt is at \texttt{inertia\_damping/reports/section5\_sweep\_cuda/SECTION5\_CLOSURE\_RECEIPT.md}; the load-bearing artefact is \texttt{section5\_closure.json}, SHA-256 \texttt{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}, with 40 per-trajectory sidecars and matplotlib figures alongside.
+\textbf{The closure-study receipt (v1.2.1).} The conjecture that the \textsc{fail} would close under longer trajectories has now been tested directly. A 40-trajectory sweep over $N_{\mathrm{steps}} \in \{1000, 2000, 4000, 8000, 16000\}$ (a $16\times$ range) crossed with eight independent seeds, fired as a single batched CUDA pass through \texttt{inertia\_damping.cuda.batched\_leapfrog} on an NVIDIA Blackwell GPU, returns verdict \textsc{NO\_CLOSURE} with the gap falling 9\,\% from $0.1748$ ($N=1000$) to $0.1598$ ($N=16000$) and then \emph{flatlining}: the asymptotic shrinkage rate would not reach the $0.02$ tolerance until $N \sim 10^{10}$ steps. The mean plaquette under the symplectic flow converges to $\langle P\rangle_{\mathrm{time}} \approx 0.66$ across all eight seeds (Flyvbjerg--Petersen blocking regime transitions from \texttt{no\_plateau} at $N=1000$ to \texttt{plateau} at $N=16000$, with $n_{\mathrm{eff}}$ growing from $7.8$ to $125$); the canonical heatbath converges to $\langle P\rangle_{\mathrm{heatbath}} \approx 0.506$. \textbf{Shell $\ne$ ensemble at the buckyball's finite size:} each symplectic trajectory's energy shell has a time-averaged plaquette that differs structurally from the Boltzmann average over all energy shells. This is a reproducible feature of this finite substrate at the sizes and trajectory lengths tested --- not presently explained by any known software bug --- and is visible precisely because the system is small enough (90 link variables, 93 transverse gauge degrees of freedom) that the canonical thermometer and the microcanonical thermometer are measuring structurally different things on a single trajectory. The full receipt is at \longtt{inertia\_damping/reports/section5\_sweep\_cuda/SECTION5\_CLOSURE\_RECEIPT.md}; the load-bearing artefact is \texttt{section5\_closure.json}, SHA-256 \hexsha{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}, with 40 per-trajectory sidecars and matplotlib figures alongside.
 
 \medskip
 
@@ -255,7 +264,7 @@ reports/latest/report.json
 SHA256: 8c4b1f2a9d3e5c7b0a6f8d2e4c1b9a7d
         3f5e2c8b1a4d6e9f0c3b5a7d2e8f1c4b
 \end{verbatim}
-Source commits: \texttt{davis-wilson-lattice} \texttt{main} at \texttt{74b960fa6d5f52fb47a76b80c938aeadc8a89762}; \texttt{gigi} deploy \texttt{a6d8efa}.
+Source commits: \texttt{davis-wilson-lattice} \texttt{main} at \hexsha{74b960fa6d5f52fb47a76b80c938aeadc8a89762}; \texttt{gigi} deploy \texttt{a6d8efa}.
 
 \subsection*{A.1 Run against the live GIGI substrate}
 
@@ -298,7 +307,7 @@ python -m inertia_damping.run_validation_report \
     --output inertia_damping/reports/
 \end{verbatim}
 
-\textbf{Output:} \texttt{validation\_report\_\{TIMESTAMP\}.\{md,json\}} together with a \texttt{trajectory.json} and a \texttt{final\_state.npz} sidecar in \texttt{inertia\_damping/reports/}. The published verdict (8/10 \textsc{pass}, 1 \textsc{fail} on Section~5, 1 \textsc{not\_applicable} on the sector classifier) reproduces, on the buckyball substrate ($V=60$, $E=90$, $F=32$, $\chi=2$; $\mathrm{SU}(2)$) with the parameter set of Table~\ref{tab:verdict}.
+\textbf{Output:} \longtt{validation\_report\_\{TIMESTAMP\}.\{md,json\}} together with a \texttt{trajectory.json} and a \texttt{final\_state.npz} sidecar in \longtt{inertia\_damping/reports/}. The published verdict (8/10 \textsc{pass}, 1 \textsc{fail} on Section~5, 1 \textsc{not\_applicable} on the sector classifier) reproduces, on the buckyball substrate ($V=60$, $E=90$, $F=32$, $\chi=2$; $\mathrm{SU}(2)$) with the parameter set of Table~\ref{tab:verdict}.
 
 \subsection*{A.4 Run the public-receipt verifier against any GIGI substrate}
 
@@ -313,7 +322,7 @@ GIGI_URL=https://gigi-stream.fly.dev \
 \textbf{What the verifier emits:} the canonical tail-mean $\langle P \rangle_{\mathrm{tail}}$, the delta from the Halcyon spine, the tolerance ($3 \sigma$ + absorption margin), \textsc{pass}/\textsc{fail}, the thermalization wall-clock, and a SHA-256 of the full 200-sample measurement chain. A reader citing the chapter's spine independently of Halcyon's deployed report can cite the verifier's SHA-256 instead --- the chain is the cryptographic witness for any independently derived numerical claim. The script source is in \texttt{inertia\_damping/scripts/verify\_canonical\_receipt.py} and is exercised by \texttt{test\_gigi\_live\_phase\_d\_public\_receipt.py} in CI when the engine is reachable.
 
 \textbf{Cross-team handshake receipt (2026-06-19).} Fired against \texttt{gigi-stream.fly.dev} with the \texttt{--snapshot} flag set. Sprint A's \texttt{face\_edges} hoist + measurement pre-alloc deployed (image \texttt{deployment-01KVGKE7TAJ0V17VEZR9H44QMG}, version 221) preserves bit-identity: the snapshot SHA is the same byte-for-byte before and after Sprint A. The receipt:
-\begin{verbatim}
+\begin{Verbatim}[fontsize=\footnotesize]
 tail_mean              = 0.5121834
 halcyon_spine_P        = 0.5068472
 delta_from_spine       = 0.005336    (inside 0.04 tolerance)
@@ -321,7 +330,7 @@ band_pass              = TRUE
 P_chain_sha256         = bfb6c90c15ac17c967db1165ef36e07d257f35b2965a0ad1474d66cc6daf4d77
 snapshot_sha256        = ea7b934ca3fbe9897e9f11851647388972004a2ca025100179a92dd966516591
 snapshot_wal_offset    = 24
-\end{verbatim}
+\end{Verbatim}
 
 The end-to-end wall budget decomposes honestly into three numbers:
 \begin{verbatim}
@@ -334,9 +343,9 @@ The end-to-end wall budget decomposes honestly into three numbers:
 \end{verbatim}
 The substrate compute is what the chapter's "thermalization cost" used to denote --- about $50 \times$ faster than the local Python kernel (and over $2000 \times$ faster than the orchestrator's original $\sim 30$\,s estimate I'd been carrying). The verifier wall is dominated by network round-trip to fly.dev, not by the engine. A reader who runs the verifier against a local \texttt{cargo run --release --bin gigi-stream} sees the substrate compute directly, without the public-internet tax.
 
-\textbf{The chapter's citation handle is \texttt{ea7b934ca3fbe9897e9f11851647388972004a2ca025100179a92dd966516591}} --- the SHA-256 of the post-thermalization $90 \times 4$ \texttt{f64} link buffer, written to the engine's WAL under \texttt{OP\_GAUGE\_FIELD\_SNAPSHOT} (\texttt{0x0B}) at offset 24. This hash lives in three places by construction: in GIGI's WAL on the production engine, in the SNAPSHOT response Rows envelope, and on this page. A reader can independently compute it from the buffer they read back through \texttt{GET /v1/gauge\_field/halcyon\_canonical\_U/plaquette} and confirm the canonical. The chain SHA-256 above is kept as a secondary diagnostic for cross-checking the measurement path, but the buffer SHA is the citation of record --- state, not path.
+\textbf{The chapter's citation handle is \hexsha{ea7b934ca3fbe9897e9f11851647388972004a2ca025100179a92dd966516591}} --- the SHA-256 of the post-thermalization $90 \times 4$ \texttt{f64} link buffer, written to the engine's WAL under \texttt{OP\_GAUGE\_FIELD\_SNAPSHOT} (\texttt{0x0B}) at offset 24. This hash lives in three places by construction: in GIGI's WAL on the production engine, in the SNAPSHOT response Rows envelope, and on this page. A reader can independently compute it from the buffer they read back through \texttt{GET /v1/gauge\_field/halcyon\_canonical\_U/plaquette} and confirm the canonical. The chain SHA-256 above is kept as a secondary diagnostic for cross-checking the measurement path, but the buffer SHA is the citation of record --- state, not path.
 
-The Halcyon-side regression contracts are \texttt{test\_gigi\_live\_phase\_b.py::test\_G\_LIVE\_B2\_production\_thermalization\_pass\_criterion} (band check, $\sim$13\,s wall) and \texttt{test\_gigi\_live\_phase\_e\_snapshot.py::test\_G\_LIVE\_E0\_snapshot\_writes\_wal\_and\_returns\_buffer\_sha} + \texttt{test\_G\_LIVE\_E1\_bare\_snapshot\_rejected} (Part V's snapshot contract + the D-V-D \texttt{PERSIST}-required pushback empirically enforced).
+The Halcyon-side regression contracts are \longtt{test\_gigi\_live\_phase\_b.py::test\_G\_LIVE\_B2\_production\_thermalization\_pass\_criterion} (band check, $\sim$13\,s wall) and \longtt{test\_gigi\_live\_phase\_e\_snapshot.py::test\_G\_LIVE\_E0\_snapshot\_writes\_wal\_and\_returns\_buffer\_sha} + \longtt{test\_G\_LIVE\_E1\_bare\_snapshot\_rejected} (Part V's snapshot contract + the D-V-D \texttt{PERSIST}-required pushback empirically enforced).
 
 \textbf{Persistence note.} The thermalized state is now durably persisted under \texttt{OP\_GAUGE\_FIELD\_SNAPSHOT} (\texttt{0x0B}). \texttt{LATTICE} and \texttt{GAUGE\_FIELD} declarations (\texttt{0x09} and \texttt{0x0A}) persist as before; the new op records the SU(2) link buffer as little-endian \texttt{f64} bytes alongside a SHA-256 the replay path verifies against on next \texttt{Engine::open}. Bare \texttt{SNAPSHOT GAUGE\_FIELD U;} parse-errors --- only \texttt{SNAPSHOT GAUGE\_FIELD U PERSIST;} is legal --- so the day a future \texttt{TRANSIENT} variant lands, zero existing callers change meaning. See \texttt{theory/halcyon/HALCYON\_PART\_V\_SNAPSHOT\_GATES.md} for the spec.
 
@@ -373,11 +382,11 @@ python -m inertia_damping.scripts.section5_closure_analysis \
     --sweep-root inertia_damping/reports/section5_sweep_cuda
 \end{verbatim}
 
-The artefact of record is \texttt{inertia\_damping/reports/section5\_sweep\_cuda/section5\_closure.json},
-SHA-256 \texttt{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}.
-The polished narrative is \texttt{SECTION5\_CLOSURE\_RECEIPT.md} alongside, with
+The artefact of record is \longtt{inertia\_damping/reports/section5\_sweep\_cuda/section5\_closure.json},
+SHA-256 \hexsha{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}.
+The polished narrative is \longtt{SECTION5\_CLOSURE\_RECEIPT.md} alongside, with
 40 per-trajectory sidecars (each carrying the full Section 5 schema) and two matplotlib figures
-(\texttt{section5\_gap\_vs\_nsteps.pdf}, \texttt{section5\_pt\_vs\_ph.pdf}).
+(\longtt{section5\_gap\_vs\_nsteps.pdf}, \longtt{section5\_pt\_vs\_ph.pdf}).
 
 \subsection*{A.6 The thread experiment and the dynamic transfer-function target}
 
@@ -432,7 +441,8 @@ Appendix A.6 derived the load-bearing experimental claim: at fixed static gravit
 \textbf{The grid.} Ten null hypotheses $H_0\ldots H_9$ form the rows of the elimination grid. Seven are simulatable; three (thermal, EM, and mechanical pickup) require hardware DOFs the simulation does not have, so the simulation states the prediction-of-absence and the hardware apparatus is responsible for ruling them out at its own scale.
 
 \begin{center}
-\begin{tabular}{cllp{4.5cm}c}
+{\footnotesize
+\begin{tabular}{cllp{3.7cm}c}
 \toprule
 $\#$ & Null & Protocol & Gate threshold & Realm \\
 \midrule
@@ -448,6 +458,7 @@ $H_8$ & $Q$ sector drift & continuous $Q_{\rm surrogate}$ monitor & $\sigma_Q/\l
 $H_9$ & $\tau_Q$ model error & alternative functional form & $|\alpha_{\rm alt} - \alpha|/|\alpha| < 0.20$ & sim \\
 \bottomrule
 \end{tabular}
+}
 \end{center}
 
 \textbf{The substrate model the battery probes.} The test-mass dynamics is governed by $\mu_{\rm total}(Q)\,\ddot{x} + c_Q\,\dot{x} + K_Q\,x = F(t)$, where $\mu_{\rm total}(Q) = \mu_{\rm proxy} \cdot \mu_{\rm baseline} + \mu_{\rm eff}(Q)$. The Halcyon coupling enters only through $\mu_{\rm eff}(Q)$, computed on the buckyball substrate via
@@ -482,13 +493,13 @@ with $\kappa_Q(e) = (1 - q_0(U_{f_1(e)}))(1 - q_0(U_{f_2(e)}))$, $\tau_Q(e) = \t
 
 \textbf{The ergodicity caveat.} Per A.5, the buckyball substrate exhibits a documented $\sim 16\%$ irreducible shell-vs-ensemble gap. The battery operates within the microcanonical energy shell sampled by the seed-and-canonical-init protocol; a \texttt{PASS\_SIMULATION\_ONLY} verdict therefore does not imply thermodynamic equilibrium. For hardware extension to a larger lattice the gap is expected to vanish under the law of large numbers and the battery must re-validate at the new scale; the SPEC does not certify cross-scale invariance.
 
-\textbf{The receipt.} The 8-seed \texttt{--battery-fast} sidecar is \texttt{inertia\_damping/reports/section11\_battery/battery\_fast\_20260620\_104846.json}, SHA-256 \texttt{b841ede05cffabfffbb82efc1b21b63ed9e22341125b01e3f16801d4412c789c}.
+\textbf{The receipt.} The 8-seed \texttt{--battery-fast} sidecar is \longtt{inertia\_damping/reports/section11\_battery/battery\_fast\_20260620\_104846.json}, SHA-256 \hexsha{b841ede05cffabfffbb82efc1b21b63ed9e22341125b01e3f16801d4412c789c}.
 
 \subsection*{A.7.1 The full-battery follow-up: an honest falsifier of the extractor itself}
 
 The smoke results above used a slope-through-origin extractor on the internal \texttt{mu\_eff\_mean} value tracked by the simulation. That number is the model's own internal state, not the value the apparatus would observe. SPEC v2 \S4 specifies a stricter protocol --- the H$_6$ test: fit $\chi_Q(\omega) = [K_Q + i c_Q \omega - \mu_Q \omega^2]^{-1}$ per $Q$ to the lock-in-demodulated $|\chi|$ and $\arg\chi$ curves at multiple $\omega$, then extract $\alpha$ from the fitted $\mu_Q$ values. The fitted $\mu_Q$ is what a real experiment would see; the internal $\mu_{\rm eff}(U(t))$ is what only the simulator knows. The two extractors are different epistemic objects, and the SPEC's choice to make the observation-space extractor load-bearing was the right one.
 
-A full-battery run with the H$_6$ extractor wired up (sidecar \texttt{battery\_full\_20260620\_181227.json}, SHA-256 \texttt{ad33fd568f6257ff0ba98fd9d31a22403cb9915de083a6b6ca1384c49e4b49b8}, 111.2\,min wall, 5 $\omega$ $\times$ 3 $Q$ $\times$ 8 seeds main grid plus H$_1$/H$_5$/H$_9$ supplements) returned:
+A full-battery run with the H$_6$ extractor wired up (sidecar \longtt{battery\_full\_20260620\_181227.json}, SHA-256 \hexsha{ad33fd568f6257ff0ba98fd9d31a22403cb9915de083a6b6ca1384c49e4b49b8}, 111.2\,min wall, 5 $\omega$ $\times$ 3 $Q$ $\times$ 8 seeds main grid plus H$_1$/H$_5$/H$_9$ supplements) returned:
 
 \begin{itemize}
     \item Sector separation: \textsc{pass} (17.83\,$\sigma$ minimum pairwise).
