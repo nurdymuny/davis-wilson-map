@@ -1,17 +1,34 @@
-# Zenodo Deposit Metadata — Halcyon Falsification Battery SPEC v3
+# Zenodo Deposit Metadata — Halcyon Falsification Battery SPEC v3.1
 
 **Purpose of this file.** Paste-ready metadata for the Zenodo deposit of
-`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md` (commit
-`0fe654d556e4f6878c439df64d1ff20599c9c733`, 2026-06-20 21:34:26 -0700).
-The Zenodo DOI minted from this deposit becomes the
-publication-level pre-registration of the v3 falsification criteria,
-to be cited in Solves Vol.\ 4 Appendix A.8 when the v3 protocol runs.
+`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md` (commit hash TBD —
+the v3.1 commit hash supersedes v3.0's `0fe654d` as the canonical
+pre-registration). The Zenodo DOI minted from this deposit becomes the
+publication-level pre-registration of the v3.1 falsification criteria,
+to be cited in Solves Vol.\ 4 Appendix A.8 when the v3.1 protocol runs.
+
+**v3.0 vs v3.1.** The v3.0 SPEC (`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md`,
+commit `0fe654d`) was the first-draft pre-registration. Before its Zenodo
+deposit, external review caught two mathematical defects (scalar holonomy
+vanishing by FTC; adiabaticity inequality reversed) and five
+protocol-discipline issues. v3.1 patches them. The v3.0 draft is preserved
+as a first-class artefact in the repository for the chain of custody;
+the v3.1 commit hash is the document that goes to Zenodo.
 
 ## What to upload
 
-The single file `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md` (732 lines)
-from the commit hash above. No accompanying figures, datasets, or
-supplementary code. The SPEC is self-contained.
+Both files, as a single Zenodo deposit (Zenodo supports multi-file
+uploads):
+
+1. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md` — the canonical
+   pre-registered protocol (the actual contract).
+2. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md` — the v3.0 first-draft,
+   included for transparency of the review-and-patch process. Mark as
+   "v3.0 — superseded by v3.1 before deposit; preserved for the
+   pre-registration chain of custody."
+
+No accompanying figures, datasets, or supplementary code. The SPECs
+are self-contained.
 
 ## Recommended Zenodo form values
 
@@ -22,8 +39,9 @@ publishable either way).
 
 ### Title
 ```
-Halcyon Falsification Battery — SPEC v3 (Pre-Registration):
-Holonomy as the Load-Bearing Falsifier on the Buckyball Substrate
+Halcyon Falsification Battery — SPEC v3.1 (Pre-Registration):
+Closed-Loop Holonomy on a Two-Dimensional Control Manifold
+as the Load-Bearing Falsifier on the Buckyball Substrate
 ```
 
 ### Creators
@@ -54,14 +72,22 @@ Holonomy as the Load-Bearing Falsifier on the Buckyball Substrate
   (fixed-Q lock-in).
 </p>
 <p>
-  <strong>v3 redesigns the measurement to match the framework's native
+  <strong>v3.1 redesigns the measurement to match the framework's native
   observable and the apparatus's native protocol: closed-loop holonomy of
-  the pulled-back inertial-coupling connection along a programmed Q-loop.</strong>
-  The simulation delegates the substrate computation to the GIGI engine's
-  <code>SAMPLE_TRANSPORT … ALONG_LOOP … ADIABATIC</code> verb (pending GIGI
-  spec extension), making the v3 audit surface a two-layer inversion:
-  substrate correctness is reviewable through the engine's 1373-assertion
-  test suite, protocol design is reviewable in this SPEC.
+  a real connection 1-form on a two-dimensional programmed control
+  manifold Λ = (Q, θ), measured via discretized parallel transport.</strong>
+  The control manifold has dimension ≥ 2 so non-trivial loops enclose
+  finite area; the primary observable is the <em>antisymmetric</em>
+  component H_geom = ½(H[γ] − H[γ⁻¹]) of the forward and reversed
+  holonomies, with the symmetric H_sys reported as a systematic-offset
+  diagnostic. The simulation delegates the substrate computation to the
+  GIGI engine's <code>SAMPLE_TRANSPORT … ALONG_LOOP … CONTROL_MANIFOLD …
+  ADIABATIC</code> verb (pending GIGI spec extension), making the v3.1
+  audit surface a two-layer inversion: substrate correctness is reviewable
+  through the engine's test suite plus a six-contract verb acceptance
+  battery (GC₁–GC₆: flat-connection-zero, area-law, reversed-loop
+  inversion, zero-size-zero, discretization convergence, gauge
+  invariance); protocol design is reviewable in this SPEC.
 </p>
 <p>
   <strong>This deposit is a pre-registration, not a result.</strong>

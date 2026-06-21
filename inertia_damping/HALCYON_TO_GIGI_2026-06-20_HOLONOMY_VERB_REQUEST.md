@@ -1,13 +1,29 @@
-# Halcyon → Gigi — Holonomy verb for the v3 falsification battery
+# Halcyon → Gigi — Holonomy verb for the v3.1 falsification battery
 
-**Date:** 2026-06-20
+**Date:** 2026-06-20 (amended same day to v3.1 after external review)
 **Pattern:** same as the `--use-gigi` flag spec and the Part V SNAPSHOT
 gates — Halcyon writes the substrate request, Gigi designs the engine-
 side implementation, the two coordinate via this letter pattern.
-**Predecessor:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md`,
-committed at `0fe654d556e4f6878c439df64d1ff20599c9c733`. Read §2 and §4
-of that document first; this letter is the implementation request that
-falls out of those sections.
+**Authoritative SPEC:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md`
+(the v3.0 draft was caught in external review before Zenodo deposit;
+v3.1 is the patched contract). Read §2.3, §4.4, and §7.4 of v3.1 first;
+this letter is the implementation request that falls out of those
+sections.
+
+**Key v3.1 patches that change this letter from its v3.0 draft:**
+- The loop lives on a **multi-dimensional control manifold Λ = (Q, θ)**,
+  not on Q alone. A 1D Q-only path encloses zero area and trivially
+  returns zero holonomy by FTC; v3.1 needs a 2D loop.
+- The substrate must compute a **real connection 1-form `A` on Λ**, not
+  the scalar derivative `∂μ/∂Q` (which is exact and vanishes).
+- The substrate must compute `H_forward` AND `H_reversed` so the
+  Python side can form `H_geom = ½(H_fwd − H_rev)` (the geometric
+  observable) and `H_sys = ½(H_fwd + H_rev)` (the systematic-offset
+  diagnostic).
+- The substrate must emit a **tracking-error trace** so that active
+  Q-pinning cannot become a hidden signal source.
+- The substrate must pass a six-contract acceptance battery
+  (`GC₁`–`GC₆` in v3.1 §7.4) before Halcyon calls it for science.
 
 ## TL;DR
 
@@ -26,49 +42,82 @@ are independently reviewable. The Python orchestrator becomes ~200
 lines of glue code instead of v2's ~750 lines of inline integrator,
 because the heavy lifting is yours.
 
-## The verb, written down
+## The verb, written down (v3.1 shape)
 
 ```
 SAMPLE_TRANSPORT <gauge_field_name>
   ALONG_LOOP <loop_id>
+  CONTROL_MANIFOLD (Q, theta)        // v3.1: must be >= 2D
   ADIABATIC TRUE
-  RAMP_RATE <float>           // |dQ/dt|, in Q-units per simulation time unit
-  DRIVE_OMEGA <float>          // test-mass lock-in carrier frequency (rad / time-unit)
-  DRIVE_F0 <float>             // test-mass drive amplitude
-  N_DISCRETIZATION <int>       // number of substeps along the loop
-  PIN_LAMBDA <float>           // soft-constraint strength keeping Q on the programmed path
-  ALPHA_HALCYON <float>        // coupling calibration (currently free, 1 or 1000)
-  TAU_0 <float> BETA_TAU <float>  // tau_Q model parameters per SPEC v2 §3
+  RAMP_RATE_Q <float>                // |dQ/dt| in Q-units per sim time unit
+  RAMP_RATE_THETA <float>             // |dtheta/dt| in rad per sim time unit
+  DRIVE_OMEGA <float>                 // lock-in carrier frequency
+  DRIVE_F0 <float>                    // test-mass drive amplitude
+  N_DISCRETIZATION <int>              // substeps along the loop
+  PIN_LAMBDA_Q <float>                // soft-pin strength on Q
+  PIN_LAMBDA_THETA <float>            // soft-pin strength on theta
+  EPS_Q <float>                       // tracking-error tolerance on Q
+  EPS_THETA <float>                   // tracking-error tolerance on theta
+  ALPHA_HALCYON <float>               // coupling calibration
+  TAU_0 <float> BETA_TAU <float>       // tau_Q model parameters
   MU_BASELINE <float> K_SPRING <float> C_DAMP <float>  // test-mass parameters
-  SEEDS <int_list>             // RNG seeds; one independent realisation per seed
-  COMPUTE HOLONOMY            // primary observable: closed-loop integrated coupling
-  COMPUTE TRANSPORT_TRACE      // per-substep trace for verification
-  COMPUTE PER_SEED_HOLONOMY    // disaggregated for gate evaluation
-  RETURN H_mean, sigma_H_blocked, per_seed_H, trace_path, adiabaticity_check
+  SEEDS <int_list>
+  // v3.1: substrate computes connection 1-form A on (Q, theta), holonomy
+  // is its closed-loop transport. Substrate must compute BOTH directions
+  // so the Python side can form the antisymmetric primary observable.
+  COMPUTE HOLONOMY_FORWARD           // primary: traverse loop in nominal direction
+  COMPUTE HOLONOMY_REVERSED           // companion: traverse same loop reversed
+  COMPUTE TRACKING_ERROR_TRACE        // per-substep |Q_surrogate - Q_target|, same for theta
+  COMPUTE ADIABATICITY_CHECK          // T_drive vs T_segment vs tau_relax check
+  RETURN H_forward, H_reversed,
+         sigma_H_blocked,
+         per_seed_H_forward, per_seed_H_reversed,
+         tracking_error_max_Q, tracking_error_max_theta,
+         adiabaticity_check
 ```
+
+The Python orchestrator then constructs:
+
+```python
+H_geom = 0.5 * (H_forward - H_reversed)
+H_sys  = 0.5 * (H_forward + H_reversed)
+```
+
+and applies the v3.1 §3 gates. The substrate does not need to know
+about `H_geom`/`H_sys` — it just returns both directions and the
+Python side combines.
 
 Loop specs are first-class objects, declared earlier in the GQL block:
 
 ```
 LOOP gamma_unit:
-  Q_PATH [0.0, 1.0, 2.0, 1.0, 0.0]
-  SEGMENTS_PER_EDGE LINEAR
+  // v3.1: closed rectangle on (Q, theta), encloses area Q_max * pi
+  CONTROL_MANIFOLD (Q, theta)
+  PATH:  (Q=0,   theta=0)
+      -> (Q=2,   theta=0)
+      -> (Q=2,   theta=PI)
+      -> (Q=0,   theta=PI)
+      -> (Q=0,   theta=0)
   T_LOOP 100.0
-
-LOOP gamma_reversed:
-  Q_PATH [0.0, 1.0, 2.0, 1.0, 0.0]
-  SEGMENTS_PER_EDGE LINEAR
-  T_LOOP 100.0
-  TRAVERSE REVERSED
+  SEGMENTS PIECEWISE_LINEAR
 
 LOOP gamma_degenerate:
-  Q_PATH [0.0, 0.0]
+  // zero-area loop for sham S_5
+  CONTROL_MANIFOLD (Q, theta)
+  PATH: (Q=0, theta=0) -> (Q=0, theta=0)
   T_LOOP 100.0
 ```
 
-If the LOOP DSL form bothers you, an equivalent JSON-side
-parameterization works too — what matters is that loops are
-substrate-side objects, not strings reconstructed on every call.
+The reversed loop is generated substrate-side by traversing
+`gamma_unit` time-reversed; the Python side does not need to declare
+`gamma_reversed` separately because v3.1's primary observable is
+already antisymmetric.
+
+If a different second axis is more natural for the substrate (a
+β-coupling knob, a drive-phase parameter, a substrate-side
+gauge-rotation parameter), that's fine — the constraint is dim(Λ) ≥ 2
+and that loops enclose finite area. Name the chosen second axis in
+your reply.
 
 ## The six sham controls v3 requires
 
@@ -168,33 +217,56 @@ just an aspiration. If the verb lands, the audit story is clean.
 
 In rough sprint-sized chunks:
 
-1. **The verb itself** — `SAMPLE_TRANSPORT … ALONG_LOOP … ADIABATIC`
-   landing on `gigi-stream.fly.dev` and the local build, with the
-   parameter surface above. This is the load-bearing piece; v3 cannot
-   run without it. If the existing `SAMPLE_TRANSPORT` verb is close to
-   this, the work is mostly extending its grammar; if it's not, this
-   is a new verb sibling of HOLONOMY.
-2. **The six sham flags** — implementable as a single
-   `SHAM_MODE <enum>` parameter if cleaner. Each variant changes one
-   piece of the computation (zero out κ, zero out α, scale μ_baseline,
-   reverse traversal direction, hold Q at 0, freeze U). Most of these
-   are 1-5 line changes inside the per-substep loop.
-3. **The adiabaticity self-check** — substrate-side computation of the
-   instantaneous gauge-field relaxation rate vs the prescribed ramp
-   rate, with a warning emitted in the response when violated. Useful
-   for the substrate's own diagnostics regardless of Halcyon's use.
-4. **Per-seed independent computation** — confirming that the substrate's
-   existing seed model (PCG64 in Python, xorshift64* in Rust per the
-   v1.2.1 substrate-consolidation receipt) propagates per-seed
-   independence through the loop transport, so the per-seed
-   distribution is what the §3 gates need.
-5. **A regression test in your `cargo test --features halcyon` suite**
-   that runs the verb on a small loop and verifies (a) sham flags
-   return zero to machine precision, (b) the holonomy of a trivial
-   trivial-bundle loop returns zero, (c) the holonomy of a known
-   non-trivial test connection returns its analytical value. This is
-   the substrate-side correctness check that makes the audit story
-   real.
+1. **The verb itself** — `SAMPLE_TRANSPORT … ALONG_LOOP …
+   CONTROL_MANIFOLD … ADIABATIC` landing on `gigi-stream.fly.dev`
+   and the local build with the v3.1 parameter surface above. The
+   substrate computes the connection 1-form A on the 2D control
+   manifold, then the closed-loop holonomy via discretized parallel
+   transport. **Both `HOLONOMY_FORWARD` and `HOLONOMY_REVERSED`
+   must be computed** so the Python side can form the antisymmetric
+   primary observable.
+2. **The five sham flags** (S₄ is absorbed into the antisymmetric
+   primary observable, not a separate flag):
+   - `SHAM_FLAT_FIELD` — substrate forces κ_Q ≡ 0
+   - `SHAM_ALPHA_ZERO` — substrate sets α_Halcyon = 0
+   - `SHAM_MASS_SCALED <float>` — substrate scales μ_baseline (called
+     three times at 0.1, 1.0, 10.0 for the baseline-subtraction fit)
+   - `SHAM_DEGENERATE_LOOP` — substrate uses the degenerate loop
+   - `SHAM_FROZEN_FIELD` — substrate freezes U(t) while updating
+     (Q_target, θ_target)
+3. **Tracking-error reporting** — substrate-side computation of
+   `max_t |Q_surrogate(t) − Q_target(t)|` and the same for θ, emitted
+   in the response. v3.1 needs this because active Q-pinning could
+   otherwise become a hidden signal source. v3.1 §4.3 makes
+   tracking-error violation force AMBIGUOUS regardless of the H
+   values.
+4. **The adiabaticity self-check** — substrate-side computation of
+   the instantaneous gauge-field local-equilibration rate vs the
+   segment timescale, with a warning emitted when the inequality
+   chain of v3.1 §4.2 is violated.
+5. **Per-seed independent computation** — confirming the seed model
+   propagates per-seed independence through the loop transport on Λ.
+6. **The six-contract verb acceptance battery (`GC₁`–`GC₆`)** from
+   v3.1 §7.4, as a substrate-side `cargo test --features halcyon`
+   regression suite *that must pass before Halcyon makes science
+   calls to the verb*:
+   - **GC₁** Flat connection (A ≡ 0): H[any loop] = 0 to machine ε
+     across ≥ 4 loop shapes.
+   - **GC₂** Known Abelian constant-curvature connection: H[γ] =
+     F₀ · Area(γ) to 1% across 3 loop sizes (an Abelian area law).
+   - **GC₃** Reversed loop: H[γ⁻¹] = −H[γ] (Abelian) or H[γ]⁻¹
+     (non-Abelian) to 1% across ≥ 3 connections.
+   - **GC₄** Zero-size loop: H = 0 to machine ε.
+   - **GC₅** Discretization convergence: H at N ∈ {1000, 2000, 4000,
+     8000} converges monotonically with rel change < 1% between 4000
+     and 8000.
+   - **GC₆** Gauge invariance: H invariant to machine ε under known
+     gauge transformation on the connection.
+
+   The existing 1373-assertion suite is necessary but not sufficient
+   — `GC₁`–`GC₆` are the *new* contracts the new verb introduces, and
+   they are the substrate-side correctness audit that closes v3.1's
+   two-layer auditability story.
 
 ## What I'm not asking for
 
