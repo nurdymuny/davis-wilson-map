@@ -4,20 +4,24 @@
 **Pattern:** same as the `--use-gigi` flag spec and the Part V SNAPSHOT
 gates — Halcyon writes the substrate request, Gigi designs the engine-
 side implementation, the two coordinate via this letter pattern.
-**Authoritative SPEC:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.1.md`
-(the v3.0 and v3.1 drafts were caught in external review before Zenodo
-deposit; v3.1.1 is the patched contract that goes to deposit). Read
-§2.2, §4.4, and §7.4 of v3.1.1 first; this letter is the
-implementation request that falls out of those sections.
+**Authoritative SPEC:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.2.md`
+(the v3.0, v3.1, and v3.1.1 drafts were caught in three rounds of
+external review before Zenodo deposit; v3.1.2 is the patched contract
+that goes to deposit). Read §2.2, §4.4, and §7.4 of v3.1.2 first; this
+letter is the implementation request that falls out of those sections.
 
-**Key v3.1.1 patches that change this letter from its earlier drafts:**
+**Key v3.1.2 patches that change this letter from its earlier drafts:**
 - The loop lives on a **multi-dimensional control manifold Λ = (Q, β_W)**,
   not on Q alone. A 1D Q-only path encloses zero area and trivially
   returns zero holonomy by FTC; v3.1 needed a 2D loop and v3.1.1
-  locks the second coordinate to the **Wilson gauge coupling β_W**
+  locked the second coordinate to the **Wilson gauge coupling β_W**
   (same β that GIGI's existing `gauge_field` declarations carry —
-  no new conceptual introduction). Range: β_W ∈ [2.0, 3.0] with
-  the Migdal–Witten canonical 2.5 at the midpoint.
+  no new conceptual introduction). **v3.1.2 range:** `β_W ∈ [2.5, 3.0]`,
+  *tightened from v3.1.1's `[2.0, 3.0]`* to keep the loop strictly
+  inside the SU(2) Q-observable regime the program's earlier
+  validation work has trusted (JOURNAL: β=2.5 and 2.7 clean, β=2.3
+  marginal failure). The Migdal–Witten canonical 2.5 is at the
+  lower endpoint of the range.
 - The substrate must compute a **real connection 1-form `A` on Λ**, not
   the scalar derivative `∂μ/∂Q` (which is exact and vanishes).
 - The substrate must compute `H_forward` AND `H_reversed` so the
