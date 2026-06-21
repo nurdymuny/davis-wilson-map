@@ -1,34 +1,56 @@
-# Zenodo Deposit Metadata — Halcyon Falsification Battery SPEC v3.1
+# Zenodo Deposit Metadata — Halcyon Falsification Battery SPEC v3.1.1
 
 **Purpose of this file.** Paste-ready metadata for the Zenodo deposit of
-`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md` (commit hash TBD —
-the v3.1 commit hash supersedes v3.0's `0fe654d` as the canonical
-pre-registration). The Zenodo DOI minted from this deposit becomes the
-publication-level pre-registration of the v3.1 falsification criteria,
-to be cited in Solves Vol.\ 4 Appendix A.8 when the v3.1 protocol runs.
+`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.1.md`. The Zenodo DOI minted
+from this deposit becomes the publication-level pre-registration of the
+v3.1.1 falsification criteria, to be cited in Solves Vol.\ 4
+Appendix A.8 when the v3.1.1 protocol runs.
 
-**v3.0 vs v3.1.** The v3.0 SPEC (`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md`,
-commit `0fe654d`) was the first-draft pre-registration. Before its Zenodo
-deposit, external review caught two mathematical defects (scalar holonomy
-vanishing by FTC; adiabaticity inequality reversed) and five
-protocol-discipline issues. v3.1 patches them. The v3.0 draft is preserved
-as a first-class artefact in the repository for the chain of custody;
-the v3.1 commit hash is the document that goes to Zenodo.
+**Three-stage review history before deposit (all preserved):**
+
+- **v3.0** (`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md`, commit
+  `0fe654d556e4f6878c439df64d1ff20599c9c733`): first-draft
+  pre-registration. External review caught two mathematical defects
+  (scalar holonomy vanishing by FTC; adiabaticity inequality reversed)
+  and five protocol-discipline issues.
+- **v3.1** (`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md`, commit
+  `712109488d43cf2fcd43b8d2bc8b5a1b053579ec`): patched the two
+  mathematical defects and the five protocol issues. Second round of
+  external review caught seven executability issues (under-specified
+  second coordinate, internal timing inconsistency, weak `<<`
+  separation, wrong N_DISCRETIZATION comment, missing absolute ε for
+  S₂, S₃ NULL-branch division-by-zero, under-defined per-seed σ).
+- **v3.1.1** (this commit, hash TBD at time of writing): patched the
+  seven executability issues. The canonical pre-registered protocol.
+  Goes to Zenodo.
+
+The v3.0 and v3.1 drafts are preserved as first-class artefacts in the
+repository for the chain of custody; the v3.1.1 commit hash is the
+document that goes to Zenodo as the cited pre-registration.
 
 ## What to upload
 
-Both files, as a single Zenodo deposit (Zenodo supports multi-file
-uploads):
+All three SPEC files, as a single Zenodo deposit (Zenodo supports
+multi-file uploads):
 
-1. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md` — the canonical
-   pre-registered protocol (the actual contract).
-2. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md` — the v3.0 first-draft,
-   included for transparency of the review-and-patch process. Mark as
-   "v3.0 — superseded by v3.1 before deposit; preserved for the
-   pre-registration chain of custody."
+1. **`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.1.md`** — the canonical
+   pre-registered protocol (the actual contract; the SPEC §3
+   falsification criteria committed to publication-level
+   pre-registration).
+2. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md` — v3.1 second-draft,
+   marked "second-draft pre-registration; superseded by v3.1.1 before
+   deposit after second-round external review. Preserved for the
+   chain of custody."
+3. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md` — v3.0 first-draft,
+   marked "first-draft pre-registration; superseded by v3.1 before
+   deposit after first-round external review. Preserved for the
+   chain of custody."
 
 No accompanying figures, datasets, or supplementary code. The SPECs
-are self-contained.
+are self-contained. The three-stage history demonstrates that
+pre-registration with allowed-before-deposit correction is
+working: each review pass caught real issues that a one-pass
+pre-registration would have locked in.
 
 ## Recommended Zenodo form values
 
@@ -39,8 +61,8 @@ publishable either way).
 
 ### Title
 ```
-Halcyon Falsification Battery — SPEC v3.1 (Pre-Registration):
-Closed-Loop Holonomy on a Two-Dimensional Control Manifold
+Halcyon Falsification Battery — SPEC v3.1.1 (Pre-Registration):
+Closed-Loop Holonomy on the (Q, β_W) Control Manifold
 as the Load-Bearing Falsifier on the Buckyball Substrate
 ```
 
@@ -72,10 +94,12 @@ as the Load-Bearing Falsifier on the Buckyball Substrate
   (fixed-Q lock-in).
 </p>
 <p>
-  <strong>v3.1 redesigns the measurement to match the framework's native
-  observable and the apparatus's native protocol: closed-loop holonomy of
-  a real connection 1-form on a two-dimensional programmed control
-  manifold Λ = (Q, θ), measured via discretized parallel transport.</strong>
+  <strong>v3.1.1 redesigns the measurement to match the framework's
+  native observable and the apparatus's native protocol: closed-loop
+  holonomy of a real connection 1-form on a two-dimensional programmed
+  control manifold Λ = (Q, β_W), where Q is the surrogate sector
+  coordinate and β_W is the Wilson gauge-action coupling. The holonomy
+  is measured via discretized parallel transport.</strong>
   The control manifold has dimension ≥ 2 so non-trivial loops enclose
   finite area; the primary observable is the <em>antisymmetric</em>
   component H_geom = ½(H[γ] − H[γ⁻¹]) of the forward and reversed

@@ -4,26 +4,40 @@
 **Pattern:** same as the `--use-gigi` flag spec and the Part V SNAPSHOT
 gates — Halcyon writes the substrate request, Gigi designs the engine-
 side implementation, the two coordinate via this letter pattern.
-**Authoritative SPEC:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md`
-(the v3.0 draft was caught in external review before Zenodo deposit;
-v3.1 is the patched contract). Read §2.3, §4.4, and §7.4 of v3.1 first;
-this letter is the implementation request that falls out of those
-sections.
+**Authoritative SPEC:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.1.md`
+(the v3.0 and v3.1 drafts were caught in external review before Zenodo
+deposit; v3.1.1 is the patched contract that goes to deposit). Read
+§2.2, §4.4, and §7.4 of v3.1.1 first; this letter is the
+implementation request that falls out of those sections.
 
-**Key v3.1 patches that change this letter from its v3.0 draft:**
-- The loop lives on a **multi-dimensional control manifold Λ = (Q, θ)**,
+**Key v3.1.1 patches that change this letter from its earlier drafts:**
+- The loop lives on a **multi-dimensional control manifold Λ = (Q, β_W)**,
   not on Q alone. A 1D Q-only path encloses zero area and trivially
-  returns zero holonomy by FTC; v3.1 needs a 2D loop.
+  returns zero holonomy by FTC; v3.1 needed a 2D loop and v3.1.1
+  locks the second coordinate to the **Wilson gauge coupling β_W**
+  (same β that GIGI's existing `gauge_field` declarations carry —
+  no new conceptual introduction). Range: β_W ∈ [2.0, 3.0] with
+  the Migdal–Witten canonical 2.5 at the midpoint.
 - The substrate must compute a **real connection 1-form `A` on Λ**, not
   the scalar derivative `∂μ/∂Q` (which is exact and vanishes).
 - The substrate must compute `H_forward` AND `H_reversed` so the
   Python side can form `H_geom = ½(H_fwd − H_rev)` (the geometric
   observable) and `H_sys = ½(H_fwd + H_rev)` (the systematic-offset
   diagnostic).
-- The substrate must emit a **tracking-error trace** so that active
-  Q-pinning cannot become a hidden signal source.
+- The substrate must emit a **tracking-error trace per axis** (Q and
+  β_W independently) so that active pinning cannot become a hidden
+  signal source.
 - The substrate must pass a six-contract acceptance battery
-  (`GC₁`–`GC₆` in v3.1 §7.4) before Halcyon calls it for science.
+  (`GC₁`–`GC₆` in v3.1.1 §7) before Halcyon calls it for science.
+
+**Disambiguation up front:** `β_W` is the **Wilson gauge coupling**
+appearing in `S_W = (β_W / N) Σ_f [N − Re Tr U_f]`. `BETA_TAU` is the
+v2.1 τ_Q model's coupling coefficient appearing in
+`τ_Q(e) = τ₀ / (1 + β_τ s_Q(e))`. They are different parameters and
+must not be confused. The `SAMPLE_TRANSPORT` call carries both because
+the τ_Q model uses `BETA_TAU` (held fixed at 2.0) while the loop
+**traverses** values of `BETA_WILSON` (varying along the loop's
+second axis).
 
 ## TL;DR
 
@@ -47,17 +61,17 @@ because the heavy lifting is yours.
 ```
 SAMPLE_TRANSPORT <gauge_field_name>
   ALONG_LOOP <loop_id>
-  CONTROL_MANIFOLD (Q, theta)        // v3.1: must be >= 2D
+  CONTROL_MANIFOLD (Q, beta_wilson)        // v3.1: must be >= 2D
   ADIABATIC TRUE
   RAMP_RATE_Q <float>                // |dQ/dt| in Q-units per sim time unit
-  RAMP_RATE_THETA <float>             // |dtheta/dt| in rad per sim time unit
+  RAMP_RATE_BETA_W <float>            // |d(beta_W)/dt| per sim time unit
   DRIVE_OMEGA <float>                 // lock-in carrier frequency
   DRIVE_F0 <float>                    // test-mass drive amplitude
   N_DISCRETIZATION <int>              // substeps along the loop
   PIN_LAMBDA_Q <float>                // soft-pin strength on Q
-  PIN_LAMBDA_THETA <float>            // soft-pin strength on theta
+  PIN_LAMBDA_BETA_W <float>           // soft-pin strength on beta_W
   EPS_Q <float>                       // tracking-error tolerance on Q
-  EPS_THETA <float>                   // tracking-error tolerance on theta
+  EPS_BETA_W <float>                  // tracking-error tolerance on beta_W
   ALPHA_HALCYON <float>               // coupling calibration
   TAU_0 <float> BETA_TAU <float>       // tau_Q model parameters
   MU_BASELINE <float> K_SPRING <float> C_DAMP <float>  // test-mass parameters
@@ -67,14 +81,39 @@ SAMPLE_TRANSPORT <gauge_field_name>
   // so the Python side can form the antisymmetric primary observable.
   COMPUTE HOLONOMY_FORWARD           // primary: traverse loop in nominal direction
   COMPUTE HOLONOMY_REVERSED           // companion: traverse same loop reversed
-  COMPUTE TRACKING_ERROR_TRACE        // per-substep |Q_surrogate - Q_target|, same for theta
+  COMPUTE TRACKING_ERROR_TRACE_Q       // per-substep |Q_surrogate - Q_target|
+  COMPUTE TRACKING_ERROR_TRACE_BETA_W  // per-substep |beta_W_surrogate - beta_W_target|
   COMPUTE ADIABATICITY_CHECK          // T_drive vs T_segment vs tau_relax check
   RETURN H_forward, H_reversed,
          sigma_H_blocked,
          per_seed_H_forward, per_seed_H_reversed,
-         tracking_error_max_Q, tracking_error_max_theta,
+         tracking_error_max_Q, tracking_error_max_beta_W,
          adiabaticity_check
 ```
+
+**Concrete v3.1.1 numerical values** (from SPEC v3.1.1 §4.4, locked
+at the pre-registration commit hash):
+
+| parameter | value |
+|---|---|
+| `CONTROL_MANIFOLD` | `(Q, beta_wilson)` |
+| Q range | `[0.0, 2.0]` |
+| β_W range | `[2.0, 3.0]` |
+| T_loop | 200.0 |
+| T_segment | 50.0 |
+| `RAMP_RATE_Q` | 0.04 |
+| `RAMP_RATE_BETA_W` | 0.02 |
+| `DRIVE_OMEGA` | 1.0 |
+| `DRIVE_F0` | 0.01 |
+| `N_DISCRETIZATION` | 10000 (dt = 0.02 over T_loop = 200) |
+| `PIN_LAMBDA_Q` | 1.0 |
+| `PIN_LAMBDA_BETA_W` | 1.0 |
+| `EPS_Q` | 0.05 |
+| `EPS_BETA_W` | 0.05 |
+| `TAU_0` / `BETA_TAU` (τ_Q model) | 1.0 / 2.0 |
+| `MU_BASELINE` / `K_SPRING` / `C_DAMP` | 1.0 / 1.0 / 0.1 |
+| `ALPHA_HALCYON` | 1.0 and 1000.0 (two pre-registered calibrations) |
+| seeds | `[20260616 .. 20260623]` (8 seeds) |
 
 The Python orchestrator then constructs:
 
@@ -91,22 +130,25 @@ Loop specs are first-class objects, declared earlier in the GQL block:
 
 ```
 LOOP gamma_unit:
-  // v3.1: closed rectangle on (Q, theta), encloses area Q_max * pi
-  CONTROL_MANIFOLD (Q, theta)
-  PATH:  (Q=0,   theta=0)
-      -> (Q=2,   theta=0)
-      -> (Q=2,   theta=PI)
-      -> (Q=0,   theta=PI)
-      -> (Q=0,   theta=0)
-  T_LOOP 100.0
+  // v3.1.1: closed rectangle on (Q, beta_W), encloses area 2*1 = 2
+  CONTROL_MANIFOLD (Q, beta_wilson)
+  PATH:  (Q=0.0, beta_W=2.0)
+      -> (Q=2.0, beta_W=2.0)
+      -> (Q=2.0, beta_W=3.0)
+      -> (Q=0.0, beta_W=3.0)
+      -> (Q=0.0, beta_W=2.0)
+  T_LOOP 200.0
   SEGMENTS PIECEWISE_LINEAR
 
 LOOP gamma_degenerate:
   // zero-area loop for sham S_5
-  CONTROL_MANIFOLD (Q, theta)
-  PATH: (Q=0, theta=0) -> (Q=0, theta=0)
-  T_LOOP 100.0
+  CONTROL_MANIFOLD (Q, beta_wilson)
+  PATH: (Q=0.0, beta_W=2.5) -> (Q=0.0, beta_W=2.5)
+  T_LOOP 200.0
 ```
+
+(β_W = 2.5 for the degenerate loop is the Migdal–Witten canonical
+operating point; any single point in Λ would do.)
 
 The reversed loop is generated substrate-side by traversing
 `gamma_unit` time-reversed; the Python side does not need to declare
