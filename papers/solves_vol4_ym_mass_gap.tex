@@ -466,7 +466,38 @@ Both are correctly implementing what they claim to measure. The SPEC's choice to
 
 This is the actual scientific content of A.7.1: \emph{the battery is doing its job by failing}. A real signal needs either (a) a stronger predicted coupling --- $\alpha_{\rm Halcyon}$ calibrated from the Davis Field Equations rather than set to 1.0 by convention; (b) a longer measurement window that the gauge dynamics do not relax through (the $H_8$ drift); or (c) an actively driven $Q$ sector that the apparatus pins, not the passive initial-condition bias the simulation currently uses. All three are open work tracked outside this chapter. The simulation cannot supply the independent value of $\alpha_{\rm Halcyon}$; that comes from the Field Equations.
 
-\textbf{What this commits the chapter to.} The simulation has demonstrated that the SPEC v2 extractor discipline is operative: it refuses to score a passing verdict when the signal is below the observation floor. The four-of-five strikes in \texttt{--battery-fast} reflect internal model consistency (which is real and useful for verifying the framework's mechanics), not an observable apparatus claim. The three-of-seven strikes in the full battery reflect the apparatus-side reality at the current calibration. Both are honest readings of what each test asks. The chapter's load-bearing claim --- $\partial_Q \mu_Q \ne 0$ in observation space --- is not yet substantiated by this simulation at the SPEC's default $\alpha_{\rm Halcyon}$ and will require either re-calibration or a longer-window measurement protocol. That is the open item the next chapter version will address. The SPEC v2 design document is \texttt{inertia\_damping/HALCYON\_FALSIFICATION\_BATTERY\_SPEC.md}. Reproducibility command:
+\textbf{What this commits the chapter to.} The simulation has demonstrated that the SPEC v2 extractor discipline is operative: it refuses to score a passing verdict when the signal is below the observation floor. The four-of-five strikes in \texttt{--battery-fast} reflect internal model consistency (which is real and useful for verifying the framework's mechanics), not an observable apparatus claim. The three-of-seven strikes in the full battery reflect the apparatus-side reality at the current calibration. Both are honest readings of what each test asks. The chapter's load-bearing claim --- $\partial_Q \mu_Q \ne 0$ in observation space --- is not yet substantiated by this simulation at the SPEC's default $\alpha_{\rm Halcyon}$ and will require either re-calibration or a longer-window measurement protocol. That is the open item the next chapter version will address.
+
+\subsection*{A.7.2 The calibrated run: $\alpha_{\rm Halcyon}=1000$ surfaces the second blocker}
+
+A.7.1's diagnosis pointed at $\alpha_{\rm Halcyon}=1.0$ as a calibration too small to produce an observable shift. A frozen-gauge calibration scan confirmed that the per-$Q$ instantaneous $|\chi|$ spread scales monotonically with $\alpha$: $\alpha=1$ gives a spread of $0.005$ (under noise), $\alpha=100$ gives $0.41$, $\alpha=1000$ gives $1.60$, $\alpha=10000$ saturates near the unphysical limit. The natural follow-up is the second full-battery run at $\alpha_{\rm Halcyon}=1000$, on the contracted $\omega$ grid $\{1.0, 3.0, 10.0\}\times\omega_c$ (dropping the quasi-static cells where the period exceeded $t_{\rm total}$).
+
+Sidecar of record: \texttt{battery\_calibrated\_20260621\_011304.json}, SHA-256 \texttt{8183edfa936aeddfa3ba719ce6971f1237e3f0108bd5eba70e59dd558575d037}, 55.5\,min wall, 8 seeds, 3 $\omega$, 3 $Q$, $n_{\rm steps}=1200$, $\alpha_{\rm Halcyon}=1000$, gauge dynamics live. The result:
+
+\begin{itemize}
+    \item Verdict: \textsc{fail\_signal\_missing} again. $|\alpha_{\rm fitted}|/\sigma_\alpha = 0.52$ --- only 2.5$\times$ better than the $\alpha=1$ run despite the 1000$\times$ bump in coupling.
+    \item $H_5$ (amplitude linearity): \textsc{strike} (rel slope effectively zero).
+    \item $H_6$ ($\chi(\omega)$ fit quality): \textsc{not struck}, $\chi^2/\mathrm{dof}$ dropped 5 orders of magnitude (from $1.3\times 10^8$ to $1777$). The fit is no longer hopeless --- the per-$Q$ curves are now distinguishable in principle --- but they are still not consistent with the 3-parameter Lorentzian.
+    \item $H_8$ ($Q$ drift): \textsc{not struck}. Mean rel.\ drift $20.5\%$, max $128\%$. Not improved by the $\alpha$ bump --- this is a separate physics constraint.
+    \item $H_1, H_9$: strike as before, by the internal extractor.
+\end{itemize}
+
+\textbf{The diagnosis sharpens.} The $\alpha$ bump did exactly what a calibration bump should do: it moved the predicted signal up by 1000$\times$. But the observation-space SNR went up only 2.5$\times$, not 1000$\times$. The difference --- a factor of $\sim 400$ --- is the noise floor's own scaling with $\alpha$. The same gauge-field dynamics that produce $\mu_{\rm eff}(Q)$ also produce the $H_8$ drift; bumping $\alpha$ amplifies both. The signal-to-noise ratio asymptotes to the timescale ratio
+$$
+\frac{S}{N} \;\sim\; \frac{\tau_{\rm Q\,relaxation}}{t_{\rm total}},
+$$
+not to $\alpha$. Pushing $\alpha$ harder will not close $H_8$ --- only changing the measurement-window-to-relaxation-time ratio will.
+
+\textbf{The real blocker, named cleanly.} The simulation as designed has no active $Q$-pinning mechanism. The buckyball Hamiltonian's minimum-energy state is the trivial vacuum at $Q_{\rm surrogate}=0$, and any non-trivial initial condition (the simulation's $Q=1, 2$ sectors) is a perturbation that relaxes back during measurement. A real apparatus pins $Q$ through the cage's continuous drive of the Josephson junctions --- the cage doesn't \emph{prepare} $Q$ and then \emph{watch} it decay; it \emph{holds} $Q$ throughout measurement. The simulation's passive initial-condition protocol is the wrong model for this.
+
+\textbf{Three paths forward, named for SPEC v3.}
+\begin{enumerate}
+    \item \textbf{Add an active $Q$-restoring potential} $V_{\rm pin}(U) = \lambda_{\rm pin}\,(Q_{\rm surrogate}(U) - Q_{\rm target})^2$ to the gauge Hamiltonian. This models the cage's continuous drive. Changes the dynamics; needs unit tests to verify symplecticity and to confirm the pinning does not itself contaminate the lock-in via parametric coupling.
+    \item \textbf{Use a measurement window shorter than the $Q$-relaxation timescale}, with proportionally higher drive frequencies. Requires re-design of the sweep grid: $\omega$-min set by ``at least 5 cycles in $t_{\rm short}$,'' $t_{\rm short}$ set by ``$Q$ drift $< 3\%$ over the window.'' Likely $t_{\rm short} \approx 3$ time units, $\omega \geq 10$, drive cycles in $\{2, 5, 10\}\times\omega_c$. Trade-off: fewer cycles per cell means noisier demodulation per cell, so more seeds needed.
+    \item \textbf{Accept H$_8$ as a hardware-only gate}, in the same spirit as H$_2$/H$_3$/H$_4$. The simulation predicts the absence of $Q$-pinning is the dominant blocker; the apparatus is responsible for closing $H_8$ through its drive design.
+\end{enumerate}
+
+This chapter does not pick a winner among the three. SPEC v3 is the next design-doc revision; the simulation-side measurement architecture is the next implementation revision. The chapter v4.4 ships with A.7.1 and A.7.2 as the honest 3-stage diagnostic: smoke mode read internal state (passed), full mode with the proper extractor caught the calibration gap (revealed $\alpha$-scale was unobservable), and the calibrated run with the bumped $\alpha$ caught the $H_8$ drift as the deeper blocker (revealed the simulation's passive-Q-bias protocol is the wrong model for the apparatus). \textbf{Each stage of the battery, by failing, makes the experimental claim more falsifiable, not less.} The SPEC v2 design document is \texttt{inertia\_damping/HALCYON\_FALSIFICATION\_BATTERY\_SPEC.md}. Reproducibility command:
 \begin{verbatim}
 python -m inertia_damping.scripts.run_battery --fast
 \end{verbatim}
