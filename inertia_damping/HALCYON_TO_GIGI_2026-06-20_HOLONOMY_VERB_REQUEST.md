@@ -1,23 +1,25 @@
-# Halcyon → Gigi — Holonomy verb for the v3.1 falsification battery
+# Halcyon → Gigi — Holonomy verb for the v3.1.3 falsification battery
 
-**Date:** 2026-06-20 (amended same day to v3.1 after external review)
+**Date:** 2026-06-20 (amended same day through v3.1.3 after four rounds of pre-deposit technical review)
 **Pattern:** same as the `--use-gigi` flag spec and the Part V SNAPSHOT
 gates — Halcyon writes the substrate request, Gigi designs the engine-
 side implementation, the two coordinate via this letter pattern.
-**Authoritative SPEC:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.2.md`
-(the v3.0, v3.1, and v3.1.1 drafts were caught in three rounds of
-external review before Zenodo deposit; v3.1.2 is the patched contract
-that goes to deposit). Read §2.2, §4.4, and §7.4 of v3.1.2 first; this
-letter is the implementation request that falls out of those sections.
+**Authoritative SPEC:** `inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.3.md`
+(the v3.0, v3.1, v3.1.1, and v3.1.2 drafts were caught in four rounds
+of pre-deposit technical review before Zenodo deposit; v3.1.3 is the
+patched contract that goes to deposit). Read §2.2, §4.4, and §7.4 of
+v3.1.3 first; this letter is the implementation request that falls
+out of those sections.
 
-**Key v3.1.2 patches that change this letter from its earlier drafts:**
+**Key v3.1.3 substrate-side asks that this letter encodes:**
 - The loop lives on a **multi-dimensional control manifold Λ = (Q, β_W)**,
   not on Q alone. A 1D Q-only path encloses zero area and trivially
   returns zero holonomy by FTC; v3.1 needed a 2D loop and v3.1.1
   locked the second coordinate to the **Wilson gauge coupling β_W**
   (same β that GIGI's existing `gauge_field` declarations carry —
-  no new conceptual introduction). **v3.1.2 range:** `β_W ∈ [2.5, 3.0]`,
-  *tightened from v3.1.1's `[2.0, 3.0]`* to keep the loop strictly
+  no new conceptual introduction). **v3.1.3 range:** `β_W ∈ [2.5, 3.0]`
+  (locked at v3.1.2, carried forward in v3.1.3, *tightened from v3.1.1's
+  `[2.0, 3.0]`*) to keep the loop strictly
   inside the SU(2) Q-observable regime the program's earlier
   validation work has trusted (JOURNAL: β=2.5 and 2.7 clean, β=2.3
   marginal failure). The Migdal–Witten canonical 2.5 is at the
@@ -32,7 +34,18 @@ letter is the implementation request that falls out of those sections.
   β_W independently) so that active pinning cannot become a hidden
   signal source.
 - The substrate must pass a six-contract acceptance battery
-  (`GC₁`–`GC₆` in v3.1.1 §7) before Halcyon calls it for science.
+  (`GC₁`–`GC₆` in v3.1.3 §7.4) before Halcyon calls it for science.
+- **v3.1.3 patch:** `GC₅` now carries a science-value gate — the
+  call below uses `N_DISCRETIZATION = 10000`, which lies inside the
+  GC₅ convergence bracket `{1000, 2000, 4000, 8000, 16000}`. The
+  substrate must block science calls if the `8000 → 16000` relative
+  change in H is `≥ 1%`.
+- **v3.1.3 patch:** the `ADIABATICITY_CHECK` return must include a
+  quantitative `τ_pin / T_segment` measurement (not a boolean). The
+  SPEC's prose target is `τ_pin ~ 1` at `λ_pin = 1.0`, giving
+  `τ_pin / T_segment ~ 0.02`; the substrate is responsible for
+  measuring it. A reported ratio `≥ 0.1` forces AMBIGUOUS regardless
+  of H values, on the same grounds as a tracking-error violation.
 
 **Disambiguation up front:** `β_W` is the **Wilson gauge coupling**
 appearing in `S_W = (β_W / N) Σ_f [N − Re Tr U_f]`. `BETA_TAU` is the
@@ -87,7 +100,7 @@ SAMPLE_TRANSPORT <gauge_field_name>
   COMPUTE HOLONOMY_REVERSED           // companion: traverse same loop reversed
   COMPUTE TRACKING_ERROR_TRACE_Q       // per-substep |Q_surrogate - Q_target|
   COMPUTE TRACKING_ERROR_TRACE_BETA_W  // per-substep |beta_W_surrogate - beta_W_target|
-  COMPUTE ADIABATICITY_CHECK          // T_drive vs T_segment vs tau_relax check
+  COMPUTE ADIABATICITY_CHECK          // returns numerical tau_pin/T_segment ratio (v3.1.3); AMBIGUOUS if >= 0.1
   RETURN H_forward, H_reversed,
          sigma_H_blocked,
          per_seed_H_forward, per_seed_H_reversed,

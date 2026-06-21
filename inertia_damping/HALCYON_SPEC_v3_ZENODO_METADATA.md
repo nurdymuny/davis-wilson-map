@@ -1,18 +1,25 @@
-# Zenodo Deposit Metadata — Halcyon Falsification Battery SPEC v3.1.2
+# Zenodo Deposit Metadata — Halcyon Falsification Battery SPEC v3.1.3
 
 **Purpose of this file.** Paste-ready metadata for the Zenodo deposit of
-`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.2.md`. The Zenodo DOI minted
+`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.3.md`. The Zenodo DOI minted
 from this deposit becomes the publication-level pre-registration of the
-v3.1.2 falsification criteria, to be cited in Solves Vol.\ 4
-Appendix A.8 when the v3.1.2 protocol runs.
+v3.1.3 falsification criteria, to be cited in Solves Vol.\ 4
+Appendix A.8 when the v3.1.3 protocol runs.
 
-**Four-stage review history before deposit (all preserved):**
+**Five-stage review history before deposit (all preserved):**
+
+The reviews that produced v3.1.3 are *pre-deposit technical reviews* —
+model-assisted reviews of the SPEC's mathematical content and protocol
+executability, performed before deposit to catch defects in the
+falsification criteria themselves. They are explicitly *not* a
+substitute for human peer review, which is reserved for the §8.5
+stopping-rule committee and any journal submission process.
 
 - **v3.0** (`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md`, commit
   `0fe654d556e4f6878c439df64d1ff20599c9c733`): first-draft
-  pre-registration. External review round 1 caught two mathematical
-  defects (scalar holonomy vanishing by FTC; adiabaticity inequality
-  reversed) and five protocol-discipline issues.
+  pre-registration. Round-1 pre-deposit technical review caught two
+  mathematical defects (scalar holonomy vanishing by FTC; adiabaticity
+  inequality reversed) and five protocol-discipline issues.
 - **v3.1** (`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md`, commit
   `712109488d43cf2fcd43b8d2bc8b5a1b053579ec`): patched the two
   mathematical defects and the five protocol issues. Round 2 caught
@@ -23,38 +30,47 @@ Appendix A.8 when the v3.1.2 protocol runs.
   (β_W range traversed below the SU(2) Q-observable's validated
   regime) plus three smaller patches (self-containedness, ε_abs
   rationale, NULL-branch sign-coherence).
-- **v3.1.2** (this commit, hash TBD at time of writing): patched
-  the validity-window blocker (β_W now `[2.5, 3.0]`, inside the
-  validated regime) and the three smaller issues. The canonical
-  pre-registered protocol. Goes to Zenodo.
+- **v3.1.2** (`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.2.md`, commit
+  `f4cfa1444a72e94c67f5cc2b7bfee51aeaf4666a`): patched the
+  validity-window blocker (β_W now `[2.5, 3.0]`, inside the validated
+  regime) and the three smaller issues. Round 4 caught three
+  wording / audit-tightness issues (act-language distinction between
+  pre-deposit technical review and human peer review; science-value
+  gate on GC₅; substrate-gated τ_pin claim).
+- **v3.1.3** (this commit, hash TBD at time of writing): patched
+  those three issues. The canonical pre-registered protocol. Goes to
+  Zenodo.
 
-The v3.0, v3.1, and v3.1.1 drafts are preserved as first-class
-artefacts in the repository for the chain of custody; the v3.1.2
+The v3.0, v3.1, v3.1.1, and v3.1.2 drafts are preserved as first-class
+artefacts in the repository for the chain of custody; the v3.1.3
 commit hash is the document that goes to Zenodo as the cited
 pre-registration.
 
 ## What to upload
 
-All four SPEC files, as a single Zenodo deposit (Zenodo supports
+All five SPEC files, as a single Zenodo deposit (Zenodo supports
 multi-file uploads):
 
-1. **`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.2.md`** — the canonical
+1. **`HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.3.md`** — the canonical
    pre-registered protocol (the actual contract; the SPEC §3
    falsification criteria committed to publication-level
    pre-registration).
-2. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.1.md` — third-draft,
+2. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.2.md` — fourth-draft,
+   marked "fourth-draft pre-registration; superseded by v3.1.3 before
+   deposit after round-4 pre-deposit technical review. Preserved for
+   the chain of custody."
+3. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.1.md` — third-draft,
    marked "third-draft pre-registration; superseded by v3.1.2 before
-   deposit after round-3 external review. Preserved for the chain of
-   custody."
-3. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md` — second-draft,
+   deposit after round-3 pre-deposit technical review."
+4. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.md` — second-draft,
    marked "second-draft pre-registration; superseded by v3.1.1 before
-   deposit after round-2 external review."
-4. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md` — first-draft,
+   deposit after round-2 pre-deposit technical review."
+5. `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.md` — first-draft,
    marked "first-draft pre-registration; superseded by v3.1 before
-   deposit after round-1 external review."
+   deposit after round-1 pre-deposit technical review."
 
 No accompanying figures, datasets, or supplementary code. The SPECs
-are self-contained. The four-stage history demonstrates that
+are self-contained. The five-stage history demonstrates that
 pre-registration with allowed-before-deposit correction is working:
 each review pass caught real issues that a one-pass pre-registration
 would have locked in.
@@ -68,7 +84,7 @@ publishable either way).
 
 ### Title
 ```
-Halcyon Falsification Battery — SPEC v3.1.2 (Pre-Registration):
+Halcyon Falsification Battery — SPEC v3.1.3 (Pre-Registration):
 Closed-Loop Holonomy on the (Q, β_W) Control Manifold
 within the Validated SU(2) Operating Regime
 as the Load-Bearing Falsifier on the Buckyball Substrate
@@ -102,7 +118,7 @@ as the Load-Bearing Falsifier on the Buckyball Substrate
   (fixed-Q lock-in).
 </p>
 <p>
-  <strong>v3.1.2 redesigns the measurement to match the framework's
+  <strong>v3.1.3 redesigns the measurement to match the framework's
   native observable and the apparatus's native protocol: closed-loop
   holonomy of a real connection 1-form on a two-dimensional programmed
   control manifold Λ = (Q, β_W), where Q is the surrogate sector
@@ -116,7 +132,7 @@ as the Load-Bearing Falsifier on the Buckyball Substrate
   holonomies, with the symmetric H_sys reported as a systematic-offset
   diagnostic. The simulation delegates the substrate computation to the
   GIGI engine's <code>SAMPLE_TRANSPORT … ALONG_LOOP … CONTROL_MANIFOLD …
-  ADIABATIC</code> verb (pending GIGI spec extension), making the v3.1.2
+  ADIABATIC</code> verb (pending GIGI spec extension), making the v3.1.3
   audit surface a two-layer inversion: substrate correctness is reviewable
   through the engine's test suite plus a six-contract verb acceptance
   battery (GC₁–GC₆: flat-connection-zero, area-law, reversed-loop
@@ -128,13 +144,14 @@ as the Load-Bearing Falsifier on the Buckyball Substrate
   Section 3 specifies the numerical thresholds (POSITIVE / NULL / AMBIGUOUS),
   the five sham controls (S₄ folded into the antisymmetric primary
   observable), and the stopping rule (two independent measurement
-  designs both returning NULL with external review of independence
-  constitutes simulation-level falsification, and the program does not
-  iterate further without external review). Section 8 commits to
-  publication of whatever v3.1.2 returns, regardless of outcome, with the
+  designs both returning NULL with external human peer review of
+  independence (the §8.5 stopping-rule committee) constitutes
+  simulation-level falsification, and the program does not iterate
+  further without that human peer review). Section 8 commits to
+  publication of whatever v3.1.3 returns, regardless of outcome, with the
   Solves Vol.&nbsp;4 chapter incorporating the result as Appendix A.8.
   The git commit hash on the GitHub repository
-  (<code>nurdymuny/davis-wilson-map</code>, commit hash from v3.1.2's
+  (<code>nurdymuny/davis-wilson-map</code>, commit hash from v3.1.3's
   initial push) is the implementation-level pre-registration timestamp;
   this Zenodo DOI is the publication-level pre-registration.
 </p>
@@ -144,24 +161,29 @@ as the Load-Bearing Falsifier on the Buckyball Substrate
   <code>battery_full_20260620_181227.json</code>,
   <code>battery_calibrated_20260621_011304.json</code>) are preserved as
   first-class artefacts in the repository, not deprecated. v2 becomes
-  the adiabatic-limit control case for v3.1.2 in either result direction.
+  the adiabatic-limit control case for v3.1.3 in either result direction.
 </p>
 <p>
-  Predecessor draft SPECs (v3.0, v3.1, v3.1.1) are included in this
-  deposit for transparency of the four-round review-and-patch
-  process that produced v3.1.2. Each draft's §0 changelog names every
-  patch and which review surfaced it.
+  Predecessor draft SPECs (v3.0, v3.1, v3.1.1, v3.1.2) are included in
+  this deposit for transparency of the five-round review-and-patch
+  process that produced v3.1.3. Each draft's §0 changelog names every
+  patch and which round surfaced it. The reviews are *pre-deposit
+  technical reviews* — model-assisted reviews of the SPEC's mathematical
+  content and protocol executability, completed before deposit and
+  distinct from human peer review (the latter is reserved for the §8.5
+  stopping-rule committee).
 </p>
 <p>
   The methodological discipline that produced this pre-registration —
   writing the falsification criteria <em>before</em> any v3 implementation
   exists, naming the stopping rule, committing to publish all outcomes,
-  iterating four times across external review with every draft preserved —
-  follows the standard set by the Halcyon program's pre-registered
-  apparatus-side seven-gate kill chain and is documented in the SPEC's
-  acknowledgments (§11). The cost of admission to either credibility —
-  positive or negative — is the same: two independent measurements,
-  publicly committed in advance, externally reviewed.
+  iterating five times across pre-deposit technical review with every
+  draft preserved — follows the standard set by the Halcyon program's
+  pre-registered apparatus-side seven-gate kill chain and is documented
+  in the SPEC's acknowledgments (§11). The cost of admission to either
+  credibility — positive or negative — is the same: two independent
+  measurements, publicly committed in advance, externally peer-reviewed
+  by the named §8.5 human committee.
 </p>
 ```
 
@@ -193,7 +215,7 @@ restricts who can cite it in industry research contexts.
 | Relation | Identifier | Resource type |
 |---|---|---|
 | `is supplement to` | https://doi.org/10.5281/zenodo.17942784 | Publication / Preprint (Yang–Mills v6) |
-| `is part of` | https://github.com/nurdymuny/davis-wilson-map (at the v3.1.2 commit hash; insert once known) | Software |
+| `is part of` | https://github.com/nurdymuny/davis-wilson-map (at the v3.1.3 commit hash; insert once known) | Software |
 | `is documented by` | (the eventual Solves Vol. 4 v5 DOI when minted) | Publication |
 | `references` | The v2.1 SPEC's own commit hash for v2 (look it up in `git log -- inertia_damping/HALCYON_FALSIFICATION_BATTERY_SPEC.md`) | Software / Other |
 | `references` | https://doi.org/10.5281/zenodo.20438796 | Publication (Geometric Encryption — establishes the bundle/connection framing) |
@@ -205,41 +227,52 @@ Davis Geometric, Inc. internal R&D.
 
 ```
 This is a pre-registered protocol specification. The simulation has not
-been run against v3.1.2 at the time of deposit. The deposit's purpose
+been run against v3.1.3 at the time of deposit. The deposit's purpose
 is to fix the falsification criteria of §3 in the public record before
 any v3 implementation exists, distinguishing honest measurement-design
 redesign from post-hoc protocol-shopping. Pre-registration follows the
 standard set by the Halcyon program's apparatus-side seven-gate kill
 chain.
 
-Four review iterations completed before deposit:
+Five review iterations completed before deposit:
 - Gigi's methodological intervention establishing pre-registration discipline
-- GPT round 1: caught the two math defects (scalar holonomy = 0 by FTC;
-  reversed adiabaticity inequality)
-- GPT round 2: caught seven executability issues
-- GPT round 3: caught the β_W validity-window blocker (range tightened
-  to [2.5, 3.0] from [2.0, 3.0] to stay inside the SU(2) Q-observable
+- Round 1 (pre-deposit technical review): caught the two math defects
+  (scalar holonomy = 0 by FTC; reversed adiabaticity inequality)
+- Round 2: caught seven executability issues
+- Round 3: caught the β_W validity-window blocker (range tightened to
+  [2.5, 3.0] from [2.0, 3.0] to stay inside the SU(2) Q-observable
   validated regime), plus three smaller patches (self-containedness,
   ε_abs rationale, NULL-branch sign-coherence)
+- Round 4: caught three wording / audit-tightness issues
+  (act-language distinction between pre-deposit technical review and
+  human peer review; science-value gate on GC₅; substrate-gated τ_pin
+  claim)
 
-All four draft SPECs (v3.0, v3.1, v3.1.1) are included in this deposit
-for chain-of-custody transparency. v3.1.2 is the canonical contract.
+The rounds are *pre-deposit technical reviews* — model-assisted
+reviews of the SPEC's mathematical content and protocol executability,
+performed before deposit. They are not a substitute for human peer
+review, which is reserved for the §8.5 stopping-rule committee and
+any subsequent journal submission process.
+
+All four predecessor draft SPECs (v3.0, v3.1, v3.1.1, v3.1.2) are
+included in this deposit for chain-of-custody transparency. v3.1.3 is
+the canonical contract.
 
 Companion SPEC (Halcyon → GIGI verb request) lives in the repository at
 inertia_damping/HALCYON_TO_GIGI_2026-06-20_HOLONOMY_VERB_REQUEST.md.
 
-The v3.1.2 git commit hash (insert when known) is the canonical
+The v3.1.3 git commit hash (insert when known) is the canonical
 implementation-level timestamp.
 ```
 
 ## After the Zenodo DOI is minted
 
-1. Add a `Zenodo DOI:` line near the top of the v3.1.2 SPEC file
+1. Add a `Zenodo DOI:` line near the top of the v3.1.3 SPEC file
    referencing the new DOI.
 2. Commit and push that single-line edit. The post-deposit commit is
    *not* part of the pre-registration — it merely records the DOI
    pointer.
-3. Solves Vol.\ 4 Appendix A.7.2 (or v5 Appendix A.8 when the v3.1.2
+3. Solves Vol.\ 4 Appendix A.7.2 (or v5 Appendix A.8 when the v3.1.3
    run lands) cites the Zenodo DOI as the pre-registration record.
 
 ## What this deposit is NOT
