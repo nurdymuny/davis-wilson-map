@@ -61,12 +61,21 @@ substrate v1 reply scope estimate).
   list from the design closeout §B.2 (alpha, tau_0, beta_tau,
   mu_baseline, K_spring, c_damp, drive_omega, drive_F0,
   pin_lambda_{Q,beta_W}, eps_{Q,beta_W}).
-- The five science-gate sham flags inside a nested `SHAM { ... }`
-  block: `FLAT_FIELD`, `ALPHA_ZERO`, `MASS_SCALED` (with
-  `sham_mass_scale: Option<f64>`), `BACKTRACK_LOOP`, `FROZEN_FIELD`.
-- The two substrate-internal audit-story flags: `EMPTY_LOOP`,
-  `OPEN_LOOP` (not science-gate, but ship for the substrate's own
-  audit story).
+- The **five science-gate sham flags** inside a nested `SHAM { ... }`
+  block — these are the Halcyon-side ask, gated by v3.1.3 §5:
+  `FLAT_FIELD`, `ALPHA_ZERO`, `MASS_SCALED` (with
+  `sham_mass_scale: Option<f64>`), `BACKTRACK_LOOP` (canonical S₅
+  mapping), `FROZEN_FIELD`. These five are required for v3.1.3
+  science calls.
+- **Two optional substrate-internal audit-story flags** named in
+  Halcyon v1 reply §D.1 but **NOT in the v3.1.3 deposited SPEC and
+  NOT required by Halcyon's gates**: `EMPTY_LOOP` (GC₄ companion —
+  stronger zero-area sanity than `DEGENERATE_LOOP` alone) and
+  `OPEN_LOOP` (parser-rejection test for input validation). Ship at
+  substrate discretion; the Halcyon orchestrator never sets them and
+  the v3.1.3 verdict logic never reads them. **VI.3 SHAM-block
+  implementation is not blocked on enumerating these** — the five
+  flags above are the complete Halcyon-side ask.
 - A `LoopRegistry` mirroring `GaugeFieldRegistry` (CC-LT-1 path (a)).
 
 **What this unblocks:** GC tests can be written against it.
@@ -113,7 +122,8 @@ file, `#[cfg(feature = "halcyon")]`).
   Halcyon-side consumer).
 - `SHAM_FROZEN_FIELD` — skip the U-update entirely in `drift_step`.
 
-**Plus the two audit-story flags:**
+**Plus the two optional audit-story flags** (substrate-side
+discretion; not Halcyon-side asks; not required for v3.1.3):
 - `SHAM_EMPTY_LOOP` — GC₄ companion (no segments).
 - `SHAM_OPEN_LOOP` — parser-rejection test.
 
