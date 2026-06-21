@@ -1,9 +1,55 @@
-# Halcyon Falsification Battery — SPEC (v2)
+# Halcyon Falsification Battery — SPEC (v2.1)
 
 **Status:** design-locked, ready to implement
-**Date:** 2026-06-20
+**Date:** 2026-06-20 (v2.1 amended 2026-06-20 PM after first full-battery run)
 **Predecessors:** Solves Vol. 4 Appendix A.6 (the thread experiment + dynamic
 transfer-function target), HALCYON_USE_GIGI_FLAG_SPEC.md (the integration pattern this follows)
+
+## v2.1 changelog (the calibration finding)
+
+The first full-battery run (per-Q χ(ω) fit extractor wired up) returned
+`FAIL_SIGNAL_MISSING` at the SPEC v2 default `α_Halcyon = 1.0`. Diagnosis:
+the predicted `μ_eff/μ_baseline` shift is ~60 ppm at this calibration,
+below the lock-in noise floor of a ~30 time-unit driven trajectory.
+The smoke-mode extractor (slope-through-origin on internal `mu_eff_mean`)
+passed at 15.6σ; the full-mode extractor (per-Q χ(ω) fit on observed
+susceptibility) failed at 0.21σ. Both are honest readings of what each
+test asks — the two extractors are different epistemic objects.
+
+This SPEC v2.1 adds:
+
+- **The two-extractor distinction made explicit.** §3 now clarifies that
+  `extract_alpha` reads the model's internal state (mechanical-consistency
+  check) and `extract_alpha_from_fits` reads what an apparatus would
+  observe (load-bearing falsifier). The SPEC's stricter gate is the
+  observation-space extractor; the internal extractor is retained as a
+  *plumbing* check.
+- **A.7.1 calibration receipt** added to the open queue: the simulation
+  cannot supply the independent `α_Halcyon` value; that comes from a
+  closed-form derivation in the Davis Field Equations at β=2.5 on the
+  buckyball substrate.
+- **H8 drift gate tightening recommended.** The full run showed
+  mean Q-drift of 18.5% at t_total=30 time units; the gate was set to
+  3%, but this implicitly assumed the gauge-field initial-condition Q-bias
+  would be preserved through measurement. The simulation has no active
+  Q-pinning mechanism, so the bias decays toward trivial vacuum. The
+  apparatus must actively drive Q (not passively bias it via initial
+  conditions); the simulation should either (a) add a Q-restoring
+  potential to the gauge Hamiltonian, (b) use a shorter t_total than
+  the relaxation timescale, or (c) report H8 as a constraint on the
+  measurement window rather than a binary gate. Tracked for SPEC v3.
+- **ω grid contraction.** ω=0.1 (period 62.8) was longer than t_total=30,
+  so that cell never completed one drive cycle. The lock-in demodulator
+  returned garbage from those cells. Revised default ω grid is
+  `{1.0, 3.0, 10.0}` × ω_c — the inertial transition + impulsive limit,
+  excluding the quasi-static cell that requires longer windows than H8
+  drift permits.
+- **CLI exposure of α_Halcyon.** `run_battery_full(alpha_halcyon=...)`
+  added so the calibration scan is parameterizable.
+
+The v2 grid (H₀..H₉), gate thresholds, and protocol definitions are
+otherwise unchanged. The discipline is the same; the v2.1 amendments
+are about how to *use* the SPEC, not what it specifies.
 
 ## v2 changelog (responses to the 2026-06-20 adversarial review)
 

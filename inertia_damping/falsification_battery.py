@@ -169,6 +169,7 @@ def measure_chi_at_cell(graph, Q_label: int, omega: float, seed: int,
                         use_alternative_tau: bool = False,
                         mu_proxy: float = 1.0,
                         freeze_gauge: bool = False,
+                        alpha_halcyon: float = 1.0,
                         ) -> Dict[str, Any]:
     """Run one lock-in measurement at (Q, omega, seed).
 
@@ -184,6 +185,7 @@ def measure_chi_at_cell(graph, Q_label: int, omega: float, seed: int,
         c_damp=0.1,
         mu_proxy=mu_proxy,
         use_alternative_tau=use_alternative_tau,
+        alpha_halcyon=alpha_halcyon,
         drive_omega=omega,
         drive_F0=F_0,
         n_equil=n_equil,
@@ -607,6 +609,7 @@ def run_battery_full(graph, dt: float = 0.02, freeze_gauge: bool = False,
                      Q_grid: Optional[List[int]] = None,
                      amplitude_mults: Optional[List[float]] = None,
                      mu_proxy_grid: Optional[List[float]] = None,
+                     alpha_halcyon: float = 1.0,
                      ) -> Dict[str, Any]:
     """Full battery run per SPEC v2 §4.
 
@@ -660,7 +663,7 @@ def run_battery_full(graph, dt: float = 0.02, freeze_gauge: bool = False,
                 m = measure_chi_at_cell(graph, q, om, seed,
                                         F_0=F_default,
                                         n_equil=n_equil, n_steps=n_steps, dt=dt,
-                                        freeze_gauge=freeze_gauge)
+                                        freeze_gauge=freeze_gauge, alpha_halcyon=alpha_halcyon)
                 main_meas.append(m)
 
     # ---- H1: vary mu_proxy at omega_c ----
@@ -680,7 +683,7 @@ def run_battery_full(graph, dt: float = 0.02, freeze_gauge: bool = False,
                     m = measure_chi_at_cell(graph, q, omega_c, seed,
                                             F_0=F_default, mu_proxy=mp,
                                             n_equil=n_equil, n_steps=n_steps, dt=dt,
-                                            freeze_gauge=freeze_gauge)
+                                            freeze_gauge=freeze_gauge, alpha_halcyon=alpha_halcyon)
                     meas_mp.append(m)
         mu_proxy_results[mp] = meas_mp
 
@@ -696,7 +699,7 @@ def run_battery_full(graph, dt: float = 0.02, freeze_gauge: bool = False,
                 m = measure_chi_at_cell(graph, q, omega_c, seed,
                                         F_0=F0,
                                         n_equil=n_equil, n_steps=n_steps, dt=dt,
-                                        freeze_gauge=freeze_gauge)
+                                        freeze_gauge=freeze_gauge, alpha_halcyon=alpha_halcyon)
                 meas_amp.append(m)
         amplitude_meas[F0] = meas_amp
 
@@ -709,7 +712,7 @@ def run_battery_full(graph, dt: float = 0.02, freeze_gauge: bool = False,
             m = measure_chi_at_cell(graph, q, omega_c, seed,
                                     F_0=F_default, use_alternative_tau=True,
                                     n_equil=n_equil, n_steps=n_steps, dt=dt,
-                                    freeze_gauge=freeze_gauge)
+                                    freeze_gauge=freeze_gauge, alpha_halcyon=alpha_halcyon)
             alt_meas.append(m)
 
     # ---- Per-omega chi(omega) fits (the proper H6 extractor) ----
@@ -839,7 +842,7 @@ def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = False,
                     print(f"[battery-fast] default Q={Q} omega={om:.3f} seed={seed}")
                 m = measure_chi_at_cell(graph, Q, om, seed,
                                         n_equil=n_equil, n_steps=n_steps, dt=dt,
-                                        freeze_gauge=freeze_gauge)
+                                        freeze_gauge=freeze_gauge, alpha_halcyon=alpha_halcyon)
                 default_meas.append(m)
 
     # ---- mu_proxy grid (for H1) ----
@@ -851,7 +854,7 @@ def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = False,
                 # only at omega_c for H1
                 m = measure_chi_at_cell(graph, Q, omega_c, seed, mu_proxy=mp,
                                         n_equil=n_equil, n_steps=n_steps, dt=dt,
-                                        freeze_gauge=freeze_gauge)
+                                        freeze_gauge=freeze_gauge, alpha_halcyon=alpha_halcyon)
                 meas.append(m)
         mu_proxy_results[mp] = meas
 
@@ -862,7 +865,7 @@ def run_battery_fast(graph, dt: float = 0.02, freeze_gauge: bool = False,
             m = measure_chi_at_cell(graph, Q, omega_c, seed,
                                     use_alternative_tau=True,
                                     n_equil=n_equil, n_steps=n_steps, dt=dt,
-                                    freeze_gauge=freeze_gauge)
+                                    freeze_gauge=freeze_gauge, alpha_halcyon=alpha_halcyon)
             alt_meas.append(m)
 
     # ---- Alpha extraction ----
