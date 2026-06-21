@@ -201,14 +201,40 @@ Halcyon; Davis Geometric; methodological discipline; reproducibility
   if you have one)
 
 ### License
-**Recommended: `Creative Commons Attribution 4.0 International (CC-BY-4.0)`**
+**Recommended: `PolyForm Noncommercial License 1.0.0`**
 
-Rationale: pre-registration documents are most useful when they can be
-cited and discussed freely. CC-BY-4.0 is the academic-standard choice
-for protocol pre-registrations. If you prefer non-commercial
-restrictions for consistency with the inertia_damping repo's
-non-commercial-default, use `CC-BY-NC-4.0`, but note that this slightly
-restricts who can cite it in industry research contexts.
+SPDX identifier: `PolyForm-Noncommercial-1.0.0`
+Canonical URL: <https://polyformproject.org/licenses/noncommercial/1.0.0/>
+
+Rationale: matches the canonical license at the repository root
+(`LICENSE`). Permits academic citation, research extension, and
+noncommercial reuse — including by educational institutions, public
+research organizations, and government institutions — without
+requiring further authorization. Commercial use of the protocol or
+its derivatives requires separate licensing arranged via
+`bee_davis@alumni.brown.edu`.
+
+**If Zenodo's license picker does not list PolyForm-Noncommercial-1.0.0
+directly:**
+
+- First, search the Zenodo license picker for "PolyForm" — Zenodo
+  imports the SPDX list and may have it under a slight variant.
+- If still not present, choose `Other (Non-Open)` from the license
+  dropdown and enter the canonical URL
+  <https://polyformproject.org/licenses/noncommercial/1.0.0/> in the
+  "License URL" / custom license field.
+- In the deposit's "Additional notes" field, add the line:
+  `License: PolyForm Noncommercial License 1.0.0
+  (SPDX: PolyForm-Noncommercial-1.0.0).`
+
+Why not CC-BY-4.0 / CC-BY-NC-4.0 for the SPEC text specifically: the
+Creative Commons family is more idiomatic for prose documents, but
+keeping a single canonical license across the project (code, SPECs,
+papers, letters) reduces audit-trail confusion and matches what the
+LICENSE file at the repository root already establishes. PolyForm-NC's
+"noncommercial purposes" + "noncommercial organizations" clauses
+cover the academic-citation use case explicitly, so the freedom-of-
+citation rationale for CC-BY does not require a CC license.
 
 ### Related identifiers
 
