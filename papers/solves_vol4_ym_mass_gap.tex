@@ -31,11 +31,11 @@
     linkcolor=blue!50!black,
     citecolor=blue!50!black,
     urlcolor=blue!60!black,
-    pdftitle={Yang-Mills Mass Gap: A Worked Example on the Substrate},
+    pdftitle={A Strong-Coupling Lattice Yang-Mills Worked Example on the GIGI Substrate},
     pdfauthor={Bee Rosa Davis}
 }
 
-\title{Yang--Mills Mass Gap: A Worked Example on the Substrate\footnote{Series note: GIGI Solves, Vol.~4.} \\[0.5em] \large A worked example of the Davis--Wilson lattice pipeline on the buckyball substrate at $\mathrm{SU}(2)$, $\beta = 2.5$.}
+\title{A Strong-Coupling Lattice Yang--Mills Worked Example on the GIGI Substrate\footnote{Series note: GIGI Solves, Vol.~4.} \\[0.5em] \large A worked example of the Davis--Wilson lattice pipeline on the buckyball substrate at $\mathrm{SU}(2)$, $\beta = 2.5$.}
 \author{Bee Rosa Davis \\ \small \texttt{bee\_davis@alumni.brown.edu}}
 \date{June 2026}
 
@@ -160,7 +160,7 @@ Halcyon v1.2 production run \texttt{run\_20260617\_110642} (schema version 1.2, 
 \textsc{pass} & Migdal--Witten analytical target & engine plaquette mean $0.5068472 \pm 0.0014580$ within $3.5\times 10^{-4}$ of the Migdal--Witten heat-kernel target $P_{\mathrm{exact}} = I_2(\beta)/I_1(\beta) = 0.5071951$ at $\beta=2.5$ (tolerance $10^{-2}$) \\
 \textsc{pass} & Gauge invariance & residual at machine epsilon \\
 \textsc{pass} & Beta-scan & monotone, no spurious crossings \\
-\textsc{pass} & Operational $\beta$ envelope & recommends $\beta = 2.0$ \\
+\textsc{pass} & Operational $\beta$ envelope & $\beta = 2.5$ is the canonical validation point for this chapter; separate $Q$/holonomy protocols must stay inside their own validated $\beta$-window \\
 \midrule
 \textsc{n/a} & Sector classifier & $Q_{\mathrm{surrogate}}$ dispersion does not populate all three operational bands; declines honestly (see \S\ref{subsec:na}) \\
 \midrule
@@ -173,7 +173,7 @@ Halcyon v1.2 production run \texttt{run\_20260617\_110642} (schema version 1.2, 
 
 \subsection{The eight PASSes}
 
-Each pass anchors a specific quantity the proof references. \textbf{Substrate identities} confirm the discrete manifold the engine actually integrated on is the one the proof references. \textbf{Energy conservation}, \textbf{covariant Gauss residual}, \textbf{time reversibility}, and \textbf{gauge invariance} are the four conservation laws the integrator must respect for any downstream spectral statement to mean what it says; three of them sit at machine epsilon, and the fourth (energy) sits inside the tolerance derived from the integrator order and step size. \textbf{Migdal--Witten} is the analytical target: the closed-form heat-kernel value $P_{\mathrm{exact}} = I_2(\beta)/I_1(\beta) = 0.5071951$ at $\beta = 2.5$, against which the engine plaquette mean $0.5068472 \pm 0.0014580$ lands within $3.5 \times 10^{-4}$ (the harness tolerance is $10^{-2}$). \textbf{Beta-scan} and \textbf{operational $\beta$ envelope} certify that the recommended working coupling $\beta = 2.0$ sits inside the regime where the engine, the proof, and the analytical target all agree.
+Each pass anchors a specific quantity the proof references. \textbf{Substrate identities} confirm the discrete manifold the engine actually integrated on is the one the proof references. \textbf{Energy conservation}, \textbf{covariant Gauss residual}, \textbf{time reversibility}, and \textbf{gauge invariance} are the four conservation laws the integrator must respect for any downstream spectral statement to mean what it says; three of them sit at machine epsilon, and the fourth (energy) sits inside the tolerance derived from the integrator order and step size. \textbf{Migdal--Witten} is the analytical target: the closed-form heat-kernel value $P_{\mathrm{exact}} = I_2(\beta)/I_1(\beta) = 0.5071951$ at $\beta = 2.5$, against which the engine plaquette mean $0.5068472 \pm 0.0014580$ lands within $3.5 \times 10^{-4}$ (the harness tolerance is $10^{-2}$). \textbf{Beta-scan} and \textbf{operational $\beta$ envelope} certify that $\beta = 2.5$ is the canonical validation point for this chapter, where the engine, the proof, and the analytical target all agree; separate $Q$/holonomy protocols must stay inside their own validated $\beta$-window (SU(2) clover-$Q$ + Wilson flow is clean at $\beta \geq 2.5$; $\beta = 2.3$ marginally fails --- see \texttt{inertia\_damping/JOURNAL.md}).
 
 \subsection{The NOT\_APPLICABLE}
 \label{subsec:na}
@@ -182,9 +182,9 @@ The harness declines the sector classifier because the $Q_{\mathrm{surrogate}}$ 
 
 \subsection{The FAIL}
 
-The microcanonical-versus-canonical cross-check fails. \textbf{This is real physics and real bookkeeping, not a software bug.} A single finite-length trajectory on 93 dynamical degrees of freedom does not sample the canonical ensemble well enough to close the cross-check at the tolerance the proof would need; the conservative-factor note in the harness configuration explicitly anticipates this gap, and the \textsc{fail} is the honest readout of that anticipated shortfall. \textbf{We do not paper it over.} The cluster-expansion proof of the lattice mass gap does not depend on microcanonical--canonical equivalence on a single buckyball trajectory; nothing in v6 is invalidated by this \textsc{fail}. What the \textsc{fail} marks is the precise boundary between \emph{the numerical pipeline works} and \emph{the pipeline alone proves the gap}. The pipeline does not prove the gap. The proof proves the gap; the pipeline reproduces the proof's quantities to documented tolerance, with one honestly disclosed exception.
+The microcanonical-versus-canonical cross-check fails. \textbf{This is a reproducible finite-substrate ensemble mismatch and a bookkeeping issue, not presently explained by any known software bug.} A single finite-length trajectory on 93 dynamical degrees of freedom does not sample the canonical ensemble well enough to close the cross-check at the tolerance the proof would need; the conservative-factor note in the harness configuration explicitly anticipates this gap, and the \textsc{fail} is the honest readout of that anticipated shortfall. \textbf{We do not paper it over.} The cluster-expansion proof of the lattice mass gap does not depend on microcanonical--canonical equivalence on a single buckyball trajectory; nothing in v6 is invalidated by this \textsc{fail}. What the \textsc{fail} marks is the precise boundary between \emph{the numerical pipeline works} and \emph{the pipeline alone proves the gap}. The pipeline does not prove the gap. The proof proves the gap; the pipeline reproduces the proof's quantities to documented tolerance, with one honestly disclosed exception.
 
-\textbf{The closure-study receipt (v1.2.1).} The conjecture that the \textsc{fail} would close under longer trajectories has now been tested directly. A 40-trajectory sweep over $N_{\mathrm{steps}} \in \{1000, 2000, 4000, 8000, 16000\}$ (a $16\times$ range) crossed with eight independent seeds, fired as a single batched CUDA pass through \texttt{inertia\_damping.cuda.batched\_leapfrog} on an NVIDIA Blackwell GPU, returns verdict \textsc{NO\_CLOSURE} with the gap falling 9\,\% from $0.1748$ ($N=1000$) to $0.1598$ ($N=16000$) and then \emph{flatlining}: the asymptotic shrinkage rate would not reach the $0.02$ tolerance until $N \sim 10^{10}$ steps. The mean plaquette under the symplectic flow converges to $\langle P\rangle_{\mathrm{time}} \approx 0.66$ across all eight seeds (Flyvbjerg--Petersen blocking regime transitions from \texttt{no\_plateau} at $N=1000$ to \texttt{plateau} at $N=16000$, with $n_{\mathrm{eff}}$ growing from $7.8$ to $125$); the canonical heatbath converges to $\langle P\rangle_{\mathrm{heatbath}} \approx 0.506$. \textbf{Shell $\ne$ ensemble at the buckyball's finite size:} each symplectic trajectory's energy shell has a time-averaged plaquette that differs structurally from the Boltzmann average over all energy shells. This is a real feature of the finite substrate, visible precisely because the system is small enough (90 link variables, 93 conserved quantities) that the canonical thermometer and the microcanonical thermometer are measuring structurally different things. The full receipt is at \texttt{inertia\_damping/reports/section5\_sweep\_cuda/SECTION5\_CLOSURE\_RECEIPT.md}; the load-bearing artefact is \texttt{section5\_closure.json}, SHA-256 \texttt{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}, with 40 per-trajectory sidecars and matplotlib figures alongside.
+\textbf{The closure-study receipt (v1.2.1).} The conjecture that the \textsc{fail} would close under longer trajectories has now been tested directly. A 40-trajectory sweep over $N_{\mathrm{steps}} \in \{1000, 2000, 4000, 8000, 16000\}$ (a $16\times$ range) crossed with eight independent seeds, fired as a single batched CUDA pass through \texttt{inertia\_damping.cuda.batched\_leapfrog} on an NVIDIA Blackwell GPU, returns verdict \textsc{NO\_CLOSURE} with the gap falling 9\,\% from $0.1748$ ($N=1000$) to $0.1598$ ($N=16000$) and then \emph{flatlining}: the asymptotic shrinkage rate would not reach the $0.02$ tolerance until $N \sim 10^{10}$ steps. The mean plaquette under the symplectic flow converges to $\langle P\rangle_{\mathrm{time}} \approx 0.66$ across all eight seeds (Flyvbjerg--Petersen blocking regime transitions from \texttt{no\_plateau} at $N=1000$ to \texttt{plateau} at $N=16000$, with $n_{\mathrm{eff}}$ growing from $7.8$ to $125$); the canonical heatbath converges to $\langle P\rangle_{\mathrm{heatbath}} \approx 0.506$. \textbf{Shell $\ne$ ensemble at the buckyball's finite size:} each symplectic trajectory's energy shell has a time-averaged plaquette that differs structurally from the Boltzmann average over all energy shells. This is a reproducible feature of this finite substrate at the sizes and trajectory lengths tested --- not presently explained by any known software bug --- and is visible precisely because the system is small enough (90 link variables, 93 transverse gauge degrees of freedom) that the canonical thermometer and the microcanonical thermometer are measuring structurally different things on a single trajectory. The full receipt is at \texttt{inertia\_damping/reports/section5\_sweep\_cuda/SECTION5\_CLOSURE\_RECEIPT.md}; the load-bearing artefact is \texttt{section5\_closure.json}, SHA-256 \texttt{145e331340f657e3eacf4704c9bb04a4181972b988e25b88114af9d98d623183}, with 40 per-trajectory sidecars and matplotlib figures alongside.
 
 \medskip
 
@@ -379,6 +379,51 @@ The polished narrative is \texttt{SECTION5\_CLOSURE\_RECEIPT.md} alongside, with
 40 per-trajectory sidecars (each carrying the full Section 5 schema) and two matplotlib figures
 (\texttt{section5\_gap\_vs\_nsteps.pdf}, \texttt{section5\_pt\_vs\_ph.pdf}).
 
+\subsection*{A.6 The thread experiment and the dynamic transfer-function target}
+
+The textbook two-thread inertia demonstration \cite[Vol.~I, \S10--2]{feynman_lectures} is the simplest geometry that already distinguishes the two readings of $\mu$ Halcyon needs to separate: $\mu$-as-a-property versus $\mu$-as-a-coupling. A weight hangs from a thread tied to the ceiling; a second thread hangs from the bottom of the weight to a hand. Pull the lower thread slowly and the upper thread breaks (it bears $mg + F$ in static equilibrium). Pull the lower thread fast and the lower thread breaks (the mass cannot redistribute the impulse fast enough; the lower thread bears $F$ alone). Same weight, same gravity, different breaking thread. The control parameter is the Deborah number \cite{reiner1964}
+\begin{equation}
+    \mathcal{D} \;=\; \frac{\tau}{t_{\mathrm{load}}} \;=\; \frac{r\,\tau}{F_*}
+\end{equation}
+where $r=\mathrm{d}F/\mathrm{d}t$ is the loading rate, $t_{\mathrm{load}}=F_*/r$, $F_*$ is the breaking-force scale, and $\tau$ is the bulk's inertial relaxation time. The thread experiment lives in the two limits $\mathcal{D}\ll 1$ (quasi-static, upper bears $mg+F$) and $\mathcal{D}\gg 1$ (impulsive, lower bears $F$ alone).
+
+\textbf{The idealised inertial crossover.} In an elastic model with no dissipation, the crossover from quasi-static to inertial response is set by the balance $K \sim \mu\,\omega^{2}$, giving
+\begin{equation}
+    \omega_{c} \;=\; \sqrt{K/\mu}, \qquad \tau_{\mu} \;=\; \sqrt{\mu/K}, \qquad \mu \;=\; K\,\tau_{\mu}^{2}.
+\label{eq:inertial-crossover}
+\end{equation}
+The dimensional discipline matters: $\tau_{\mu}$ is the \emph{inertial} relaxation time (the time for an impulse to propagate through the bulk), not the viscous relaxation time $\tau_{\eta}=\eta/K$. Conflating the two is a common error; the thread demo, having no viscous element in the idealisation, isolates $\tau_{\mu}$ cleanly.
+
+\textbf{The real apparatus.} For finite damping, the linear-response (Kubo) susceptibility for the single relevant degree of freedom \cite[\S6.4]{goldstein_classical_mechanics} is
+\begin{equation}
+    \chi_{Q}(\omega) \;=\; \frac{1}{K_{Q} + i\,c_{Q}\,\omega - \mu_{Q}\,\omega^{2}}.
+\end{equation}
+For a measured normal mode of shape $\phi_{n}(x)$, the mode-effective inertial coefficient is
+\begin{equation}
+    \mu_{\mathrm{eff}}^{(n)}(Q) \;\sim\; \int \kappa_{Q}(x)\,\tau_{Q}^{2}(x)\,\lvert \phi_{n}(x)\rvert^{2}\,\mathrm{d}V.
+\label{eq:mode-effective-mass}
+\end{equation}
+The $|\phi_{n}|^{2}$ projection makes the coordinate dependence explicit; effective mass is mode-dependent in any extended elastic system.
+
+\textbf{The falsifiable claim.} Halcyon's hypothesis, written cleanly:
+\begin{equation}
+    \partial_{Q}\,\mu_{Q} \;\stackrel{?}{\ne}\; 0
+\label{eq:halcyon-claim}
+\end{equation}
+at fixed $K_{Q}$, $c_{Q}$, drive amplitude, thermal drift, and EM systematics. Three implementation discipline points:
+
+\begin{enumerate}
+\item \textit{Fit the full transfer function.} A shift in $\omega_{c}(Q)=\sqrt{K_{Q}/\mu_{Q}}$ alone proves only a shift in the ratio $K_{Q}/\mu_{Q}$. The clean inertial-shift claim requires fitting $K_{Q}$, $\mu_{Q}$, $c_{Q}$ as independent parameters.
+\item \textit{Include damping.} The idealised model can omit $c_{Q}$; the apparatus model cannot. Mechanical mounts, eddy currents, and air loading all contribute finite damping that must be either physically suppressed or fit and subtracted.
+\item \textit{Preregister systematics.} Drive amplitude, thermal drift, magnetic pickup, vibration, and cage drift constitute the systematics budget. Eq.~\ref{eq:halcyon-claim} is a positive claim only after that budget is set in advance and the residual slope exceeds it. This is the same discipline that resolved MICROSCOPE \cite{microscope2022}.
+\end{enumerate}
+
+\textbf{The equivalence-principle framing.} This is an equivalence-principle-sensitive measurement, not an equivalence-principle-preserving one. MICROSCOPE bounds $m_{i}/m_{g}$ at the $10^{-15}$ level between materials at fixed material state \cite{microscope2022}; Halcyon tests whether $\mu_{Q}$ depends on the programmed gauge sector of the surrounding apparatus at fixed material and fixed static gravitational load. A non-zero $\partial_{Q}\mu_{Q}$ is an EP-sensitive result --- not a contradiction-free preservation of $m_{i}=m_{g}$. Halcyon is by construction a \emph{state-programmed equivalence-principle stress test}: same test mass, same gravitational load, different programmed gauge sector.
+
+\textbf{The distinction from prior claims.} The historical class Halcyon distinguishes itself from --- the Woodward effect, Podkletnov's rotating disc, the EmDrive --- has consistently failed under careful measurement; the records are consistent with zero modulo systematics. Halcyon's response is not a stronger version of the same target. The target is different: a dynamic transfer-function shift in Eq.~\ref{eq:halcyon-claim}, not a static weight or thrust anomaly. The scale never notices. A weight measurement is the wrong instrument; a lock-in driven response measurement at multiple frequencies, fitted across multiple $Q$, is the right one.
+
+\textbf{The connection to the buckyball substrate.} The Halcyon substrate enters Eq.~\ref{eq:mode-effective-mass} through $\kappa_{Q}(x)$ and $\tau_{Q}(x)$. The buckyball cage realises the programmed gauge sector $Q$ as a Wilson-action ground state on the $V=60$, $E=90$, $F=32$, $\chi=2$ truncated icosahedron, $\mathrm{SU}(2)$, $\beta=2.5$ substrate this chapter validates. The cage geometry sets $\kappa_{Q}$; the local field configuration sets $\tau_{Q}$. The falsification target Eq.~\ref{eq:halcyon-claim} is the only experimental statement that depends on the Halcyon framework being right rather than on standard lattice-gauge bookkeeping. Everything else --- the Migdal--Witten target, the eight PASS verdicts in \S\ref{sec:verdict}, the Section~5 closure receipt in A.5 --- is preparation. A.6 is the actual measurement bridge that A.7's Falsification Battery then tries to strike through.
+
 \subsection*{A.7 The Falsification Battery (sudoku elimination grid)}
 \label{subsec:battery}
 
@@ -502,51 +547,6 @@ This chapter does not pick a winner among the three. SPEC v3 is the next design-
 python -m inertia_damping.scripts.run_battery --fast
 \end{verbatim}
 The standalone script \texttt{inertia\_damping/scripts/run\_battery.py} ships in this commit; integration into \texttt{run\_validation\_report.py} as a first-class \texttt{--battery} flag is the next item in the open queue.
-
-\subsection*{A.6 The thread experiment and the dynamic transfer-function target}
-
-The textbook two-thread inertia demonstration \cite[Vol.~I, \S10--2]{feynman_lectures} is the simplest geometry that already distinguishes the two readings of $\mu$ Halcyon needs to separate: $\mu$-as-a-property versus $\mu$-as-a-coupling. A weight hangs from a thread tied to the ceiling; a second thread hangs from the bottom of the weight to a hand. Pull the lower thread slowly and the upper thread breaks (it bears $mg + F$ in static equilibrium). Pull the lower thread fast and the lower thread breaks (the mass cannot redistribute the impulse fast enough; the lower thread bears $F$ alone). Same weight, same gravity, different breaking thread. The control parameter is the Deborah number \cite{reiner1964}
-\begin{equation}
-    \mathcal{D} \;=\; \frac{\tau}{t_{\mathrm{load}}} \;=\; \frac{r\,\tau}{F_*}
-\end{equation}
-where $r=\mathrm{d}F/\mathrm{d}t$ is the loading rate, $t_{\mathrm{load}}=F_*/r$, $F_*$ is the breaking-force scale, and $\tau$ is the bulk's inertial relaxation time. The thread experiment lives in the two limits $\mathcal{D}\ll 1$ (quasi-static, upper bears $mg+F$) and $\mathcal{D}\gg 1$ (impulsive, lower bears $F$ alone).
-
-\textbf{The idealised inertial crossover.} In an elastic model with no dissipation, the crossover from quasi-static to inertial response is set by the balance $K \sim \mu\,\omega^{2}$, giving
-\begin{equation}
-    \omega_{c} \;=\; \sqrt{K/\mu}, \qquad \tau_{\mu} \;=\; \sqrt{\mu/K}, \qquad \mu \;=\; K\,\tau_{\mu}^{2}.
-\label{eq:inertial-crossover}
-\end{equation}
-The dimensional discipline matters: $\tau_{\mu}$ is the \emph{inertial} relaxation time (the time for an impulse to propagate through the bulk), not the viscous relaxation time $\tau_{\eta}=\eta/K$. Conflating the two is a common error; the thread demo, having no viscous element in the idealisation, isolates $\tau_{\mu}$ cleanly.
-
-\textbf{The real apparatus.} For finite damping, the linear-response (Kubo) susceptibility for the single relevant degree of freedom \cite[\S6.4]{goldstein_classical_mechanics} is
-\begin{equation}
-    \chi_{Q}(\omega) \;=\; \frac{1}{K_{Q} + i\,c_{Q}\,\omega - \mu_{Q}\,\omega^{2}}.
-\end{equation}
-For a measured normal mode of shape $\phi_{n}(x)$, the mode-effective inertial coefficient is
-\begin{equation}
-    \mu_{\mathrm{eff}}^{(n)}(Q) \;\sim\; \int \kappa_{Q}(x)\,\tau_{Q}^{2}(x)\,\lvert \phi_{n}(x)\rvert^{2}\,\mathrm{d}V.
-\label{eq:mode-effective-mass}
-\end{equation}
-The $|\phi_{n}|^{2}$ projection makes the coordinate dependence explicit; effective mass is mode-dependent in any extended elastic system.
-
-\textbf{The falsifiable claim.} Halcyon's hypothesis, written cleanly:
-\begin{equation}
-    \partial_{Q}\,\mu_{Q} \;\stackrel{?}{\ne}\; 0
-\label{eq:halcyon-claim}
-\end{equation}
-at fixed $K_{Q}$, $c_{Q}$, drive amplitude, thermal drift, and EM systematics. Three implementation discipline points:
-
-\begin{enumerate}
-\item \textit{Fit the full transfer function.} A shift in $\omega_{c}(Q)=\sqrt{K_{Q}/\mu_{Q}}$ alone proves only a shift in the ratio $K_{Q}/\mu_{Q}$. The clean inertial-shift claim requires fitting $K_{Q}$, $\mu_{Q}$, $c_{Q}$ as independent parameters.
-\item \textit{Include damping.} The idealised model can omit $c_{Q}$; the apparatus model cannot. Mechanical mounts, eddy currents, and air loading all contribute finite damping that must be either physically suppressed or fit and subtracted.
-\item \textit{Preregister systematics.} Drive amplitude, thermal drift, magnetic pickup, vibration, and cage drift constitute the systematics budget. Eq.~\ref{eq:halcyon-claim} is a positive claim only after that budget is set in advance and the residual slope exceeds it. This is the same discipline that resolved MICROSCOPE \cite{microscope2022}.
-\end{enumerate}
-
-\textbf{The equivalence-principle framing.} This is an equivalence-principle-sensitive measurement, not an equivalence-principle-preserving one. MICROSCOPE bounds $m_{i}/m_{g}$ at the $10^{-15}$ level between materials at fixed material state \cite{microscope2022}; Halcyon tests whether $\mu_{Q}$ depends on the programmed gauge sector of the surrounding apparatus at fixed material and fixed static gravitational load. A non-zero $\partial_{Q}\mu_{Q}$ is an EP-sensitive result --- not a contradiction-free preservation of $m_{i}=m_{g}$. Halcyon is by construction a \emph{state-programmed equivalence-principle stress test}: same test mass, same gravitational load, different programmed gauge sector.
-
-\textbf{The distinction from prior claims.} The historical class Halcyon distinguishes itself from --- the Woodward effect, Podkletnov's rotating disc, the EmDrive --- has consistently failed under careful measurement; the records are consistent with zero modulo systematics. Halcyon's response is not a stronger version of the same target. The target is different: a dynamic transfer-function shift in Eq.~\ref{eq:halcyon-claim}, not a static weight or thrust anomaly. The scale never notices. A weight measurement is the wrong instrument; a lock-in driven response measurement at multiple frequencies, fitted across multiple $Q$, is the right one.
-
-\textbf{The connection to the buckyball substrate.} The Halcyon substrate enters Eq.~\ref{eq:mode-effective-mass} through $\kappa_{Q}(x)$ and $\tau_{Q}(x)$. The buckyball cage realises the programmed gauge sector $Q$ as a Wilson-action ground state on the $V=60$, $E=90$, $F=32$, $\chi=2$ truncated icosahedron, $\mathrm{SU}(2)$, $\beta=2.5$ substrate this chapter validates. The cage geometry sets $\kappa_{Q}$; the local field configuration sets $\tau_{Q}$. The falsification target Eq.~\ref{eq:halcyon-claim} is the only experimental statement that depends on the Halcyon framework being right rather than on standard lattice-gauge bookkeeping. Everything else --- the Migdal--Witten target, the eight PASS verdicts in \S\ref{sec:verdict}, the Section~5 closure receipt in A.5 --- is preparation. A.6 is the actual measurement bridge.
 
 \begin{thebibliography}{9}
 
