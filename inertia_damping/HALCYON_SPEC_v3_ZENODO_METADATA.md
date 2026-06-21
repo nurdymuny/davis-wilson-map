@@ -37,9 +37,10 @@ stopping-rule committee and any journal submission process.
   wording / audit-tightness issues (act-language distinction between
   pre-deposit technical review and human peer review; science-value
   gate on GC₅; substrate-gated τ_pin claim).
-- **v3.1.3** (this commit, hash TBD at time of writing): patched
-  those three issues. The canonical pre-registered protocol. Goes to
-  Zenodo.
+- **v3.1.3** (commit `44c70b1b76501b4b66c6f9ace6bccd8b5bd14c4a`,
+  git tag `spec-v3.1.3-zenodo-20785681`): patched those three issues.
+  The canonical pre-registered protocol. **DEPOSITED at Zenodo
+  2026-06-21 as DOI [10.5281/zenodo.20785681](https://doi.org/10.5281/zenodo.20785681).**
 
 The v3.0, v3.1, v3.1.1, and v3.1.2 drafts are preserved as first-class
 artefacts in the repository for the chain of custody; the v3.1.3
@@ -291,15 +292,17 @@ The v3.1.3 git commit hash (insert when known) is the canonical
 implementation-level timestamp.
 ```
 
-## After the Zenodo DOI is minted
+## After the Zenodo DOI is minted (executed 2026-06-21)
 
-1. Add a `Zenodo DOI:` line near the top of the v3.1.3 SPEC file
-   referencing the new DOI.
-2. Commit and push that single-line edit. The post-deposit commit is
-   *not* part of the pre-registration — it merely records the DOI
-   pointer.
-3. Solves Vol.\ 4 Appendix A.7.2 (or v5 Appendix A.8 when the v3.1.3
-   run lands) cites the Zenodo DOI as the pre-registration record.
+1. ✅ Added a `Zenodo DOI:` callout near the top of the v3.1.3 SPEC
+   file referencing [10.5281/zenodo.20785681](https://doi.org/10.5281/zenodo.20785681).
+2. ✅ Committed and pushed that single-line edit. The post-deposit
+   commit is *not* part of the pre-registration — it merely records
+   the DOI pointer. Canonical pre-registration commit `44c70b1`
+   tagged `spec-v3.1.3-zenodo-20785681` for permanent reference.
+3. ⏳ Solves Vol.\ 4 Appendix A.8 (when the v3.1.3 run lands) will
+   cite the Zenodo DOI as the pre-registration record. Open until
+   the v3.1.3 protocol runs and the chapter v5 is published.
 
 ## What this deposit is NOT
 

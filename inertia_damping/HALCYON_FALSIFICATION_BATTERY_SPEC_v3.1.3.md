@@ -1,6 +1,12 @@
 # Halcyon Falsification Battery — SPEC v3.1.3 (wording + audit-tightness patch, deposit-ready)
 
-**Status:** PRE-REGISTRATION, deposit-ready. Supersedes
+> **Zenodo DOI:** [10.5281/zenodo.20785681](https://doi.org/10.5281/zenodo.20785681)
+> *Deposited 2026-06-21.* Citation:
+> Davis, B. R. (2026). *Halcyon Falsification Battery — SPEC v3.1.3 (Pre-Registration): Closed-Loop Holonomy on the (Q, β_W) Control Manifold within the Validated SU(2) Operating Regime as the Load-Bearing Falsifier on the Buckyball Substrate.* Zenodo. <https://doi.org/10.5281/zenodo.20785681>
+>
+> This DOI pointer was added in a post-deposit commit. The post-deposit commit is **not** part of the pre-registration — the pre-registration is what was deposited at the Zenodo timestamp from the canonical SPEC commit `44c70b1` (also tagged `spec-v3.1.3-zenodo-20785681` in git). §3's falsification criteria are now locked at that commit hash and that DOI; subsequent edits to this file are limited to non-protocol metadata (this DOI pointer, typo fixes, cross-reference updates).
+
+**Status:** PRE-REGISTRATION, **DEPOSITED**. Supersedes
 `HALCYON_FALSIFICATION_BATTERY_SPEC_v3.1.2.md` (commit
 `f4cfa1444a72e94c67f5cc2b7bfee51aeaf4666a`) **before** that document
 reached Zenodo deposit. v3.0, v3.1, v3.1.1, and v3.1.2 stay preserved
