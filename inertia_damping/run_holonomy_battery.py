@@ -238,7 +238,59 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         default=None,
         help="Directory to write section_12 sidecar JSONs (default: stdout-only)",
     )
+    parser.add_argument(
+        "--client",
+        choices=("mock", "live"),
+        default="mock",
+        help=(
+            "LoopTransportClient backend. mock = deterministic scenario data "
+            "(no network, default); live = HTTP POST /v1/gql against GIGI_URL. "
+            "Live REQUIRES VI.4 shipped before sham gates are meaningful and "
+            "VI.5 shipped before per-seed values are reproducible across "
+            "recompiles. Use --client live for integration testing only until "
+            "those land; the publication-bound run waits for VI.5."
+        ),
+    )
+    parser.add_argument(
+        "--gigi-url",
+        default=None,
+        help=(
+            "Override the live-client base URL (defaults to GIGI_URL env var "
+            "or http://localhost:3142). Only used when --client live."
+        ),
+    )
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=list(DEFAULT_SEEDS),
+        help=(
+            "Per-seed list for the ensemble. v3.1.3 §3.5 pre-registers 8 seeds "
+            "[20260616..20260623]; overriding for smoke tests is OK but the "
+            "publication-bound run uses the pre-registered set."
+        ),
+    )
     return parser.parse_args(argv)
+
+
+def _make_client(args: argparse.Namespace):
+    """Build either a Mock or Live client per --client flag."""
+    if args.client == "live":
+        # Lazy import — the mock-only path must not require `requests`.
+        from inertia_damping.gigi_client.live_loop_transport import (
+            LiveLoopTransportClient,
+        )
+        print(
+            "WARNING: --client live talks to a real GIGI substrate.\n"
+            "         Halcyon's gate logic produces meaningful POSITIVE/NULL/\n"
+            "         AMBIGUOUS verdicts only when VI.4 (SHAM block dispatch)\n"
+            "         AND VI.5 (bit-identity per-seed gold fixture) are both\n"
+            "         green on the substrate side. Use --client live for\n"
+            "         integration testing only until those land; the\n"
+            "         publication-bound run waits for VI.5.\n",
+        )
+        return LiveLoopTransportClient(base_url=args.gigi_url)
+    return MockLoopTransportClient(scenario=args.mock_scenario)
 
 
 def _reconfigure_stdout_utf8() -> None:
@@ -257,10 +309,11 @@ def _reconfigure_stdout_utf8() -> None:
 def main(argv: Optional[List[str]] = None) -> int:
     _reconfigure_stdout_utf8()
     args = _parse_args(argv)
-    client = MockLoopTransportClient(scenario=args.mock_scenario)
+    client = _make_client(args)
     results = run_holonomy_battery(
         client,
         alpha_halcyon_values=tuple(args.alpha),
+        seeds=tuple(args.seeds),
         output_dir=args.output_dir,
     )
     for alpha, (composite, sidecar) in results.items():
