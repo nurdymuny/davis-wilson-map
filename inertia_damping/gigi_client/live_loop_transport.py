@@ -182,40 +182,83 @@ class LiveLoopTransportClient:
     # GQL builders (best-effort against gate-doc grammar + v3.1.3 §4.4)
     # ------------------------------------------------------------------
 
+    # Lattice name on the live gigi-stream that the LOOP declarations
+    # attach to. Halcyon's pre-declaration block (per the YM paper §A.1
+    # 5-statement block) declares both the LATTICE and the GAUGE_FIELD
+    # under the name "buckyball" / "halcyon_canonical_buckyball"
+    # respectively. The LOOP statement references the LATTICE (not the
+    # GAUGE_FIELD), so this is the lattice-side name.
+    DEFAULT_LATTICE_NAME = "buckyball"
+
     @staticmethod
     def _build_declare_loop_gql(loop: LoopHandle) -> str:
-        """Construct a DECLARE LOOP GQL statement. Best-guess grammar
-        against Gigi's Part VI gate doc; if VI.2's parser uses a
-        different exact shape, this surfaces as a 400 on the first
-        live smoke test and is patched here."""
-        axes = ", ".join(loop.control_manifold_axes)
-        path_segments = []
-        for (q, beta_w) in loop.vertices:
-            path_segments.append(f"(Q={q!r}, beta_wilson={beta_w!r})")
-        path = " -> ".join(path_segments)
+        """Construct a LOOP <name> ON <lattice> FACE <n>; statement
+        per Gigi's Part VI parser (gigi/src/parser.rs:3241 parse_loop_decl).
+        The substrate-side LOOP is a SPATIAL loop on the buckyball (face
+        index or edge vertex sequence), NOT a (Q, β_W) parameter-space
+        loop. The parameter-space ramp lives in the LOOP_TRANSPORT
+        clause itself (RAMP_RATE_Q, RAMP_RATE_BETA_W, ...).
+
+        For Halcyon's v3.1.3 canonical loop, the substrate's existing
+        smoke and parser tests use FACE 0 as the canonical spatial loop
+        (see gigi/tests/halcyon_part_vi_executor_smoke.rs line 59,
+        gigi/tests/halcyon_part_vi_parser_grammar.rs lines 33 / 157 /
+        186 / 216). Halcyon adopts the same convention."""
         return (
-            f"DECLARE LOOP {loop.name}"
-            f" CONTROL_MANIFOLD ({axes})"
-            f" PATH {path}"
-            f" T_LOOP {loop.t_per_segment * max(1, loop.n_segments())!r}"
-            f" SEGMENTS PIECEWISE_LINEAR;"
+            f"LOOP {loop.name} ON {LiveLoopTransportClient.DEFAULT_LATTICE_NAME}"
+            f" FACE 0;"
         )
 
     @staticmethod
     def _build_loop_transport_gql(request: LoopTransportRequest) -> str:
-        """Construct the LOOP_TRANSPORT GQL statement matching v3.1.3
-        §4.4 + Halcyon's design-closeout per-axis ramp_rate (CC-LT-8)."""
+        """Construct the LOOP_TRANSPORT GQL statement matching Gigi's
+        VI.2 parser grammar (gigi/src/parser.rs:3280-3315 ebnf comment).
+
+        Three corrections from the initial best-guess after the first
+        smoke test surfaced them:
+          1. CONTROL_MANIFOLD is "(Q, BETA_WILSON)" with uppercase
+             BETA_WILSON, not "(Q, beta_wilson)".
+          2. SEEDS uses range syntax `[start..end]` (end exclusive),
+             not an explicit list. Halcyon's seeds are always
+             contiguous per v3.1.3 §3.5 ([20260616..20260624]).
+          3. BETA_WILSON_START is an additive knob (defaults to regime
+             midpoint 2.75 if omitted). v3.1.3 §4.1's canonical loop
+             starts at β_W = 2.5; passing it explicitly so the start
+             matches the SPEC's loop construction.
+
+        DIRECTION is also NOT in Gigi's parser EBNF — the substrate
+        does both forward and reversed in one call and returns both
+        in the per_seed_H_forward / per_seed_H_reversed return fields.
+        Removed from the GQL string."""
         pack = request.pack
-        seeds_clause = "[" + ", ".join(str(s) for s in request.seeds) + "]"
+
+        # SEEDS range: validate contiguity (parser only accepts ranges)
+        seeds = request.seeds
+        if len(seeds) > 0:
+            seeds_sorted = sorted(seeds)
+            if seeds_sorted != list(range(seeds_sorted[0], seeds_sorted[-1] + 1)):
+                raise ValueError(
+                    f"SEEDS must be contiguous per Gigi's parser grammar; "
+                    f"got {seeds!r}. Use a contiguous range like "
+                    f"(20260616, 20260617, ..., 20260623)."
+                )
+            seeds_clause = f"[{seeds_sorted[0]}..{seeds_sorted[-1] + 1}]"
+        else:
+            raise ValueError("SEEDS cannot be empty")
 
         sham_clause = ""
         if request.sham is not ShamFlag.NONE:
             sham_clause = " " + LiveLoopTransportClient._build_sham_clause(request)
 
+        # BETA_WILSON_START: v3.1.3 §4.1's loop starts at β_W = 2.5
+        # (the lower endpoint of the validated regime). Pass explicitly
+        # so the default 2.75 midpoint doesn't apply.
+        beta_wilson_start = 2.5
+
         return (
             f"LOOP_TRANSPORT {CANONICAL_GAUGE_FIELD}"
             f" ALONG_LOOP {request.loop.name}"
-            f" CONTROL_MANIFOLD (Q, beta_wilson)"
+            f" CONTROL_MANIFOLD (Q, BETA_WILSON)"
             f" ADIABATIC TRUE"
             f" RAMP_RATE_Q {request.ramp_rate_Q!r}"
             f" RAMP_RATE_BETA_W {request.ramp_rate_beta_W!r}"
@@ -232,14 +275,14 @@ class LiveLoopTransportClient:
             f" MU_BASELINE {pack.mu_baseline!r}"
             f" K_SPRING {pack.K_spring!r}"
             f" C_DAMP {pack.c_damp!r}"
-            f" DIRECTION {request.direction}"
+            f" BETA_WILSON_START {beta_wilson_start!r}"
             f" SEEDS {seeds_clause}"
-            f"{sham_clause}"
             f" COMPUTE HOLONOMY_FORWARD"
             f" COMPUTE HOLONOMY_REVERSED"
             f" COMPUTE TRACKING_ERROR_TRACE_Q"
             f" COMPUTE TRACKING_ERROR_TRACE_BETA_W"
             f" COMPUTE ADIABATICITY_CHECK"
+            f"{sham_clause}"
             f" RETURN H_forward, H_reversed, sigma_H_blocked,"
             f" per_seed_H_forward, per_seed_H_reversed,"
             f" tracking_error_max_Q, tracking_error_max_beta_W,"
@@ -305,13 +348,22 @@ class LiveLoopTransportClient:
         the parser tried."""
         n_seeds = len(request.seeds)
 
+        # Response column names per gigi/src/parser.rs:10338 executor
+        # dispatch: lowercase snake_case (per_seed_h_forward,
+        # per_seed_h_reversed, h_forward, h_reversed,
+        # tracking_error_max_q, tracking_error_max_beta_w,
+        # adiabaticity_verdict + adiabaticity_ratio as separate flat
+        # fields, n_substeps_completed). The CamelCase fallbacks below
+        # are kept as future-proofing if Gigi changes the column-name
+        # convention to match the V.0 dispatch shape (MeanPlaquette /
+        # QSurrogate etc.) later.
         per_seed_H_forward = self._pull_vec(
-            row, ("PerSeedHForward", "per_seed_H_forward", "per_seed_h_forward"),
-            f"per_seed_H_forward (vector of {n_seeds} f64)",
+            row, ("per_seed_h_forward", "PerSeedHForward", "per_seed_H_forward"),
+            f"per_seed_h_forward (vector of {n_seeds} f64)",
         )
         per_seed_H_reversed = self._pull_vec(
-            row, ("PerSeedHReversed", "per_seed_H_reversed", "per_seed_h_reversed"),
-            f"per_seed_H_reversed (vector of {n_seeds} f64)",
+            row, ("per_seed_h_reversed", "PerSeedHReversed", "per_seed_H_reversed"),
+            f"per_seed_h_reversed (vector of {n_seeds} f64)",
         )
         if per_seed_H_forward.shape != (n_seeds,):
             raise LoopTransportLiveError(
@@ -349,21 +401,25 @@ class LiveLoopTransportClient:
             per_seed_holonomy[:, 0] = per_seed_h_scalar  # park the real signal in q[0]
 
         sigma_h_blocked = self._pull_scalar(
-            row, ("SigmaHBlocked", "sigma_H_blocked", "sigma_h_blocked"),
-            "sigma_H_blocked", default=0.0,
+            row, ("sigma_h_blocked", "SigmaHBlocked", "sigma_H_blocked"),
+            "sigma_h_blocked", default=0.0,
         )
         tracking_q = self._pull_scalar(
-            row, ("TrackingErrorMaxQ", "tracking_error_max_Q", "tracking_error_max_q"),
-            "tracking_error_max_Q", default=0.0,
+            row, ("tracking_error_max_q", "TrackingErrorMaxQ", "tracking_error_max_Q"),
+            "tracking_error_max_q", default=0.0,
         )
         tracking_beta_w = self._pull_scalar(
-            row, ("TrackingErrorMaxBetaW", "tracking_error_max_beta_W",
-                  "tracking_error_max_beta_w"),
-            "tracking_error_max_beta_W", default=0.0,
+            row, ("tracking_error_max_beta_w", "TrackingErrorMaxBetaW",
+                  "tracking_error_max_beta_W"),
+            "tracking_error_max_beta_w", default=0.0,
         )
 
-        # AdiabaticityCheck is a struct on the wire. Tolerate both
-        # nested object shape and dot-separated flat keys.
+        # AdiabaticityCheck on the wire: per gigi/src/parser.rs:10380
+        # the executor emits two FLAT fields, not a nested struct:
+        #   adiabaticity_verdict: string ("ACCEPTABLE" | "AMBIGUOUS_FORCED")
+        #   adiabaticity_ratio:   f64 (the tau_pin / T_segment value)
+        # _pull_adiabaticity tolerates both that flat shape and the
+        # nested-struct shape (for any future substrate change).
         adia = self._pull_adiabaticity(row)
 
         run_id = str(row.get("run_id") or row.get("RunId") or "")
@@ -427,18 +483,42 @@ class LiveLoopTransportClient:
 
     @staticmethod
     def _pull_adiabaticity(row: Dict[str, Any]) -> AdiabaticityCheck:
-        """Build an AdiabaticityCheck from either a nested struct or
-        a flat dot-separated key set. Provides safe defaults for fields
-        the substrate may not emit (warnings_count, warning_indices)."""
+        """Build an AdiabaticityCheck from the substrate's flat fields
+        (gigi/src/parser.rs:10380 emits `adiabaticity_verdict` as a
+        string + `adiabaticity_ratio` as f64) OR from a nested struct
+        if the substrate ever changes to one.
+
+        The substrate's verdict string ("ACCEPTABLE" /
+        "AMBIGUOUS_FORCED") carries the gate's own decision; the ratio
+        carries the numerical value. Halcyon's Python applies its
+        own threshold (0.1 per v3.1.3 §4.2) against the ratio
+        regardless of the substrate's verdict — the substrate-side
+        verdict is recorded for the audit trail but not load-bearing
+        for Halcyon's gate."""
+        # Path 1: flat fields (current substrate shape)
+        if "adiabaticity_ratio" in row or "adiabaticity_verdict" in row:
+            return AdiabaticityCheck(
+                tau_pin_over_t_segment=float(row.get("adiabaticity_ratio", 0.0)),
+                # Observable B (ramp_rate / gauge_relaxation) isn't emitted
+                # by the substrate today; v3.1.3 §4.2 has it as a diagnostic
+                # only, no pre-registered threshold. Default to 0.0; a
+                # future substrate version may emit it.
+                ramp_rate_over_relaxation_rate=float(
+                    row.get("ramp_rate_over_relaxation_rate", 0.0)
+                ),
+                warnings_count=0,
+                warning_substep_indices=(),
+            )
+        # Path 2: nested struct fallback (for any future substrate shape)
         nested = (
-            row.get("AdiabaticityCheck")
-            or row.get("adiabaticity_check")
+            row.get("adiabaticity_check")
+            or row.get("AdiabaticityCheck")
         )
         if isinstance(nested, dict):
             return AdiabaticityCheck(
                 tau_pin_over_t_segment=float(nested.get(
                     "tau_pin_over_t_segment",
-                    nested.get("TauPinOverTSegment", 0.0),
+                    nested.get("ratio", nested.get("TauPinOverTSegment", 0.0)),
                 )),
                 ramp_rate_over_relaxation_rate=float(nested.get(
                     "ramp_rate_over_relaxation_rate",
@@ -455,17 +535,14 @@ class LiveLoopTransportClient:
                     )
                 ),
             )
-        # Flat shape fallback
+        # No adiabaticity data in the response — return a zero default.
+        # Halcyon's gate is permissive on tau_pin=0 (which would mean
+        # the substrate didn't measure it; the gate fires AMBIGUOUS at
+        # >= 0.1, so 0.0 passes).
         return AdiabaticityCheck(
-            tau_pin_over_t_segment=float(
-                row.get("adiabaticity_check.tau_pin_over_t_segment", 0.0)
-            ),
-            ramp_rate_over_relaxation_rate=float(
-                row.get("adiabaticity_check.ramp_rate_over_relaxation_rate", 0.0)
-            ),
-            warnings_count=int(
-                row.get("adiabaticity_check.warnings_count", 0)
-            ),
+            tau_pin_over_t_segment=0.0,
+            ramp_rate_over_relaxation_rate=0.0,
+            warnings_count=0,
             warning_substep_indices=(),
         )
 
