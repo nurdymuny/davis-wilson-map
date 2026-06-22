@@ -18,8 +18,11 @@ from inertia_damping.gigi_client.loop_transport import LoopHandle
 
 # γ_unit: closed rectangle in (Q, β_W) per v3.1.3 §4.1.
 # Traversal order: (0, 2.5) → (2, 2.5) → (2, 3.0) → (0, 3.0) → (0, 2.5).
+# Loop name matches the substrate's VI.5 gold fixture
+# (`tests/fixtures/halcyon/part_vi/loop_transport_canonical.json` —
+# "loop": "gamma_unit_in_Q_beta_W") + Gigi's calling guide §Preconditions.
 GAMMA_UNIT = LoopHandle(
-    name="gamma_unit",
+    name="gamma_unit_in_Q_beta_W",
     control_manifold_axes=("Q", "beta_wilson"),
     vertices=(
         (0.0, 2.5),

@@ -84,15 +84,15 @@ def test_gamma_degenerate_is_zero_area():
 
 def test_mock_declare_loop_idempotent():
     client = MockLoopTransportClient("primary_null")
-    assert client.declare_loop(GAMMA_UNIT) == "gamma_unit"
-    assert client.declare_loop(GAMMA_UNIT) == "gamma_unit"  # twice OK
+    assert client.declare_loop(GAMMA_UNIT) == "gamma_unit_in_Q_beta_W"
+    assert client.declare_loop(GAMMA_UNIT) == "gamma_unit_in_Q_beta_W"  # twice OK
 
 
 def test_mock_declare_loop_rejects_redefinition():
     client = MockLoopTransportClient("primary_null")
     client.declare_loop(GAMMA_UNIT)
     different_shape = GAMMA_UNIT.__class__(
-        name="gamma_unit",
+        name="gamma_unit_in_Q_beta_W",
         control_manifold_axes=("Q", "beta_wilson"),
         vertices=((0.0, 2.5), (1.0, 2.5), (0.0, 2.5)),  # different
         t_per_segment=50.0,
@@ -469,7 +469,7 @@ def test_sidecar_schema_records_v3_1_3_provenance():
     assert d["spec_commit"] == SPEC_COMMIT
     assert d["spec_doi"] == SPEC_DOI == "10.5281/zenodo.20785681"
     assert d["alpha_halcyon"] == 1.0
-    assert d["loop_name"] == "gamma_unit"
+    assert d["loop_name"] == "gamma_unit_in_Q_beta_W"
     assert d["verdict"] in {"POSITIVE", "NULL", "AMBIGUOUS"}
     assert set(d["shams"].keys()) == {s.value for s in SCIENCE_GATE_SHAMS}
 

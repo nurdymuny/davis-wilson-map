@@ -146,6 +146,39 @@ class MockLoopTransportClient:
                 run_id=f"mock-{self.scenario}-{request.loop.name}-{request.direction}",
             )
         elif self.scenario == "primary_positive":
+            # Share noise across directions so the per-seed values
+            # for forward and reversed are EXACT mirrors (forward[i]
+            # = +raw[i], reversed[i] = -raw[i]). This makes
+            # H_sys = ½(forward + reversed) = 0 by construction
+            # (the noise cancels exactly), so the §3.1 |H_sys| < 1σ_H
+            # gate is reliably satisfied regardless of loop name or
+            # other RNG-keyed args. H_geom = ½(forward - reversed)
+            # = raw[i] carries the full antisymmetric magnitude.
+            sigma_per_seed = 1e-5
+            direction_agnostic = replace(request, direction="FORWARD")
+            rng_shared = _deterministic_rng(self.scenario, direction_agnostic)
+            raw = rng_shared.normal(loc=7e-5, scale=sigma_per_seed, size=n_seeds)
+            direction_sign = +1.0 if request.direction == "FORWARD" else -1.0
+            per_seed_h_scalar = direction_sign * raw
+            per_seed_holonomy = _identity_quaternion(n_seeds)
+            per_seed_holonomy[:, 1] = per_seed_h_scalar
+            sigma_h_blocked = float(np.std(per_seed_h_scalar, ddof=1) / np.sqrt(n_seeds))
+            return LoopTransportResult(
+                per_seed_holonomy=per_seed_holonomy,
+                per_seed_h_scalar=per_seed_h_scalar,
+                sigma_h_blocked=sigma_h_blocked,
+                tracking_error_max_Q=0.005,
+                tracking_error_max_beta_W=0.005,
+                adiabaticity_check=AdiabaticityCheck(
+                    tau_pin_over_t_segment=0.02,
+                    ramp_rate_over_relaxation_rate=0.04,
+                    warnings_count=0,
+                    warning_substep_indices=(),
+                ),
+                run_id=f"mock-{self.scenario}-{request.loop.name}-{request.direction}",
+            )
+        elif self.scenario == "primary_positive_legacy_unused":
+            # Reserved branch kept for clarity; not reached.
             sigma_per_seed = 1e-5
             mean_h = self._directional_signed(request, magnitude=7e-5)
         elif self.scenario == "primary_ambiguous_sigma":

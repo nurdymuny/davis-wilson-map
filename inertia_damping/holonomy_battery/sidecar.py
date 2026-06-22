@@ -10,7 +10,7 @@ Schema (locked at SPEC commit 44c70b1 / Zenodo DOI
       "gigi_deploy_hash": "<sha>",
       "run_timestamp_utc": "2026-06-21T08:00:00Z",
       "alpha_halcyon": 1.0,
-      "loop_name": "gamma_unit",
+      "loop_name": "gamma_unit_in_Q_beta_W",
       "seeds": [20260616, ..., 20260623],
       "per_seed_forward": [[q0, q1, q2, q3], ...],
       "per_seed_forward_scalar": [float, ...],
@@ -74,7 +74,7 @@ class Section12Sidecar:
     gigi_deploy_hash: str = "unknown"
     run_timestamp_utc: str = ""
     alpha_halcyon: float = 1.0
-    loop_name: str = "gamma_unit"
+    loop_name: str = "gamma_unit_in_Q_beta_W"
     seeds: Tuple[int, ...] = ()
     per_seed_forward: List[List[float]] = field(default_factory=list)
     per_seed_forward_scalar: List[float] = field(default_factory=list)

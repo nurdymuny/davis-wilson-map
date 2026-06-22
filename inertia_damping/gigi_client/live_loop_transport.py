@@ -183,12 +183,14 @@ class LiveLoopTransportClient:
     # ------------------------------------------------------------------
 
     # Lattice name on the live gigi-stream that the LOOP declarations
-    # attach to. Halcyon's pre-declaration block (per the YM paper §A.1
-    # 5-statement block) declares both the LATTICE and the GAUGE_FIELD
-    # under the name "buckyball" / "halcyon_canonical_buckyball"
-    # respectively. The LOOP statement references the LATTICE (not the
-    # GAUGE_FIELD), so this is the lattice-side name.
-    DEFAULT_LATTICE_NAME = "buckyball"
+    # attach to. Per Gigi's LOOP_TRANSPORT_CALLING_GUIDE.md
+    # §Preconditions, the v3.1.3 canonical LATTICE name is
+    # "halcyon_canonical_buckyball" — matching the gauge field naming
+    # convention LOOP_TRANSPORT's executor arm expects (the first arg
+    # of LOOP_TRANSPORT is the LATTICE name; the executor hardcodes
+    # gauge field as "U_lt" and E field as "E_lt" attached to that
+    # lattice).
+    DEFAULT_LATTICE_NAME = "halcyon_canonical_buckyball"
 
     @staticmethod
     def _build_declare_loop_gql(loop: LoopHandle) -> str:
@@ -232,7 +234,13 @@ class LiveLoopTransportClient:
         Removed from the GQL string."""
         pack = request.pack
 
-        # SEEDS range: validate contiguity (parser only accepts ranges)
+        # SEEDS range: validate contiguity (parser only accepts ranges).
+        # Per Gigi's calling guide §"Seed range syntax" + line 189:
+        # `[start..end]` is INCLUSIVE on both ends. So 8 seeds
+        # (20260616..20260623) emits `[20260616..20260623]`, NOT
+        # `[20260616..20260624]` (which would be 9 seeds inclusive).
+        # The substrate's VI.2 smoke test confirms this convention:
+        # `SEEDS [20260616..20260616]` → 1 seed (20260616 itself).
         seeds = request.seeds
         if len(seeds) > 0:
             seeds_sorted = sorted(seeds)
@@ -242,7 +250,7 @@ class LiveLoopTransportClient:
                     f"got {seeds!r}. Use a contiguous range like "
                     f"(20260616, 20260617, ..., 20260623)."
                 )
-            seeds_clause = f"[{seeds_sorted[0]}..{seeds_sorted[-1] + 1}]"
+            seeds_clause = f"[{seeds_sorted[0]}..{seeds_sorted[-1]}]"
         else:
             raise ValueError("SEEDS cannot be empty")
 
@@ -291,28 +299,36 @@ class LiveLoopTransportClient:
 
     @staticmethod
     def _build_sham_clause(request: LoopTransportRequest) -> str:
-        """Nested SHAM { flag: value, ... } block per Halcyon
-        design-closeout §C.6 (CC-LT-6 nested over top-level)."""
+        """Nested `SHAM { KEY = VALUE }` block per Gigi's calling guide
+        §"The verb call" lines 86-91. UPPERCASE flag names with `= TRUE`
+        (or `= <float>` for MASS_BASELINE_SCALED) — not lowercase
+        `key: true`. OPEN_LOOP is rejected at parse time per the guide
+        (gigi raises LoopTransportError::LoopNotClosed); it is not a
+        runtime SHAM flag, so this method errors if it's requested."""
+        if request.sham is ShamFlag.OPEN_LOOP:
+            raise ValueError(
+                "OPEN_LOOP is a parser-rejection test, not a runtime SHAM "
+                "flag (per Gigi's calling guide §Verb call line 92). It "
+                "cannot be set on a LoopTransportRequest."
+            )
         if request.sham is ShamFlag.MASS_SCALED:
             return (
-                f"SHAM {{ mass_baseline_scaled: true, "
-                f"mu_baseline_scale: {request.sham_mass_scale!r} }}"
+                f"SHAM {{ MASS_BASELINE_SCALED = {request.sham_mass_scale!r} }}"
             )
-        # Map ShamFlag enum to lowercase nested-block keys matching
-        # Gigi's Part VI gate doc §SHAM table (FLAT_FIELD →
-        # flat_field, ALPHA_ZERO → alpha_zero, etc.)
+        # Map ShamFlag enum to UPPERCASE nested-block keys matching
+        # gigi's calling guide §The verb call (FLAT_FIELD, ALPHA_ZERO,
+        # DEGENERATE_LOOP, FROZEN_FIELD, EMPTY_LOOP).
         key_map = {
-            ShamFlag.FLAT_FIELD: "flat_field",
-            ShamFlag.ALPHA_ZERO: "alpha_zero",
-            ShamFlag.BACKTRACK_LOOP: "degenerate_loop",
-            ShamFlag.FROZEN_FIELD: "frozen_field",
-            ShamFlag.EMPTY_LOOP: "empty_loop",
-            ShamFlag.OPEN_LOOP: "open_loop",
+            ShamFlag.FLAT_FIELD: "FLAT_FIELD",
+            ShamFlag.ALPHA_ZERO: "ALPHA_ZERO",
+            ShamFlag.BACKTRACK_LOOP: "DEGENERATE_LOOP",
+            ShamFlag.FROZEN_FIELD: "FROZEN_FIELD",
+            ShamFlag.EMPTY_LOOP: "EMPTY_LOOP",
         }
         key = key_map.get(request.sham)
         if key is None:
             raise ValueError(f"unmapped sham flag {request.sham}")
-        return f"SHAM {{ {key}: true }}"
+        return f"SHAM {{ {key} = TRUE }}"
 
     # ------------------------------------------------------------------
     # Response unpacking
