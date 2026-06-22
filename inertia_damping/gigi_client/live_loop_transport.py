@@ -49,6 +49,7 @@ adjust here, not in the orchestrator.
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -72,6 +73,13 @@ DEFAULT_GIGI_URL = "http://localhost:3142"
 DEFAULT_TIMEOUT_S = 300.0
 
 CANONICAL_GAUGE_FIELD = "halcyon_canonical_buckyball"
+
+# Per-seed thermalization defaults — match precondition_canonical_buckyball()
+# so the per-seed re-thermalizations land in the same Halcyon-spine band
+# the precondition lands in (<P>_last ~ 0.51, β=2.5 Migdal-Witten).
+DEFAULT_PER_SEED_BETA = 2.5
+DEFAULT_PER_SEED_N_SWEEPS = 200
+DEFAULT_U_FIELD_NAME = "U_lt"
 
 
 class LoopTransportLiveError(RuntimeError):
@@ -101,6 +109,10 @@ class LiveLoopTransportClient:
         timeout_s: float = DEFAULT_TIMEOUT_S,
         api_key: Optional[str] = None,
         ping: bool = False,
+        per_seed_thermalize: bool = True,
+        per_seed_beta: float = DEFAULT_PER_SEED_BETA,
+        per_seed_n_sweeps: int = DEFAULT_PER_SEED_N_SWEEPS,
+        u_field_name: str = DEFAULT_U_FIELD_NAME,
     ):
         try:
             import requests  # noqa: F401 — checked at construction time
@@ -122,6 +134,22 @@ class LiveLoopTransportClient:
         # we cache the handle so a redeclare with a different shape
         # raises a clear error without round-tripping to the engine.
         self._declared_loops: Dict[str, LoopHandle] = {}
+        # Per-seed thermalization: per Gigi's substrate-determinism stance
+        # (2026-06-21 VI.6 readout), the substrate's LOOP_TRANSPORT verb
+        # is deterministic given fixed (U, E) input. To produce the
+        # per-seed variance v3.1.3 §3.5's σ_H_blocked needs, Halcyon
+        # re-thermalizes U_lt with each seed BEFORE that seed's
+        # LOOP_TRANSPORT call. Decomposes multi-seed requests into N
+        # single-seed sub-calls with deterministic per-seed
+        # thermalizations between. Disable by passing per_seed_thermalize
+        # =False (the original single-call mode) for integration tests
+        # that explicitly want to exercise the substrate's seed-handling
+        # in isolation, or for cases where the engine is already in a
+        # known canonical state and re-thermalization is unwanted.
+        self.per_seed_thermalize = bool(per_seed_thermalize)
+        self.per_seed_beta = float(per_seed_beta)
+        self.per_seed_n_sweeps = int(per_seed_n_sweeps)
+        self.u_field_name = str(u_field_name)
         if ping:
             self._ping()
 
@@ -158,8 +186,33 @@ class LiveLoopTransportClient:
         per_seed_H_reversed, tracking_error_max_Q,
         tracking_error_max_beta_W, adiabaticity_check;``
 
-        Posts the GQL to ``/v1/gql`` and unpacks the Rows envelope
-        into a ``LoopTransportResult`` matching the mock's contract.
+        Per Gigi's substrate-determinism stance (the substrate's
+        LOOP_TRANSPORT verb is deterministic given fixed `(U, E)`
+        input), the per-seed variance v3.1.3 §3.5 requires must come
+        from per-seed thermalizations on the Halcyon side, not from
+        seeds-as-RNG inside the verb. When `self.per_seed_thermalize`
+        is True (the default) AND the request has more than one seed,
+        this method decomposes the call into N single-seed sub-calls,
+        each preceded by `GIBBS_SAMPLE U_lt SEED <per_seed>` so each
+        seed slot corresponds to an INDEPENDENT thermalized
+        configuration. The decomposition preserves the orchestrator's
+        existing call contract — the returned `LoopTransportResult`
+        has the same shape as if a single multi-seed call had been
+        made — but the per-seed values now carry genuine ensemble
+        variance.
+
+        Important: the GIBBS_SAMPLE thermalization is deterministic
+        per seed (Gigi's xorshift64* CSPRNG). So the same seed in
+        two separate `loop_transport` calls (e.g., forward then
+        reversed) lands the SAME thermalized U_lt configuration —
+        which is required for the antisymmetric primary observable
+        H_geom = ½(H[γ] − H[γ⁻¹]) per v3.1.3 §3.1 (both holonomies
+        on the same configuration).
+
+        For single-seed requests, the call falls through to the
+        original single-shot path. Per_seed_thermalize can be
+        disabled at construction time for integration-testing the
+        substrate's seed-handling in isolation.
         """
         if request.loop.name not in self._declared_loops:
             raise ValueError(
@@ -167,6 +220,17 @@ class LiveLoopTransportClient:
                 f"call declare_loop({request.loop.name}) first"
             )
 
+        if self.per_seed_thermalize and len(request.seeds) > 1:
+            return self._loop_transport_per_seed_decomposed(request)
+        return self._loop_transport_single_shot(request)
+
+    def _loop_transport_single_shot(
+        self, request: LoopTransportRequest
+    ) -> LoopTransportResult:
+        """Original single-call path: post one LOOP_TRANSPORT GQL with
+        whatever seeds the request carries, parse one row. Used for
+        single-seed requests and for the test-mode where per-seed
+        thermalization is disabled."""
         query = self._build_loop_transport_gql(request)
         body = self._gql_query(query)
         rows = self._extract_rows(body)
@@ -177,6 +241,159 @@ class LiveLoopTransportClient:
             )
         row = rows[0]
         return self._row_to_result(row, request, query)
+
+    def _loop_transport_per_seed_decomposed(
+        self, request: LoopTransportRequest
+    ) -> LoopTransportResult:
+        """Decompose a multi-seed request into N single-seed sub-calls,
+        each preceded by a per-seed thermalization of U_lt. Aggregate
+        the per-seed scalars into the multi-seed-shaped
+        LoopTransportResult the orchestrator expects.
+
+        Per v3.1.3 §3.5: each seed indexes an independent realization.
+        Since the substrate's LOOP_TRANSPORT verb is deterministic per
+        `(U, E)`, independence has to come from re-thermalizing U_lt
+        with a different seed before each call. The xorshift64* CSPRNG
+        Gigi uses is deterministic per seed, so the same seed in
+        two separate calls (e.g., forward then reversed) lands the
+        same configuration — which is exactly what the antisymmetric
+        primary observable H_geom = ½(H[γ] − H[γ⁻¹]) per v3.1.3 §3.1
+        requires (both holonomies on the same gauge field state).
+        """
+        per_seed_h_forward: List[float] = []
+        per_seed_h_reversed: List[float] = []
+        per_seed_holonomy: List[np.ndarray] = []
+        max_tracking_q: float = 0.0
+        max_tracking_beta_w: float = 0.0
+        max_adia_ratio: float = 0.0
+        max_ramp_ratio: float = 0.0
+        total_warnings: int = 0
+        warn_substep_indices: List[int] = []
+        sub_run_ids: List[str] = []
+
+        for seed in request.seeds:
+            # Per-seed re-thermalization. Deterministic per seed via the
+            # substrate's xorshift64* CSPRNG.
+            self._rethermalize_u_field(seed=seed)
+
+            single_request = replace(request, seeds=(seed,))
+            single = self._loop_transport_single_shot(single_request)
+
+            # The single-shot response per_seed_h_scalar has length 1.
+            # Extract both forward and reversed from the substrate's
+            # response by directly reading the row — but the row was
+            # consumed inside _loop_transport_single_shot. Simplest:
+            # use the direction-selected per_seed_h_scalar from the
+            # single result, AND parse the holonomy row to get the
+            # OTHER direction. To avoid a second parse-of-the-same-row
+            # detour, we instead rely on the orchestrator pattern:
+            # forward and reversed are SEPARATE calls. Each call here
+            # carries the requested direction; the per-seed scalar of
+            # the requested direction is the load-bearing value.
+            #
+            # If both directions are needed from a single sub-call,
+            # that's a future enhancement: would cut substrate calls
+            # by 2× but requires extending the response surface. For
+            # now we accept the 2× cost as the price of keeping the
+            # orchestrator + protocol contract clean.
+            scalar = float(single.per_seed_h_scalar[0])
+            if request.direction == "FORWARD":
+                per_seed_h_forward.append(scalar)
+                per_seed_h_reversed.append(scalar)  # placeholder; not used downstream
+            else:
+                per_seed_h_forward.append(scalar)  # placeholder; not used downstream
+                per_seed_h_reversed.append(scalar)
+
+            per_seed_holonomy.append(single.per_seed_holonomy[0])
+
+            # Aggregate diagnostics: max across sub-calls (the substrate
+            # emits MAX-over-substeps already, so MAX-over-seeds gives
+            # the worst-case across the ensemble — what Halcyon's gates
+            # need).
+            max_tracking_q = max(max_tracking_q, single.tracking_error_max_Q)
+            max_tracking_beta_w = max(
+                max_tracking_beta_w, single.tracking_error_max_beta_W
+            )
+            max_adia_ratio = max(
+                max_adia_ratio,
+                single.adiabaticity_check.tau_pin_over_t_segment,
+            )
+            max_ramp_ratio = max(
+                max_ramp_ratio,
+                single.adiabaticity_check.ramp_rate_over_relaxation_rate,
+            )
+            total_warnings += single.adiabaticity_check.warnings_count
+            warn_substep_indices.extend(
+                single.adiabaticity_check.warning_substep_indices
+            )
+            if single.run_id:
+                sub_run_ids.append(single.run_id)
+
+        # Per-seed scalar is the direction-selected vector (the other
+        # direction's vector is filled with the same value as a
+        # placeholder; downstream code only reads the requested-direction
+        # field).
+        if request.direction == "FORWARD":
+            per_seed_h_scalar_arr = np.asarray(per_seed_h_forward, dtype=np.float64)
+        else:
+            per_seed_h_scalar_arr = np.asarray(per_seed_h_reversed, dtype=np.float64)
+
+        # σ_H_blocked: Flyvbjerg-Petersen SEM across seeds per v3.1.3 §3.5.
+        # With per-seed thermalization, the per-seed values are now
+        # genuinely independent realizations, so np.std with ddof=1
+        # gives the unbiased sample standard deviation; dividing by
+        # √n gives the standard error of the mean.
+        n_seeds = len(per_seed_h_scalar_arr)
+        if n_seeds > 1:
+            sigma_h_blocked = float(
+                np.std(per_seed_h_scalar_arr, ddof=1) / np.sqrt(n_seeds)
+            )
+        else:
+            sigma_h_blocked = 0.0
+
+        return LoopTransportResult(
+            per_seed_holonomy=np.asarray(per_seed_holonomy, dtype=np.float64),
+            per_seed_h_scalar=per_seed_h_scalar_arr,
+            sigma_h_blocked=sigma_h_blocked,
+            tracking_error_max_Q=max_tracking_q,
+            tracking_error_max_beta_W=max_tracking_beta_w,
+            adiabaticity_check=AdiabaticityCheck(
+                tau_pin_over_t_segment=max_adia_ratio,
+                ramp_rate_over_relaxation_rate=max_ramp_ratio,
+                warnings_count=total_warnings,
+                warning_substep_indices=tuple(warn_substep_indices),
+            ),
+            run_id=";".join(sub_run_ids) if sub_run_ids else "",
+        )
+
+    def _rethermalize_u_field(
+        self,
+        seed: int,
+        beta: Optional[float] = None,
+        n_sweeps: Optional[int] = None,
+    ) -> None:
+        """Fire `GIBBS_SAMPLE U_lt BETA <β> N_SWEEPS <n> SEED <seed>;`
+        against the live engine. Used by the per-seed decomposition to
+        bring U_lt to a fresh thermalized configuration before each
+        single-seed LOOP_TRANSPORT sub-call.
+
+        Per `precondition_canonical_buckyball()`'s thermalization
+        defaults (β=2.5, 200 sweeps) — keeps the per-seed
+        thermalizations in the same Halcyon-spine band the precondition
+        lands in (~<P> 0.51, Migdal-Witten operating point per v3.1.3
+        §4.4).
+        """
+        beta_val = self.per_seed_beta if beta is None else float(beta)
+        n_sweeps_val = self.per_seed_n_sweeps if n_sweeps is None else int(n_sweeps)
+        query = (
+            f"GIBBS_SAMPLE {self.u_field_name} "
+            f"BETA {beta_val} "
+            f"N_SWEEPS {n_sweeps_val} "
+            f"MEASURE_EVERY {n_sweeps_val} "
+            f"MEASURE (MEAN(PLAQUETTE)) "
+            f"SEED {seed};"
+        )
+        self._gql_query(query)
 
     # ------------------------------------------------------------------
     # GQL builders (best-effort against gate-doc grammar + v3.1.3 §4.4)

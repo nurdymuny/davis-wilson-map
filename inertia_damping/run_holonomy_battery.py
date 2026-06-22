@@ -302,12 +302,19 @@ def _make_client(args: argparse.Namespace):
         )
         print(
             "WARNING: --client live talks to a real GIGI substrate.\n"
-            "         Halcyon's gate logic produces meaningful POSITIVE/NULL/\n"
-            "         AMBIGUOUS verdicts only when VI.4 (SHAM block dispatch)\n"
-            "         AND VI.5 (bit-identity per-seed gold fixture) are both\n"
-            "         green on the substrate side. Use --client live for\n"
-            "         integration testing only until those land; the\n"
-            "         publication-bound run waits for VI.5.\n",
+            "         Per-seed thermalization is ON (default) — each seed in\n"
+            "         the ensemble triggers a GIBBS_SAMPLE U_lt with that\n"
+            "         seed before its LOOP_TRANSPORT sub-call, so per-seed\n"
+            "         values carry genuine ensemble variance per v3.1.3 §3.5.\n"
+            "         The publication-bound run is still gated on substrate-\n"
+            "         side semantic fixes for:\n"
+            "           - FORWARD/REVERSED holonomy distinction (signed scalar)\n"
+            "           - tau_pin actual measurement (not placeholder = 1.0)\n"
+            "           - tracking_error_max actual measurement (not = 0.0)\n"
+            "           - α=1000 parser BETA_WILSON endpoint arithmetic\n"
+            "         When all four land substrate-side, the orchestrator's\n"
+            "         per-seed decomposition + the substrate's semantic\n"
+            "         correctness together produce a meaningful verdict.\n",
         )
         return LiveLoopTransportClient(base_url=args.gigi_url)
     return MockLoopTransportClient(scenario=args.mock_scenario)
