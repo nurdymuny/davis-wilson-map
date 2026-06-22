@@ -2512,3 +2512,92 @@ Three patterns from today are worth recording as cross-domain lessons, beyond th
 | Explicit follow-up (carried) | Three doc defects in 4D-cubic; SU(2) fermion validation; Davis Duality SU(2); hardware transmon-to-link; full numerical M6 gate; baseline drift at $dt = 0.01$ | 6 |
 
 The book chapter that lifts from this entry will read: a pre-registered protocol survived four rounds of pre-deposit technical review without losing its falsifiability, a six-letter cross-team design exchange resolved every cross-cutting question before a line of substrate code was written, and the Halcyon-side orchestrator went from a single specification sentence in v3.1.3 §4.6 to a 35-test-passing scaffold in the same session that minted the Zenodo DOI. The deposit timestamp is the load-bearing moment because it locks the §3 criteria as the independent referee on what counts as a result — neither the substrate's eventual numerical output nor the Halcyon orchestrator's eventual production run can amend §3 retroactively. The two-clocks methodology is now operative in practice: substrate timeline does not move the pre-registration; pre-registration does not move the substrate timeline; both clocks tick separately toward implementation. The mock client lets the Halcyon-side gate logic be developed and tested today against the contract the substrate verb will satisfy; when GIGI's verb ships, the only Halcyon-side change is swapping the mock for the live binding inside `run_holonomy_battery.py`'s `main()`. Everything else — every threshold, every gate, every sidecar field — was pre-registered, committed, deposited, tagged, tested. Pre-registration's intended property is doing what it is supposed to do.
+
+---
+
+## 2026-06-21 — Cross-team audit trail: VI.6b receipts + CSPRNG-determinism contract
+
+### The shape of the entry
+
+Logging late on the same calendar day as the deposit because Gigi shipped VI.6b on the substrate side in the afternoon and asked for several items to land in writing on the Halcyon-side audit trail before either of us moves on. The deposit closed the §3 criteria; what follows is the engineering-side bookkeeping that keeps the cross-team contract honest between now and the publication-bound run. Five items: VI.6b receipts re-fired against the rebuilt engine, Finding #2 closure on the Halcyon side at commit `5add5da`, a Fix #5 spec-clarification note that should be findable later, the CSPRNG-determinism contract now load-bearing across the cross-team boundary with a captured fingerprint, and a placeholder for the projection convention Option A will resolve.
+
+Per Gigi's request, this JOURNAL entry IS the shared spec-audit doc — searchable by date `2026-06-21` plus the key phrase identifying each item below. Any future implementer re-deriving an audited choice should look here first.
+
+### VI.6b receipts — Findings #3, #4, #5 closed at real-measurement quality
+
+Gigi shipped VI.6b on the substrate side at gigi commit `3f7d42e` (Fixes #3 + #4 + #5 in one bundle). Halcyon's diagnostic re-fire against the rebuilt `gigi-stream.exe` confirms each of the three findings closed at real-measurement quality rather than placeholder quality.
+
+**Finding #3 (τ_pin):** the previous build hard-coded `1.0` as a placeholder; VI.6b now reports a genuine measurement. Current value on the identity-U state at α=1, N=10000 is $\tau_\text{pin} = 10^{12}$ — this is the Gauss residual sitting at the $10^{-12}$ clamp floor, which is the correct answer for an identity gauge field and means the measurement plumbing is wired. The number will normalize to the SPEC's $(0, 100)$ adiabaticity bracket once Option A's per-seed pipeline produces genuinely thermalized $U_{lt}$ rather than identity-initialized $U$.
+
+**Finding #4 (tracking_error):** the previous build hard-coded `0.0`; VI.6b now reports per-axis maxes. At $\alpha = 1$: $Q$-axis tracking error $0.079$, $\beta_W$-axis $0.151$. At $\alpha = 1000$: $Q$-axis $0.095$, $\beta_W$-axis $0.167$. The substrate emits the raw f64 quantities; the Halcyon Python gate layer applies the $\varepsilon_Q = 0.05 / \varepsilon_{\beta_W} = 0.05$ thresholds per the design-closeout §A.1 architectural seam.
+
+**Finding #5 (α=1000 parses and executes):** the BETA_WILSON parser arithmetic now handles $\alpha = 1000$ cleanly end-to-end; the canonical case produces $h_\text{scalar} = 0.9429648277$ rather than rejecting at the parser.
+
+The three findings together mean the substrate side of the orchestrator contract is now emitting real numbers everywhere it used to emit placeholders, and Halcyon's Python gate layer can be trusted to be exercising the actual measurement quantities rather than zeros.
+
+### Finding #2 closure on the Halcyon side at commit `5add5da`
+
+Per-seed variance — the requirement that successive seeds produce genuinely independent forward/reversed pairs rather than re-using the same gauge configuration — is closed on the Halcyon side at commit `5add5da` of this repo, via orchestrator decomposition rather than substrate-side change. The live client decomposes each multi-seed `LOOP_TRANSPORT` request into $N$ single-seed sub-calls and interleaves a `GIBBS_SAMPLE` re-thermalization between every pair of sub-calls. The substrate stays deterministic per `(U, E)` — which is the property the t013 three-constraint contract requires — and per-seed independence comes from Halcyon's pre-call thermalization steps reseeding the state before each forward/reversed pair.
+
+End-to-end verification against the rebuilt substrate produced $\sigma_{H,\text{blocked}} = 1.36 \times 10^{-2}$ with per-seed scalars $[0.90961, 0.93416, 0.95680]$ across three seeds. The spread is real per-seed variance, not measurement noise on a single configuration; the substrate's determinism contract is preserved; the Halcyon-side closure is independent of any substrate-side change to the LOOP_TRANSPORT verb.
+
+This pattern — architectural seam at the client boundary rather than tunable knob inside the substrate — is the same pattern the design-closeout §A.1 names for ε_abs and the τ_pin threshold and tracking-error gates. The substrate emits raw quantities; the orchestrator composes them into the experimental contract.
+
+### Fix #5 amplitude-formula spec clarification — audit-trail item
+
+Gigi flagged this one explicitly because it is a spec-clarification that is *not* in v3.1.3 itself, and it would be findable later only if someone re-derived the calculation. Naming it here so the audit trail has the reading recorded at the moment the implementation choice was made.
+
+The v3.1.3 §3.6 example gives the amplitude calculation as $0.01 \cdot 200 / 4 = 0.5$. A naive reading would treat the $200$ as literal $N$ — i.e., the substep count parameter — and substitute the production $N = 10000$ to get $\text{amp} = 25$. That reading is wrong: it would reject the canonical case at the parser and break VI.5 bit-identity, because the canonical fixture (`gigi/tests/fixtures/halcyon/part_vi/loop_transport_canonical.json` at gigi commit `3f7d42e`) was generated against $\text{amp} = 0.5$ and the bit-identity hash check would fail.
+
+The correct reading is that the SPEC's "$200$" was $\tau_0$ implicitly — the time-scale parameter, not the substep count — and the amplitude formula is $|\text{ramp}| \cdot \tau_0 / 4$, which is $\alpha$-independent. VI.6b's implementation uses $\tau_0$, gives $\text{amp} = 0.5$ at the canonical $\tau_0 = 200$, and satisfies both the VI.5 bit-identity gate and the dual $\alpha = 1$ / $\alpha = 1000$ calibration v3.1.3 §3.6 requires. The substrate agent doing the implementation correctly recognized that the SPEC's worked example used $\tau_0$ in disguise; the audit-trail value of recording this is that a future implementer reading v3.1.3 §3.6 cold could plausibly choose the literal-$N$ reading and break bit-identity without noticing why.
+
+Logging this as a spec-audit item only — **v3.1.4 is not needed for this reading** because the v3.1.3 §3.6 worked example is mathematically correct under the $\tau_0$ interpretation, and this JOURNAL entry is the locatable record for any future implementer re-deriving the amplitude.
+
+### Cross-team CSPRNG-determinism contract is now load-bearing across the cross-team boundary
+
+This is the item that prompted the entry. Halcyon's per-seed orchestrator decomposition at commit `5add5da` is correct *only because* gigi's `GIBBS_SAMPLE` is deterministic per seed — the xorshift64* CSPRNG at `gigi/src/gauge/marsaglia_haar.rs:33` returns byte-identical outputs across repeat firings for any fixed seed *and starting U configuration*. If gigi ever changes its `marsaglia_haar::SmallRng` implementation — switches to a different generator, reorders the stream consumption, changes the seed expansion — Halcyon's decomposition silently produces incoherent forward/reversed pairs: **the forward sub-call sees one thermalized configuration, the reversed sub-call sees a different configuration, and the antisymmetric primary observable becomes meaningless** without anyone noticing because the f64 emission path stays the same.
+
+The substrate-side gold fixtures at IV.6 + VI.5 pin this from the gigi side. Gigi asked for the corresponding Halcyon-side sentinel: a fingerprint of the CSPRNG output that fires when the operator runs the live-smoke battery after a gigi-stream rebuild, and catches CSPRNG drift before it contaminates a science run. The two pins together — substrate gold fixtures plus orchestrator sentinel — close the audit chain across the cross-team boundary.
+
+The captured fingerprint, measured against a freshly-declared `INIT IDENTITY` SU(2) gauge field on the canonical `halcyon_canonical_buckyball` lattice, verified byte-identical across repeat firings post-VI.6b at gigi commit `3f7d42e`:
+
+```
+GIBBS_SAMPLE <fresh-identity-field> BETA 2.5 N_SWEEPS 200 MEASURE_EVERY 50
+MEASURE (MEAN(PLAQUETTE)) SEED 20260616;
+```
+
+returns the 4-element `MeanPlaquette` chain
+
+$$[0.4748770176956066,\ 0.45682045092345325,\ 0.5671546613446052,\ 0.5125429110231062].$$
+
+A different seed (`SEED 20260617`) on the same canonical starting state returns
+
+$$[0.4891038593457839,\ 0.5344809007981545,\ 0.6216678882452541,\ 0.4399333197466609]$$
+
+— per-seed-different, confirming the variance is real and the fingerprint is not an accident of constant output. **Note for future implementers**: the SEED 20260617 capture *requires* starting from a fresh `INIT IDENTITY` field. An initial capture in this session that ran SEED 20260617 immediately after SEED 20260616 (re-using the post-thermalized $U_{lt}$) produced different values; the sentinel test caught this provenance mismatch on first firing and forced a re-capture from the correct starting state. The cross-team audit chain working as designed — exactly the kind of silent provenance drift that would otherwise contaminate the publication-bound run.
+
+Halcyon's sentinel test lives at `inertia_damping/test_csprng_fingerprint.py` (companion commit to this JOURNAL entry). It pins both chains at bit-exact f64 equality (Python `==` on float, not a tolerance-based comparison — a single-bit CSPRNG drift must be detected, not hidden). Each test invocation declares a UUID-suffixed scratch field at `INIT IDENTITY` so cross-test state contamination cannot mask drift. Gated on `HALCYON_LIVE_SMOKE=1`; the operator fires it post-rebuild as part of the live-smoke battery. If gigi's CSPRNG changes for any reason — implementation swap, refactor, optimization, library upgrade — the sentinel fails first, before any science run can consume the silently-changed RNG stream.
+
+### Projection convention placeholder — Option A pending
+
+Option A is the substrate-side coordinated workflow Gigi has queued next: Fix #1 (signed arccos in the holonomy projection), GC₁–GC₄ recalibration against the corrected projection, VI.5 fixture regeneration against the new canonical signature, and a projection-convention paragraph added to the substrate-side implementation log at `theory/halcyon/HALCYON_PART_VI_IMPLEMENTATION_LOG.md`. The projection-convention item is substrate-side documentation only and does **not** require a v3.1.4 amendment because §3 falsification criteria do not move on a projection convention change — H_geom is defined abstractly in §3.1; the choice of abelianized scalar projection is an implementation detail that the substrate documents in its own implementation log.
+
+When Option A lands on the gigi side, the projection convention chosen will be back-referenced here from Halcyon's side as a follow-up entry. This sentence reserves the spot so the audit trail has continuity: the design-closeout sealed the cross-team verb contract, VI.6b closed three of the five findings at real-measurement quality, `5add5da` closed Finding #2 via orchestrator decomposition, the CSPRNG sentinel pins the determinism contract, and Option A's projection-convention paragraph is the last cross-team item before the publication-bound run.
+
+### What unblocks next
+
+After Option A ships on the gigi side, the cadence is straightforward and entirely on Halcyon's side: re-fire the 5-shape diagnostic against the rebuilt `gigi-stream.exe`, confirm all 5 findings close at canonical thermalized state, and run the publication-bound v3.1.3 protocol at both pre-registered calibrations ($\alpha = 1.0$ and $\alpha = 1000.0$) against the live `LoopTransportClient` binding rather than the mock. The orchestrator scaffold from earlier today was structured around exactly this swap: the contract is Protocol-typed against the same interface for mock and live; the 41-test mock-side suite passes regardless of which client backs it; and the publication-bound run becomes one command at the shell prompt:
+
+```
+GIGI_URL=http://localhost:3142 python -m inertia_damping.run_holonomy_battery \
+    --client live --precondition --alpha 1.0 1000.0 \
+    --output-dir inertia_damping/reports/holonomy_battery_v3_1_3/
+```
+
+Everything between here and there is substrate-side.
+
+### Ownership
+
+Halcyon side: complete pending Option A. The orchestrator scaffold, the per-seed decomposition, the CSPRNG sentinel, the gate logic in `holonomy_battery/gates.py`, the sidecar schema, the 49-test suite (35 mock + 6 per-seed decomposition unit + 2 CSPRNG sentinel + 6 live smoke) — all sealed and tested against the contract VI.6b confirms the substrate now satisfies. The only Halcyon-side change between now and the publication-bound run is the mock-to-live client swap.
+
+Gigi's queue: VI.6b shipped (Fixes #3 + #4 + #5 closed at `3f7d42e`), Option A next (Fix #1 signed arccos, GC₁–GC₄ recalibration, VI.5 fixture regen, projection-convention paragraph for `HALCYON_PART_VI_IMPLEMENTATION_LOG.md`). When Option A lands, the projection-convention back-reference will be appended to this JOURNAL.
