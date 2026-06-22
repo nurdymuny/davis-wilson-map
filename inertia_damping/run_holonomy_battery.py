@@ -126,10 +126,17 @@ def run_one_calibration(
         seeds=seeds,
     )
 
-    # Each sham: one forward call on the appropriate loop
+    # Each sham: one forward call on the canonical loop. Per Gigi's
+    # calling guide §"The verb call" line 89, SHAM { DEGENERATE_LOOP
+    # = TRUE } substitutes a zero-area loop at the substrate side —
+    # the orchestrator always passes the canonical GAMMA_UNIT (i.e.,
+    # gamma_unit_in_Q_beta_W on FACE 0) and lets the substrate's SHAM
+    # dispatch handle the degenerate semantics. The Halcyon-side
+    # GAMMA_DEGENERATE remains in loops.py as documentation of what
+    # S₅ means conceptually, but it isn't sent over the wire.
     sham_results: Dict[ShamFlag, LoopTransportResult] = {}
     for sham in SCIENCE_GATE_SHAMS:
-        sham_loop = GAMMA_DEGENERATE if sham is ShamFlag.BACKTRACK_LOOP else GAMMA_UNIT
+        sham_loop = GAMMA_UNIT
         if sham is ShamFlag.MASS_SCALED:
             # S₃ runs three sub-calls; the orchestrator picks the
             # mu_baseline = 1.0 case as the gate input (per §3.2
@@ -270,6 +277,19 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
             "publication-bound run uses the pre-registered set."
         ),
     )
+    parser.add_argument(
+        "--precondition",
+        action="store_true",
+        default=False,
+        help=(
+            "Before firing LOOP_TRANSPORT, bring the live substrate to v3.1.3 "
+            "canonical state (declare LATTICE halcyon_canonical_buckyball + "
+            "GAUGE_FIELD U_lt + E_FIELD E_lt + LOOP gamma_unit_in_Q_beta_W "
+            "FACE 0, then thermalize the gauge field at β=2.5 with seed "
+            "20260616). Idempotent — safe to run repeatedly. Only meaningful "
+            "with --client live; ignored under --client mock."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -309,6 +329,18 @@ def _reconfigure_stdout_utf8() -> None:
 def main(argv: Optional[List[str]] = None) -> int:
     _reconfigure_stdout_utf8()
     args = _parse_args(argv)
+
+    # Optional precondition step: bring the live substrate to v3.1.3
+    # canonical state before firing LOOP_TRANSPORT. Mock client doesn't
+    # need preconditioning; the flag is silently ignored for it.
+    if args.precondition and args.client == "live":
+        from inertia_damping.holonomy_battery import precondition_canonical_buckyball
+        precondition_result = precondition_canonical_buckyball(
+            base_url=args.gigi_url,
+            init="thermalized",
+        )
+        print(f"PRECONDITION: {precondition_result.summary}\n")
+
     client = _make_client(args)
     results = run_holonomy_battery(
         client,

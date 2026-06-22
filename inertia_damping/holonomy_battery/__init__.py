@@ -25,14 +25,32 @@ from inertia_damping.holonomy_battery.sidecar import (
     Section12Sidecar,
     write_sidecar,
 )
+from inertia_damping.holonomy_battery.precondition import (
+    CANONICAL_E_FIELD,
+    CANONICAL_FACE_INDEX,
+    CANONICAL_LATTICE,
+    CANONICAL_LOOP,
+    CANONICAL_U_FIELD,
+    PreconditionError,
+    PreconditionResult,
+    precondition_canonical_buckyball,
+)
 
 __all__ = [
+    "CANONICAL_E_FIELD",
+    "CANONICAL_FACE_INDEX",
+    "CANONICAL_LATTICE",
+    "CANONICAL_LOOP",
+    "CANONICAL_U_FIELD",
     "GAMMA_DEGENERATE",
     "GAMMA_UNIT",
+    "PreconditionError",
+    "PreconditionResult",
     "Section12Sidecar",
     "V313_CONSTANTS",
     "V313Constants",
     "Verdict",
     "classify",
+    "precondition_canonical_buckyball",
     "write_sidecar",
 ]
