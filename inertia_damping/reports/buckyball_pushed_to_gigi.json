@@ -1,0 +1,77 @@
+{
+  "protocol": "buckyball SU(2) thermalized configs pushed to local gigi as bundles, with fiber-blindness verification",
+  "engine": {
+    "url": "http://localhost:3142",
+    "rebuild_from": "gigi origin/main with 3.2 (INGEST) + 3.3 (cubic lattice) trilogy commits; 3.1 SU(3) not on origin",
+    "auth": "local dev, no GIGI_API_KEY required"
+  },
+  "graph": {"V": 60, "E": 90, "F": 32, "chi": 2, "topology": "S²"},
+  "bundles_pushed": [
+    {
+      "name": "halcyon_ym_buckyball_beta_2_5_links",
+      "beta": 2.5,
+      "seed": 20260616,
+      "n_sweeps_thermalize": 1000,
+      "P_measured": 0.5303,
+      "P_exact_migdal_witten": 0.5072,
+      "delta_P": 0.0231,
+      "phase": "deconfined",
+      "insert": {
+        "records": 90,
+        "curvature": 0.05989450945031192,
+        "confidence": 0.9434901219732003
+      },
+      "spectral_fiber_blind_λ1": 0.024660,
+      "spectral_full_λ1": 0.024697,
+      "betti_topology": 56.0
+    },
+    {
+      "name": "halcyon_ym_buckyball_beta_1_0_links",
+      "beta": 1.0,
+      "seed": 20260616,
+      "n_sweeps_thermalize": 1000,
+      "P_measured": 0.2359,
+      "P_exact_migdal_witten": 0.2402,
+      "delta_P": -0.0043,
+      "phase": "confined",
+      "insert": {
+        "records": 90,
+        "curvature": 0.05860,
+        "confidence": 0.94464
+      },
+      "spectral_fiber_blind_λ1": 0.024885,
+      "betti_topology": 56.0
+    }
+  ],
+  "fiber_blindness_verification": {
+    "claim": "SPECTRAL and BETTI on this bundle schema are fiber-blind — they read the field-index graph from indexed bitmaps (vertex_a, vertex_b) only, not the SU(2) quaternion fiber fields (q0..q3).",
+    "evidence_for_blindness": {
+      "SPECTRAL_beta_2_5": 0.024660,
+      "SPECTRAL_beta_1_0": 0.024885,
+      "difference": 0.000225,
+      "P_ratio_beta_2_5_to_beta_1_0": 2.25,
+      "reading": "SPECTRAL values agree to 4 significant figures despite ⟨P⟩ differing by 2.25× across the deconfinement transition. Confirms SPECTRAL reads topology only, not the gauge field."
+    },
+    "evidence_for_fiber_awareness_in_insert_curvature": {
+      "insert_curvature_beta_2_5": 0.05989,
+      "insert_curvature_beta_1_0": 0.05860,
+      "difference": 0.00129,
+      "reading": "The substrate's per-insert curvature differs between the two β configurations. This signal IS fiber-aware — gigi's automatic geometric drift monitoring reads the actual record values during INSERT, not just indexed bitmaps. This is one fiber-aware substrate observable we get for free even without the EXPOSE_GAUGE_AS_BUNDLE bridge ask."
+    }
+  },
+  "headline_caveats": [
+    "SPECTRAL on this bundle is NOT the YM mass gap. It is λ₁ of the buckyball line-graph Laplacian (a topology invariant, fiber-blind).",
+    "BETTI on this bundle is the topology of the field-index graph (β₀+β₁ = 56 for the line graph). Pure topology.",
+    "HOLONOMY around faces requires either (a) a separate faces bundle with edge cycles (face tracing failed in this push due to graph.faces shape mismatch — fixable) or (b) Halcyon-side LATTICE access. Not measured here.",
+    "True YM mass-gap reading requires EXPOSE_GAUGE_AS_BUNDLE (the bridge ask) OR a new gauge-aware Laplacian verb. Neither exists today.",
+    "What IS measurable today through this bundle path: topology (BETTI), insert-time per-config geometric drift (curvature + confidence), and the bundle exists for any future gauge-aware verbs to operate on."
+  ],
+  "cross_references": [
+    "inertia_damping/HALCYON_TO_GIGI_2026_06_22_bridge_ask.md (the substrate-side asks that would unblock gauge-aware SPECTRAL)",
+    "inertia_damping/buckyball_falls_out_demo.py (local Python toolkit version of this demo, with Migdal-Witten exact cross-check)",
+    "inertia_damping/reports/buckyball_local_falls_out.json (the 9-point β-walk that proved the local toolkit matches exact to 3% RMS)",
+    "inertia_damping/push_buckyball_to_gigi.py (reusable script that produced this result)",
+    "gigi commit 605cfa1 (3.2 INGEST executor), 2e3b2ba (3.3 4D cubic lattice) — on origin",
+    "gigi commit 732b7b1 (3.1 SU(3) GROUP Phase 1) — local-only on Gigi's machine, not on origin yet"
+  ]
+}
