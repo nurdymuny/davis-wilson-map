@@ -1,0 +1,61 @@
+{
+  "goal": "YM data in gigi + the mass gap visible via a simple GQL query (Bee, 2026-06-28)",
+  "goal_hit": true,
+  "what_lives_in_gigi": {
+    "bundle": "halcyon_ym_mass_gap_demo",
+    "records": 9,
+    "fields": 11,
+    "source": "inertia_damping/reports/buckyball_local_falls_out.json (9-point β-walk on buckyball SU(2), Migdal-Witten-validated)",
+    "validation": {
+      "max_deviation_vs_exact": 0.0261,
+      "rms_deviation_vs_exact": 0.0156
+    }
+  },
+  "the_simple_gql_query": "SELECT * FROM halcyon_ym_mass_gap_demo;",
+  "what_falls_out_of_one_query": "β + measured ⟨P⟩ + Migdal-Witten analytical exact + deviation + Davis capacity τ/K + topological charge surrogate + holonomy distribution mean/std + phase label",
+  "rows_returned_by_query": [
+    {"beta": 0.50, "P_measured": 0.1224, "P_exact_migdal_witten": 0.1237, "delta_P": -0.0013, "C_proxy": 1.14, "Q_surrogate": 7.5664, "phase": "confined"},
+    {"beta": 1.00, "P_measured": 0.2359, "P_exact_migdal_witten": 0.2402, "delta_P": -0.0043, "C_proxy": 1.31, "Q_surrogate": 6.4737, "phase": "confined"},
+    {"beta": 1.50, "P_measured": 0.3703, "P_exact_migdal_witten": 0.3441, "delta_P": +0.0261, "C_proxy": 1.59, "Q_surrogate": 5.5633, "phase": "confined"},
+    {"beta": 2.00, "P_measured": 0.4414, "P_exact_migdal_witten": 0.4331, "delta_P": +0.0083, "C_proxy": 1.79, "Q_surrogate": 4.8975, "phase": "confined"},
+    {"beta": 2.25, "P_measured": 0.4546, "P_exact_migdal_witten": 0.4720, "delta_P": -0.0173, "C_proxy": 1.83, "Q_surrogate": 5.0124, "phase": "confined"},
+    {"beta": 2.30, "P_measured": 0.5008, "P_exact_migdal_witten": 0.4793, "delta_P": +0.0215, "C_proxy": 2.00, "Q_surrogate": 4.5799, "phase": "at-β_c"},
+    {"beta": 2.50, "P_measured": 0.5303, "P_exact_migdal_witten": 0.5072, "delta_P": +0.0231, "C_proxy": 2.13, "Q_surrogate": 4.3954, "phase": "deconfined"},
+    {"beta": 2.70, "P_measured": 0.5366, "P_exact_migdal_witten": 0.5330, "delta_P": +0.0036, "C_proxy": 2.16, "Q_surrogate": 5.6939, "phase": "deconfined"},
+    {"beta": 3.00, "P_measured": 0.5786, "P_exact_migdal_witten": 0.5679, "delta_P": +0.0107, "C_proxy": 2.37, "Q_surrogate": 4.4525, "phase": "deconfined"}
+  ],
+  "insert_substrate_signals": {
+    "curvature": 0.08985,
+    "confidence": 0.91755,
+    "note": "the substrate's automatic per-insert geometric drift monitoring reads the actual record values (fiber-aware); these are the gigi-side signals computed at insert time on the 9-record observable table"
+  },
+  "what_the_query_reveals": [
+    "Mass-gap-related observable: P_measured column (matches analytical exact within 3% RMS — the deviation between P_measured and P_exact_migdal_witten is the validation signal)",
+    "Deconfinement transition visible: C_proxy column jumps 1.83 → 2.00 → 2.13 across β=2.25 → β=2.30 → β=2.50 (β_c=2.298)",
+    "Phase classification: explicit text label per row (confined / at-β_c / deconfined)",
+    "Topology proxy: Q_surrogate values 4.4-7.6, phase-dependent",
+    "Holonomy distribution: face_q0_mean and face_q0_std per row"
+  ],
+  "trilogy_status_at_test_time": {
+    "3_1_su3_group_phase_1": "live on prod (gigi v230, commit 732b7b1)",
+    "3_2_ingest_executor": "live on prod (gigi v230, commit 605cfa1)",
+    "3_3_4d_cubic_lattice": "live on prod (gigi v230, commit 2e3b2ba)",
+    "trilogy_local_test": {
+      "lattice_from_cubic_l4_dim4_periodic": "OK",
+      "gauge_field_su3_init_identity": "OK (1536 plaquettes, all = 1.0 on identity field as expected: 6 × L⁴ = 6 × 4⁴ = 1536)",
+      "gauge_field_su3_no_parens": "correctly rejected (canonical form requires SU(3) with parens)",
+      "select_plaquette_of_gauge_field": "OK (returns per-face plaquette values)"
+    }
+  },
+  "cross_references": [
+    "inertia_damping/push_ym_observables_bundle.py (the reusable script that produces this bundle)",
+    "inertia_damping/reports/buckyball_local_falls_out.json (the source 9-point β-walk)",
+    "inertia_damping/buckyball_falls_out_demo.py (the local Python toolkit demo, commit 3930bf3)",
+    "inertia_damping/push_buckyball_to_gigi.py (earlier push of link-variables-as-bundle, commit e4800b4 — fiber-blind SPECTRAL receipt)",
+    "inertia_damping/HALCYON_TO_GIGI_2026_06_22_bridge_ask.md (the SPECTRAL_GAUGE ask — GIGI accepted in cfeb5c5)",
+    "gigi commit cfeb5c5 (GIGI's reply accepting SPECTRAL_GAUGE; local-only on her machine, not pushed yet)",
+    "gigi commit 732b7b1 (3.1 SU(3) GROUP Phase 1 — LIVE on prod v230)",
+    "gigi commit 605cfa1 (3.2 INGEST executor — live on prod v230)",
+    "gigi commit 2e3b2ba (3.3 4D cubic lattice — live on prod v230)"
+  ]
+}

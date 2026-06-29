@@ -1,0 +1,289 @@
+{
+  "report_metadata": {
+    "generated_at": "2026-06-20T20:03:37.834898+00:00",
+    "mode": "full",
+    "spec_version": "HALCYON_FALSIFICATION_BATTERY_SPEC.md v2",
+    "wall_seconds": 6670.548773527145
+  },
+  "section_11_falsification_battery": {
+    "alpha_measured": -0.018295937568005894,
+    "alpha_predicted_independent": null,
+    "alpha_predicted_note": "see Solves Vol. 4 A.7 \u00a73 \u2014 independent prediction open work",
+    "alpha_predicted_self_consistency": null,
+    "alpha_sem_blocked": 0.08675310971643953,
+    "applicable_count": 7,
+    "available": true,
+    "battery": {
+      "H0_nothing": {
+        "evidence": {
+          "alpha": -0.018295937568005894,
+          "alpha_over_sem": 0.21089661947344412,
+          "alpha_sem": 0.08675310971643953,
+          "extractor": "per_Q_chi_omega_fit"
+        },
+        "h_id": "H0_nothing",
+        "per_seed_strikes": 0,
+        "reason": "alpha=-1.8296e-02, sigma=8.6753e-02, ratio=0.21 (from per-Q fits)",
+        "struck": false
+      },
+      "H1_material": {
+        "evidence": {
+          "alphas_by_proxy": {
+            "0.5": 0.00023740650641235488,
+            "1.0": 0.00021031423844814932,
+            "2.0": 0.00023335283591888312
+          },
+          "d_alpha_d_mu_proxy": 9.748450709781113e-07,
+          "d_alpha_d_mu_proxy_rel": 0.004583150077784617
+        },
+        "h_id": "H1_material",
+        "per_seed_strikes": 8,
+        "reason": "d alpha/d mu_proxy = 9.7485e-07, rel = 0.0046",
+        "struck": true
+      },
+      "H2_thermal": {
+        "evidence": {},
+        "h_id": "H2_thermal",
+        "per_seed_strikes": 0,
+        "reason": "simulation has no thermal DOF",
+        "struck": "n/a"
+      },
+      "H3_em_pickup": {
+        "evidence": {},
+        "h_id": "H3_em_pickup",
+        "per_seed_strikes": 0,
+        "reason": "simulation has no EM DOF",
+        "struck": "n/a"
+      },
+      "H4_mechanical": {
+        "evidence": {},
+        "h_id": "H4_mechanical",
+        "per_seed_strikes": 0,
+        "reason": "rigid substrate, no mount DOF",
+        "struck": "n/a"
+      },
+      "H5_amplitude": {
+        "evidence": {
+          "F0_values": [
+            0.001,
+            0.003,
+            0.01,
+            0.03
+          ],
+          "chi_mean": 6.051929999958959,
+          "chi_per_F0": [
+            6.051926448864235,
+            6.051933072981332,
+            6.051938942056857,
+            6.051921535933409
+          ],
+          "rel_slope_chi_vs_F0": 5.488460513073818e-07
+        },
+        "h_id": "H5_amplitude",
+        "per_seed_strikes": 8,
+        "reason": "rel slope of chi vs F_0 = 0.0000 (gate < 0.10)",
+        "struck": true
+      },
+      "H6_resonance": {
+        "evidence": {
+          "avg_chi2_per_dof": 70308429.51839027,
+          "max_chi2_per_dof": 133959275.34748946,
+          "per_Q_fits": {
+            "0": {
+              "error": "Residuals are not finite in the initial point."
+            },
+            "1": {
+              "K": 1.062553236636253,
+              "K_err": 0.024022380955153976,
+              "c": 0.15665259804569093,
+              "c_err": 0.015899919326315317,
+              "chi2": 937714927.4324262,
+              "chi2_per_dof": 133959275.34748946,
+              "dof": 7,
+              "mu": 1.0099798046837465,
+              "mu_err": 0.04284596477482073
+            },
+            "2": {
+              "K": 1.0671328308290284,
+              "K_err": 0.025207168797377666,
+              "c": 0.14707087423930287,
+              "c_err": 0.040862326595901347,
+              "chi2": 46603085.82503763,
+              "chi2_per_dof": 6657583.68929109,
+              "dof": 7,
+              "mu": 0.9916838671157413,
+              "mu_err": 0.07543424519399265
+            }
+          }
+        },
+        "h_id": "H6_resonance",
+        "per_seed_strikes": 0,
+        "reason": "max chi2/dof across Q = 133959275.35 (gate < 1.5)",
+        "struck": false
+      },
+      "H7_statistics": {
+        "evidence": {
+          "alpha": -0.018295937568005894,
+          "alpha_sem": 0.08675310971643953,
+          "n_slopes": null,
+          "rel_sem": 4.741659693250413
+        },
+        "h_id": "H7_statistics",
+        "per_seed_strikes": 0,
+        "reason": "rel alpha SEM = 4.7417",
+        "struck": false
+      },
+      "H8_q_drift": {
+        "evidence": {
+          "max_rel_drift": 1.0059283800489787,
+          "mean_rel_drift": 0.1846949633981626
+        },
+        "h_id": "H8_q_drift",
+        "per_seed_strikes": 0,
+        "reason": "mean rel Q drift = 0.1847; max = 1.0059",
+        "struck": false
+      },
+      "H9_tau_model": {
+        "evidence": {
+          "alpha_alt": 0.00018595052806883583,
+          "alpha_default": 0.0002127019745007625,
+          "rel_diff": 0.12576961965076058
+        },
+        "h_id": "H9_tau_model",
+        "per_seed_strikes": 8,
+        "reason": "alpha_default=2.1270e-04, alpha_alt=1.8595e-04, rel diff=0.1258",
+        "struck": true
+      }
+    },
+    "completion_count": 3,
+    "completion_invariant_simulation": "3/7 simulatable nulls struck",
+    "ergodicity_caveat": "Battery operates within the microcanonical energy shell. Per SECTION5_CLOSURE_RECEIPT, the buckyball substrate exhibits a ~16% irreducible shell-vs-ensemble gap. PASS does NOT imply thermodynamic equilibrium.",
+    "hardware_only_nulls": [
+      "H2_thermal",
+      "H3_em_pickup",
+      "H4_mechanical"
+    ],
+    "mode": "battery-full",
+    "mu_per_Q": {
+      "1": 1.0099798046837465,
+      "2": 0.9916838671157413
+    },
+    "per_Q_fits": {
+      "0": {
+        "chi_mags": [
+          0.9817083392502778,
+          0.9104218485456256,
+          6.051905211499118,
+          0.12236492040301246,
+          0.010123334579597033
+        ],
+        "error": "Residuals are not finite in the initial point.",
+        "omegas": [
+          0.1,
+          0.3,
+          1.0,
+          3.0,
+          10.0
+        ]
+      },
+      "1": {
+        "K": 1.062553236636253,
+        "K_err": 0.024022380955153976,
+        "c": 0.15665259804569093,
+        "c_err": 0.015899919326315317,
+        "chi2": 937714927.4324262,
+        "chi2_per_dof": 133959275.34748946,
+        "chi_mags": [
+          0.9817274512578724,
+          0.9104631685986635,
+          6.051920649036294,
+          0.12235495869127222,
+          0.010122734005694807
+        ],
+        "chi_phases": [
+          0.6692270858316844,
+          0.1792260271058404,
+          -1.571740547795593,
+          -3.1285564361829215,
+          -3.130380740473715
+        ],
+        "dof": 7,
+        "mu": 1.0099798046837465,
+        "mu_err": 0.04284596477482073,
+        "omegas": [
+          0.1,
+          0.3,
+          1.0,
+          3.0,
+          10.0
+        ],
+        "sems": [
+          2.1425466189030224e-06,
+          4.423673168158524e-06,
+          5.653304203516373e-06,
+          6.171872987386289e-07,
+          6.770354874442581e-08
+        ]
+      },
+      "2": {
+        "K": 1.0671328308290284,
+        "K_err": 0.025207168797377666,
+        "c": 0.14707087423930287,
+        "c_err": 0.040862326595901347,
+        "chi2": 46603085.82503763,
+        "chi2_per_dof": 6657583.68929109,
+        "chi_mags": [
+          0.9819307424576824,
+          0.9109534452065646,
+          6.052164195281719,
+          0.12222264632139161,
+          0.010115766167577483
+        ],
+        "chi_phases": [
+          0.6690676413757799,
+          0.1795467661377273,
+          -1.5749235671687334,
+          -3.1288130082537684,
+          -3.1303883799673358
+        ],
+        "dof": 7,
+        "mu": 0.9916838671157413,
+        "mu_err": 0.07543424519399265,
+        "omegas": [
+          0.1,
+          0.3,
+          1.0,
+          3.0,
+          10.0
+        ],
+        "sems": [
+          1.020353684301114e-05,
+          1.9141927439499488e-05,
+          0.00013575410734183312,
+          6.12094518376686e-06,
+          4.2771002810417066e-07
+        ]
+      }
+    },
+    "sector_separation": {
+      "Q_means": {
+        "0": 0.971608832807571,
+        "1": 0.6499896801873979,
+        "2": -0.7038924194128324
+      },
+      "Q_sems": {
+        "0": 0.0,
+        "1": 0.0180390171966634,
+        "2": 0.057986071851620094
+      },
+      "min_separation_sigma": 17.829083985776215,
+      "pairwise_sigmas": [
+        17.829083985776215,
+        28.894891457862926,
+        22.294498909772322
+      ],
+      "passed": true
+    },
+    "sudoku_verdict": "FAIL_SIGNAL_MISSING"
+  }
+}

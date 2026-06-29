@@ -1,0 +1,276 @@
+{
+  "report_metadata": {
+    "alpha_halcyon": 1000.0,
+    "generated_at": "2026-06-21T02:08:32.400310+00:00",
+    "mode": "calibrated-full",
+    "n_steps_per_cell": 1200,
+    "omegas": [
+      1.0,
+      3.0,
+      10.0
+    ],
+    "spec_version": "HALCYON_FALSIFICATION_BATTERY_SPEC.md v2",
+    "wall_seconds": 3327.6752893924713
+  },
+  "section_11_falsification_battery": {
+    "alpha_measured": 0.5693219391042214,
+    "alpha_predicted_independent": null,
+    "alpha_predicted_note": "see Solves Vol. 4 A.7 \u00a73 \u2014 independent prediction open work",
+    "alpha_predicted_self_consistency": null,
+    "alpha_sem_blocked": 1.0951468881632302,
+    "applicable_count": 7,
+    "available": true,
+    "battery": {
+      "H0_nothing": {
+        "evidence": {
+          "alpha": 0.5693219391042214,
+          "alpha_over_sem": 0.5198589753189022,
+          "alpha_sem": 1.0951468881632302,
+          "extractor": "per_Q_chi_omega_fit"
+        },
+        "h_id": "H0_nothing",
+        "per_seed_strikes": 0,
+        "reason": "alpha=5.6932e-01, sigma=1.0951e+00, ratio=0.52 (from per-Q fits)",
+        "struck": false
+      },
+      "H1_material": {
+        "evidence": {
+          "alphas_by_proxy": {
+            "0.5": 0.22678187703859487,
+            "1.0": 0.21047319577437554,
+            "2.0": 0.22950537174735014
+          },
+          "d_alpha_d_mu_proxy": 0.004275164972570806,
+          "d_alpha_d_mu_proxy_rel": 0.02056764529978512
+        },
+        "h_id": "H1_material",
+        "per_seed_strikes": 8,
+        "reason": "d alpha/d mu_proxy = 4.2752e-03, rel = 0.0206",
+        "struck": true
+      },
+      "H2_thermal": {
+        "evidence": {},
+        "h_id": "H2_thermal",
+        "per_seed_strikes": 0,
+        "reason": "simulation has no thermal DOF",
+        "struck": "n/a"
+      },
+      "H3_em_pickup": {
+        "evidence": {},
+        "h_id": "H3_em_pickup",
+        "per_seed_strikes": 0,
+        "reason": "simulation has no EM DOF",
+        "struck": "n/a"
+      },
+      "H4_mechanical": {
+        "evidence": {},
+        "h_id": "H4_mechanical",
+        "per_seed_strikes": 0,
+        "reason": "rigid substrate, no mount DOF",
+        "struck": "n/a"
+      },
+      "H5_amplitude": {
+        "evidence": {
+          "F0_values": [
+            0.001,
+            0.003,
+            0.01,
+            0.03
+          ],
+          "chi_mean": 4.890158138549816,
+          "chi_per_F0": [
+            4.877451746423755,
+            4.901366090789642,
+            4.902234874972805,
+            4.879579842013062
+          ],
+          "rel_slope_chi_vs_F0": 0.000751219705365444
+        },
+        "h_id": "H5_amplitude",
+        "per_seed_strikes": 8,
+        "reason": "rel slope of chi vs F_0 = 0.0008 (gate < 0.10)",
+        "struck": true
+      },
+      "H6_resonance": {
+        "evidence": {
+          "avg_chi2_per_dof": 912.3352129647918,
+          "max_chi2_per_dof": 1777.1496622252723,
+          "per_Q_fits": {
+            "0": {
+              "error": "Residuals are not finite in the initial point."
+            },
+            "1": {
+              "K": 1.0724119094814761,
+              "K_err": 0.0809433486682348,
+              "c": 0.19786593302174407,
+              "c_err": 0.017686603681216485,
+              "chi2": 142.56229111293376,
+              "chi2_per_dof": 47.52076370431126,
+              "dof": 3,
+              "mu": 1.1211623531454147,
+              "mu_err": 0.03701439438960452
+            },
+            "2": {
+              "K": 2.1583378963259774,
+              "K_err": 1.4702092503990705,
+              "c": 1.0000000000000002e-06,
+              "c_err": 0.9801176149792437,
+              "chi2": 5331.448986675817,
+              "chi2_per_dof": 1777.1496622252723,
+              "dof": 3,
+              "mu": 1.6904842922498167,
+              "mu_err": 1.0945211926963065
+            }
+          }
+        },
+        "h_id": "H6_resonance",
+        "per_seed_strikes": 0,
+        "reason": "max chi2/dof across Q = 1777.15 (gate < 1.5)",
+        "struck": false
+      },
+      "H7_statistics": {
+        "evidence": {
+          "alpha": 0.5693219391042214,
+          "alpha_sem": 1.0951468881632302,
+          "n_slopes": null,
+          "rel_sem": 1.9235986055382808
+        },
+        "h_id": "H7_statistics",
+        "per_seed_strikes": 0,
+        "reason": "rel alpha SEM = 1.9236",
+        "struck": false
+      },
+      "H8_q_drift": {
+        "evidence": {
+          "max_rel_drift": 1.2785188719484353,
+          "mean_rel_drift": 0.20481284390374074
+        },
+        "h_id": "H8_q_drift",
+        "per_seed_strikes": 0,
+        "reason": "mean rel Q drift = 0.2048; max = 1.2785",
+        "struck": false
+      },
+      "H9_tau_model": {
+        "evidence": {
+          "alpha_alt": 0.17982404615231734,
+          "alpha_default": 0.20785874660214365,
+          "rel_diff": 0.13487380689101677
+        },
+        "h_id": "H9_tau_model",
+        "per_seed_strikes": 8,
+        "reason": "alpha_default=2.0786e-01, alpha_alt=1.7982e-01, rel diff=0.1349",
+        "struck": true
+      }
+    },
+    "completion_count": 3,
+    "completion_invariant_simulation": "3/7 simulatable nulls struck",
+    "ergodicity_caveat": "Battery operates within the microcanonical energy shell. Per SECTION5_CLOSURE_RECEIPT, the buckyball substrate exhibits a ~16% irreducible shell-vs-ensemble gap. PASS does NOT imply thermodynamic equilibrium.",
+    "hardware_only_nulls": [
+      "H2_thermal",
+      "H3_em_pickup",
+      "H4_mechanical"
+    ],
+    "mode": "battery-full",
+    "mu_per_Q": {
+      "1": 1.1211623531454147,
+      "2": 1.6904842922498167
+    },
+    "per_Q_fits": {
+      "0": {
+        "chi_mags": [
+          5.077504413426388,
+          0.11352889665069876,
+          0.010065631873246939
+        ],
+        "error": "Residuals are not finite in the initial point.",
+        "omegas": [
+          1.0,
+          3.0,
+          10.0
+        ]
+      },
+      "1": {
+        "K": 1.0724119094814761,
+        "K_err": 0.0809433486682348,
+        "c": 0.19786593302174407,
+        "c_err": 0.017686603681216485,
+        "chi2": 142.56229111293376,
+        "chi2_per_dof": 47.52076370431126,
+        "chi_mags": [
+          4.908149163308365,
+          0.104263579651569,
+          0.009496870623586796
+        ],
+        "chi_phases": [
+          -1.7520717527932113,
+          -3.082234024567638,
+          -3.1354548038015353
+        ],
+        "dof": 3,
+        "mu": 1.1211623531454147,
+        "mu_err": 0.03701439438960452,
+        "omegas": [
+          1.0,
+          3.0,
+          10.0
+        ],
+        "sems": [
+          0.02078048487528117,
+          0.0007489672053661478,
+          5.961651660924462e-05
+        ]
+      },
+      "2": {
+        "K": 2.1583378963259774,
+        "K_err": 1.4702092503990705,
+        "c": 1.0000000000000002e-06,
+        "c_err": 0.9801176149792437,
+        "chi2": 5331.448986675817,
+        "chi2_per_dof": 1777.1496622252723,
+        "chi_mags": [
+          2.140700182061049,
+          0.07810585837993936,
+          0.005951944809035132
+        ],
+        "chi_phases": [
+          1.4739824517371367,
+          -0.7792571709744691,
+          -0.7806576478605638
+        ],
+        "dof": 3,
+        "mu": 1.6904842922498167,
+        "mu_err": 1.0945211926963065,
+        "omegas": [
+          1.0,
+          3.0,
+          10.0
+        ],
+        "sems": [
+          0.10247391344931706,
+          0.0023934686199121075,
+          0.000107135597261143
+        ]
+      }
+    },
+    "sector_separation": {
+      "Q_means": {
+        "0": 0.971608832807571,
+        "1": 0.6499896801873979,
+        "2": -0.7038924194128324
+      },
+      "Q_sems": {
+        "0": 0.0,
+        "1": 0.0180390171966634,
+        "2": 0.057986071851620094
+      },
+      "min_separation_sigma": 17.829083985776215,
+      "pairwise_sigmas": [
+        17.829083985776215,
+        28.894891457862926,
+        22.294498909772322
+      ],
+      "passed": true
+    },
+    "sudoku_verdict": "FAIL_SIGNAL_MISSING"
+  }
+}

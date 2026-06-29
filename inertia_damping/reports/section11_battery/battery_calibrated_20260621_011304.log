@@ -1,0 +1,148 @@
+[18:13:04] === Halcyon Falsification Battery (FULL) ===
+[18:13:04]   seeds=8 omegas=3 Q=3 dt=0.02
+[18:13:04]   n_equil=200 n_steps=1200 gauge=enabled
+[18:13:04]   amp_grid=[0.1, 0.3, 1.0, 3.0] mu_proxy_grid=[0.5, 1.0, 2.0]
+[18:13:05] sector separation: passed=True, min_sigma=17.83
+[18:13:05] --- main grid: 5 omegas x 3 Q x 8 seeds ---
+[18:13:05]   main 1/72: Q=0 omega=1.000 seed=20260616
+[18:13:39]   main 2/72: Q=0 omega=1.000 seed=20260617
+[18:14:16]   main 3/72: Q=0 omega=1.000 seed=20260618
+[18:14:55]   main 4/72: Q=0 omega=1.000 seed=20260619
+[18:15:20]   main 5/72: Q=0 omega=1.000 seed=20260620
+[18:15:45]   main 6/72: Q=0 omega=1.000 seed=20260621
+[18:16:10]   main 7/72: Q=0 omega=1.000 seed=20260622
+[18:16:34]   main 8/72: Q=0 omega=1.000 seed=20260623
+[18:16:59]   main 9/72: Q=0 omega=3.000 seed=20260616
+[18:17:23]   main 10/72: Q=0 omega=3.000 seed=20260617
+[18:17:47]   main 11/72: Q=0 omega=3.000 seed=20260618
+[18:18:11]   main 12/72: Q=0 omega=3.000 seed=20260619
+[18:18:36]   main 13/72: Q=0 omega=3.000 seed=20260620
+[18:19:00]   main 14/72: Q=0 omega=3.000 seed=20260621
+[18:19:25]   main 15/72: Q=0 omega=3.000 seed=20260622
+[18:19:49]   main 16/72: Q=0 omega=3.000 seed=20260623
+[18:20:14]   main 17/72: Q=0 omega=10.000 seed=20260616
+[18:20:38]   main 18/72: Q=0 omega=10.000 seed=20260617
+[18:21:03]   main 19/72: Q=0 omega=10.000 seed=20260618
+[18:21:28]   main 20/72: Q=0 omega=10.000 seed=20260619
+[18:21:53]   main 21/72: Q=0 omega=10.000 seed=20260620
+[18:22:18]   main 22/72: Q=0 omega=10.000 seed=20260621
+[18:22:42]   main 23/72: Q=0 omega=10.000 seed=20260622
+[18:23:06]   main 24/72: Q=0 omega=10.000 seed=20260623
+[18:23:32]   main 25/72: Q=1 omega=1.000 seed=20260616
+[18:23:57]   main 26/72: Q=1 omega=1.000 seed=20260617
+[18:24:25]   main 27/72: Q=1 omega=1.000 seed=20260618
+[18:24:53]   main 28/72: Q=1 omega=1.000 seed=20260619
+[18:25:21]   main 29/72: Q=1 omega=1.000 seed=20260620
+[18:25:48]   main 30/72: Q=1 omega=1.000 seed=20260621
+[18:26:17]   main 31/72: Q=1 omega=1.000 seed=20260622
+[18:26:44]   main 32/72: Q=1 omega=1.000 seed=20260623
+[18:27:10]   main 33/72: Q=1 omega=3.000 seed=20260616
+[18:27:36]   main 34/72: Q=1 omega=3.000 seed=20260617
+[18:28:00]   main 35/72: Q=1 omega=3.000 seed=20260618
+[18:28:24]   main 36/72: Q=1 omega=3.000 seed=20260619
+[18:28:54]   main 37/72: Q=1 omega=3.000 seed=20260620
+[18:29:28]   main 38/72: Q=1 omega=3.000 seed=20260621
+[18:29:57]   main 39/72: Q=1 omega=3.000 seed=20260622
+[18:30:25]   main 40/72: Q=1 omega=3.000 seed=20260623
+[18:30:53]   main 41/72: Q=1 omega=10.000 seed=20260616
+[18:31:21]   main 42/72: Q=1 omega=10.000 seed=20260617
+[18:31:48]   main 43/72: Q=1 omega=10.000 seed=20260618
+[18:32:15]   main 44/72: Q=1 omega=10.000 seed=20260619
+[18:32:43]   main 45/72: Q=1 omega=10.000 seed=20260620
+[18:33:10]   main 46/72: Q=1 omega=10.000 seed=20260621
+[18:33:38]   main 47/72: Q=1 omega=10.000 seed=20260622
+[18:34:05]   main 48/72: Q=1 omega=10.000 seed=20260623
+[18:34:32]   main 49/72: Q=2 omega=1.000 seed=20260616
+[18:34:59]   main 50/72: Q=2 omega=1.000 seed=20260617
+[18:35:26]   main 51/72: Q=2 omega=1.000 seed=20260618
+[18:35:53]   main 52/72: Q=2 omega=1.000 seed=20260619
+[18:36:20]   main 53/72: Q=2 omega=1.000 seed=20260620
+[18:36:47]   main 54/72: Q=2 omega=1.000 seed=20260621
+[18:37:14]   main 55/72: Q=2 omega=1.000 seed=20260622
+[18:37:42]   main 56/72: Q=2 omega=1.000 seed=20260623
+[18:38:09]   main 57/72: Q=2 omega=3.000 seed=20260616
+[18:38:36]   main 58/72: Q=2 omega=3.000 seed=20260617
+[18:39:03]   main 59/72: Q=2 omega=3.000 seed=20260618
+[18:39:30]   main 60/72: Q=2 omega=3.000 seed=20260619
+[18:39:58]   main 61/72: Q=2 omega=3.000 seed=20260620
+[18:40:25]   main 62/72: Q=2 omega=3.000 seed=20260621
+[18:40:52]   main 63/72: Q=2 omega=3.000 seed=20260622
+[18:41:19]   main 64/72: Q=2 omega=3.000 seed=20260623
+[18:41:46]   main 65/72: Q=2 omega=10.000 seed=20260616
+[18:42:12]   main 66/72: Q=2 omega=10.000 seed=20260617
+[18:42:39]   main 67/72: Q=2 omega=10.000 seed=20260618
+[18:43:06]   main 68/72: Q=2 omega=10.000 seed=20260619
+[18:43:33]   main 69/72: Q=2 omega=10.000 seed=20260620
+[18:43:59]   main 70/72: Q=2 omega=10.000 seed=20260621
+[18:44:26]   main 71/72: Q=2 omega=10.000 seed=20260622
+[18:44:53]   main 72/72: Q=2 omega=10.000 seed=20260623
+[18:45:19] --- H1: mu_proxy sweep ---
+[18:45:19]   H1 mu_proxy=0.5 Q=0 seed=20260616
+[18:45:46]   H1 mu_proxy=0.5 Q=0 seed=20260617
+[18:46:13]   H1 mu_proxy=0.5 Q=0 seed=20260618
+[18:46:40]   H1 mu_proxy=0.5 Q=0 seed=20260619
+[18:47:06]   H1 mu_proxy=0.5 Q=1 seed=20260616
+[18:47:33]   H1 mu_proxy=0.5 Q=1 seed=20260617
+[18:48:00]   H1 mu_proxy=0.5 Q=1 seed=20260618
+[18:48:27]   H1 mu_proxy=0.5 Q=1 seed=20260619
+[18:48:53]   H1 mu_proxy=0.5 Q=2 seed=20260616
+[18:49:20]   H1 mu_proxy=0.5 Q=2 seed=20260617
+[18:49:47]   H1 mu_proxy=0.5 Q=2 seed=20260618
+[18:50:13]   H1 mu_proxy=0.5 Q=2 seed=20260619
+[18:50:40]   H1 mu_proxy=2.0 Q=0 seed=20260616
+[18:51:08]   H1 mu_proxy=2.0 Q=0 seed=20260617
+[18:51:36]   H1 mu_proxy=2.0 Q=0 seed=20260618
+[18:52:03]   H1 mu_proxy=2.0 Q=0 seed=20260619
+[18:52:30]   H1 mu_proxy=2.0 Q=1 seed=20260616
+[18:52:57]   H1 mu_proxy=2.0 Q=1 seed=20260617
+[18:53:23]   H1 mu_proxy=2.0 Q=1 seed=20260618
+[18:53:50]   H1 mu_proxy=2.0 Q=1 seed=20260619
+[18:54:17]   H1 mu_proxy=2.0 Q=2 seed=20260616
+[18:54:44]   H1 mu_proxy=2.0 Q=2 seed=20260617
+[18:55:11]   H1 mu_proxy=2.0 Q=2 seed=20260618
+[18:55:38]   H1 mu_proxy=2.0 Q=2 seed=20260619
+[18:56:05] --- H5: amplitude sweep ---
+[18:56:05]   H5 amp=0.10 F0=0.0010 seed=20260616
+[18:56:32]   H5 amp=0.10 F0=0.0010 seed=20260617
+[18:56:58]   H5 amp=0.10 F0=0.0010 seed=20260618
+[18:57:26]   H5 amp=0.10 F0=0.0010 seed=20260619
+[18:57:52]   H5 amp=0.30 F0=0.0030 seed=20260616
+[18:58:19]   H5 amp=0.30 F0=0.0030 seed=20260617
+[18:58:45]   H5 amp=0.30 F0=0.0030 seed=20260618
+[18:59:11]   H5 amp=0.30 F0=0.0030 seed=20260619
+[18:59:38]   H5 amp=1.00 F0=0.0100 seed=20260616
+[19:00:04]   H5 amp=1.00 F0=0.0100 seed=20260617
+[19:00:31]   H5 amp=1.00 F0=0.0100 seed=20260618
+[19:00:58]   H5 amp=1.00 F0=0.0100 seed=20260619
+[19:01:25]   H5 amp=3.00 F0=0.0300 seed=20260616
+[19:01:52]   H5 amp=3.00 F0=0.0300 seed=20260617
+[19:02:18]   H5 amp=3.00 F0=0.0300 seed=20260618
+[19:02:44]   H5 amp=3.00 F0=0.0300 seed=20260619
+[19:03:11] --- H9: alternative tau_Q ---
+[19:03:11]   H9 alt_tau Q=0 seed=20260616
+[19:03:37]   H9 alt_tau Q=0 seed=20260617
+[19:04:03]   H9 alt_tau Q=0 seed=20260618
+[19:04:30]   H9 alt_tau Q=0 seed=20260619
+[19:04:56]   H9 alt_tau Q=1 seed=20260616
+[19:05:23]   H9 alt_tau Q=1 seed=20260617
+[19:05:51]   H9 alt_tau Q=1 seed=20260618
+[19:06:17]   H9 alt_tau Q=1 seed=20260619
+[19:06:44]   H9 alt_tau Q=2 seed=20260616
+[19:07:11]   H9 alt_tau Q=2 seed=20260617
+[19:07:37]   H9 alt_tau Q=2 seed=20260618
+[19:08:03]   H9 alt_tau Q=2 seed=20260619
+[19:08:29] --- fitting chi_Q(omega) per Q ---
+[19:08:32]   Q=1: K=1.0724 mu=1.121162 c=0.1979 chi2/dof=47.52
+[19:08:32]   Q=2: K=2.1583 mu=1.690484 c=0.0000 chi2/dof=1777.15
+[19:08:32] alpha (from per-Q fits) = 5.6932e-01 +/- 1.0951e+00
+[19:08:32] === Verdict: FAIL_SIGNAL_MISSING (3/7 simulatable struck) ===
+[19:08:32]   H0_nothing: struck=False
+[19:08:32]   H1_material: struck=True
+[19:08:32]   H2_thermal: struck=n/a
+[19:08:32]   H3_em_pickup: struck=n/a
+[19:08:32]   H4_mechanical: struck=n/a
+[19:08:32]   H5_amplitude: struck=True
+[19:08:32]   H6_resonance: struck=False
+[19:08:32]   H7_statistics: struck=False
+[19:08:32]   H8_q_drift: struck=False
+[19:08:32]   H9_tau_model: struck=True

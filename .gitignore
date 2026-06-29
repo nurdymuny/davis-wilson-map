@@ -80,6 +80,9 @@ results/*.npy
 # Modal
 .modal/
 
+# Modal-pulled cloud configurations (1.9 GB, regenerable from Modal volumes)
+_modal_pull/
+
 # Internal dev notes (not for public)
 docs/internal/
 
@@ -92,3 +95,4 @@ docs/internal/
 docs/confidential/
 # Ignore harvest data files
 data/harvests/*.npz
+inertia_damping/.gigi_local/

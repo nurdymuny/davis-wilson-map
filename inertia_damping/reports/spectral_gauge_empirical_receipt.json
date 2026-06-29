@@ -1,0 +1,157 @@
+{
+  "purpose": "Empirical receipt: SPECTRAL (fiber-blind, prior verb) vs SPECTRAL_GAUGE (fiber-aware, NEW verb shipped 2026-06-28 at gigi commit e37ae9e) on two buckyball SU(2) bundles.",
+  "ship_under_test": {
+    "gigi_commit": "e37ae9e",
+    "gigi_origin_main_head": "35a727d",
+    "feature": "SPECTRAL_GAUGE Phase 1 (dense fiber-weighted Laplacian)",
+    "local_build_path": "/c/Users/nurdm/OneDrive/Documents/gigi/target/release/gigi-stream.exe",
+    "endpoint": "http://localhost:3142",
+    "doc": "gigi/theory/halcyon/SPECTRAL_GAUGE_PHASE1_SHIPPED_2026-06-28.md"
+  },
+  "discipline": "Receipts before letters (Bee, 2026-06-28). Technical work first, letter after.",
+  "schema_used": {
+    "fields": [
+      "edge_id",
+      "vertex_a",
+      "vertex_b",
+      "q0",
+      "q1",
+      "q2",
+      "q3",
+      "config_id"
+    ],
+    "keys_as_base_fields": [
+      "edge_id",
+      "vertex_a",
+      "vertex_b"
+    ],
+    "fiber_fields_inferred": [
+      "q0",
+      "q1",
+      "q2",
+      "q3",
+      "config_id"
+    ],
+    "note": "Composite keys put vertex_a/vertex_b in base_fields as SPECTRAL_GAUGE expects (src/spectral.rs:1146-1150). REST POST /v1/bundles handler (src/bin/gigi_stream.rs:1922-1944) maps fields named in 'keys' to base_fields; the prior schema with keys=[edge_id] only put edge_id in base_fields and caused SPECTRAL_GAUGE to error 'missing edge endpoint fields vertex_a/vertex_b'."
+  },
+  "thermalization_protocol": {
+    "n_sweeps": 1000,
+    "n_measure": 100,
+    "measure_every": 5,
+    "seed": 20260616,
+    "kennedy_pendleton_heatbath": true
+  },
+  "bundles": [
+    {
+      "name": "halcyon_ym_buckyball_beta_2_5_links",
+      "beta": 2.5,
+      "phase_label": "above_4D_su2_deconfinement_beta_c_for_cross_reference_only",
+      "graph": {
+        "V": 60,
+        "E": 90,
+        "F": 32,
+        "chi": 2,
+        "topology": "S^2"
+      },
+      "P_measured": 0.5303006250324256,
+      "P_exact_migdal_witten": 0.5071951004360452,
+      "insert_curvature": 0.05580842320735733,
+      "insert_confidence": 0.9471415249389457
+    },
+    {
+      "name": "halcyon_ym_buckyball_beta_1_0_links",
+      "beta": 1.0,
+      "phase_label": "below_4D_su2_deconfinement_beta_c_for_cross_reference_only",
+      "graph": {
+        "V": 60,
+        "E": 90,
+        "F": 32,
+        "chi": 2,
+        "topology": "S^2"
+      },
+      "P_measured": 0.2358804571312108,
+      "P_exact_migdal_witten": 0.24019372387008978,
+      "insert_curvature": 0.05400280901368898,
+      "insert_confidence": 0.948764074865964
+    }
+  ],
+  "verbs_fired": {
+    "spectral_beta_2_5": {
+      "query": "SPECTRAL halcyon_ym_buckyball_beta_2_5_links;",
+      "http": 200,
+      "body": {
+        "value": 0.02469280064800561
+      }
+    },
+    "spectral_beta_1_0": {
+      "query": "SPECTRAL halcyon_ym_buckyball_beta_1_0_links;",
+      "http": 200,
+      "body": {
+        "value": 0.024660297341606796
+      }
+    },
+    "spectral_gauge_beta_2_5": {
+      "query": "SPECTRAL_GAUGE halcyon_ym_buckyball_beta_2_5_links ON FIBER (q0, q1, q2, q3) GROUP SU(2);",
+      "http": 200,
+      "body": {
+        "rows": [
+          {
+            "n_records_used": 90,
+            "gap": -2.4580743281194253,
+            "group_used": "SU(2)"
+          }
+        ],
+        "count": 1
+      }
+    },
+    "spectral_gauge_beta_1_0": {
+      "query": "SPECTRAL_GAUGE halcyon_ym_buckyball_beta_1_0_links ON FIBER (q0, q1, q2, q3) GROUP SU(2);",
+      "http": 200,
+      "body": {
+        "rows": [
+          {
+            "n_records_used": 90,
+            "group_used": "SU(2)",
+            "gap": -3.0153451390029677
+          }
+        ],
+        "count": 1
+      }
+    }
+  },
+  "comparison_table": {
+    "row_headers": [
+      "\u03b2 = 2.5 (high)",
+      "\u03b2 = 1.0 (low)",
+      "difference",
+      "P_ratio = 2.248"
+    ],
+    "SPECTRAL_fiber_blind": {
+      "beta_2_5": 0.02469280064800561,
+      "beta_1_0": 0.024660297341606796,
+      "abs_diff": 3.250330639881227e-05,
+      "reads_as": "FIBER-BLIND",
+      "notes": "Re-confirms the e4800b4 receipt: agreement to 4 sig figs across 2.25x change in <P>. Same line-graph Laplacian on the field-index graph; reads vertex_a/vertex_b adjacency but NOT q0..q3 fiber."
+    },
+    "SPECTRAL_GAUGE_fiber_aware": {
+      "beta_2_5": -2.4580743281194253,
+      "beta_1_0": -3.0153451390029677,
+      "abs_diff": 0.5572708108835425,
+      "ratio_2_5_over_1_0": 0.8151883830227787,
+      "n_records_used_2_5": 90,
+      "n_records_used_1_0": 90,
+      "reads_as": "FIBER-AWARE",
+      "notes": "NEW VERB (e37ae9e) \u2014 fiber-weighted normalized Laplacian L_A = D^(-1/2)(D-W)D^(-1/2), W_ij = Re Tr(U_e)/2 = q0 for SU(2). Gap is the smallest signed eigenvalue. Negative because q0 \u2208 [-1, +1] makes the weighted matrix indefinite (signed Laplacian) \u2014 honest math per the doc framing 'globally gauge-invariant, locally gauge-covariant'."
+    }
+  },
+  "headline": {
+    "verb_works": true,
+    "verb_is_fiber_aware": true,
+    "evidence": "SPECTRAL agrees to 4 sig figs (0.000033 difference) across 2.25x change in <P> \u2014 fiber-blind as documented. SPECTRAL_GAUGE differs by 0.5573 (ratio 0.815) on the same data \u2014 fiber-aware. Difference is 17145x larger than the fiber-blind SPECTRAL noise floor."
+  },
+  "math_caveats_to_carry_forward": [
+    "The 'gap' field is the smallest signed eigenvalue of the normalized signed Laplacian, not a non-negative spectral gap. For SU(2), edge weights = q0 = Re Tr(U)/2 \u2208 [-1, +1], so the weighted matrix is indefinite. The verb name 'GAP' should be read as 'smallest non-zero eigenvalue', not 'spectral gap' in the textbook sense. This matches the spec's honest framing ('fiber-weighted spectral gap, not the strict Yang-Mills mass gap').",
+    "On the buckyball (V=60, E=90), V^2 = 3600 \u2014 well within Phase 1's dense path. Phase 2 (Lanczos sparse) is unnecessary at this scale.",
+    "n_records_used = 90 confirms all 90 link records were folded into the Laplacian. Adjacency built from vertex_a/vertex_b base_fields."
+  ]
+}

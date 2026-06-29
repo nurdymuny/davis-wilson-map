@@ -1,0 +1,97 @@
+{
+  "goal": "4D SU(2) YM holonomy-continuum mass gap visible via simple GQL query, with M1 + M3 cross-channel agreement test across a beta-sweep",
+  "framing_doc": "gigi/theory/YM_MASS_GAP_CONTINUUM_HYPOTHESIS_v0.1.md (M1 + M3 + Falsification Crit. 7)",
+  "bundle": "halcyon_ym4_glueball_demo",
+  "lattice": {
+    "L": 16,
+    "dimension": 4,
+    "n_sites": 65536,
+    "n_links": 262144
+  },
+  "betas_swept": [
+    2.0,
+    2.3,
+    2.5,
+    2.7
+  ],
+  "n_ensembles": 4,
+  "headline_query": "SELECT beta, plateau_fit_mass, plateau_fit_error, sigma_creutz_22, sigma_creutz_22_error, m_eff_null_t FROM halcyon_ym4_glueball_demo WHERE t = 0;",
+  "overall_wall_seconds": 624.0668856999998,
+  "ensembles": [
+    {
+      "ensemble_id": "su2_4d_L16_beta200_n100",
+      "beta": 2.0,
+      "real_plateau_fit_mass": 3.298100267452339,
+      "real_plateau_fit_error": 0.10833699890847752,
+      "null_plateau_fit_mass": 5.066356039084277,
+      "chi_22": [
+        0.6011218532744133,
+        0.00011041044536995638
+      ],
+      "chi_32": [
+        0.582725022369338,
+        0.00019635459287167082
+      ],
+      "P_bar_global": 0.5011743422159847,
+      "heatbath_wall_seconds": 175.03747109999995
+    },
+    {
+      "ensemble_id": "su2_4d_L16_beta229_n100",
+      "beta": 2.3,
+      "real_plateau_fit_mass": 1.9490807280083904,
+      "real_plateau_fit_error": 0.014906651141309539,
+      "null_plateau_fit_mass": 1.1179685576284517,
+      "chi_22": [
+        0.31770337827064415,
+        4.297938167630752e-05
+      ],
+      "chi_32": [
+        0.27525418728872736,
+        6.023468333327067e-05
+      ],
+      "P_bar_global": 0.6022857727761806,
+      "heatbath_wall_seconds": 148.25813479999988
+    },
+    {
+      "ensemble_id": "su2_4d_L16_beta250_n100",
+      "beta": 2.5,
+      "real_plateau_fit_mass": 2.9172869186601282,
+      "real_plateau_fit_error": 0.05141929127008529,
+      "null_plateau_fit_mass": 1.9792326940316514,
+      "chi_22": [
+        0.21444892067447122,
+        2.86253622315863e-05
+      ],
+      "chi_32": [
+        0.17007759974189238,
+        3.1571048771508926e-05
+      ],
+      "P_bar_global": 0.6518268921718234,
+      "heatbath_wall_seconds": 142.79098380000005
+    },
+    {
+      "ensemble_id": "su2_4d_L16_beta270_n100",
+      "beta": 2.7,
+      "real_plateau_fit_mass": 3.3966891760421745,
+      "real_plateau_fit_error": 0.07001476235176649,
+      "null_plateau_fit_mass": 4.949261316112631,
+      "chi_22": [
+        0.16870939821996875,
+        2.2581908146548985e-05
+      ],
+      "chi_32": [
+        0.12842397737150033,
+        2.6019072688654855e-05
+      ],
+      "P_bar_global": 0.6856031301526556,
+      "heatbath_wall_seconds": 144.06634589999976
+    }
+  ],
+  "scope_caveats": [
+    "L=16 is small; this is a SUBSTRATE DEMONSTRATION of the H5 cross-channel test, not a continuum mass-gap number. Continuum extrapolation needs multiple L + scale-setting via Wilson flow or r_0.",
+    "n_configurations = 100 per ensemble is small for jackknife error bars (production would use 500-2000).",
+    "M2 (glueball variational with APE smearing) is not yet pushed. Cross-channel agreement is currently M1 vs M3.",
+    "Creutz chi(2,2) is the lattice string tension; sqrt(sigma) sets a mass scale that should agree QUALITATIVELY with m_g(M1) up to a numerical factor. Exact equality is not expected."
+  ],
+  "discipline": "Receipts before letters. Per Bee, 2026-06-28."
+}

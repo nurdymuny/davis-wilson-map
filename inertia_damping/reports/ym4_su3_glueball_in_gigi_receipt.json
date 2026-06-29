@@ -1,0 +1,98 @@
+{
+  "goal": "4D SU(3) YM holonomy-continuum mass gap + string tension visible via simple GQL query (production target)",
+  "framing_doc": "gigi/theory/YM_MASS_GAP_CONTINUUM_HYPOTHESIS_v0.1.md (M1 + M3 + Falsification Crit. 7)",
+  "bundle": "halcyon_ym4_glueball_demo",
+  "lattice": {
+    "L": 8,
+    "dimension": 4,
+    "n_sites": 4096,
+    "n_links": 16384
+  },
+  "betas_swept": [
+    5.7,
+    6.0,
+    6.2,
+    6.4
+  ],
+  "n_ensembles": 4,
+  "headline_query": "SELECT beta, plateau_fit_mass, plateau_fit_error, sigma_creutz_22, sigma_creutz_22_error, m_eff_null_t FROM halcyon_ym4_glueball_demo WHERE gauge_group = 'SU(3)' AND t = 0;",
+  "overall_wall_seconds": 1140.6565189999997,
+  "ensembles": [
+    {
+      "ensemble_id": "su3_4d_L8_beta570_n80",
+      "beta": 5.7,
+      "real_plateau_fit_mass": 1.6447079337416868,
+      "real_plateau_fit_error": 0.02176559233622285,
+      "null_plateau_fit_mass": 3.544406800930877,
+      "chi_22": [
+        0.38211045632138957,
+        0.0001625835462749118
+      ],
+      "chi_32": [
+        0.3340306250080831,
+        0.000282586138752356
+      ],
+      "P_bar_global": 0.547016444533749,
+      "heatbath_wall_seconds": 294.46062120000033
+    },
+    {
+      "ensemble_id": "su3_4d_L8_beta600_n80",
+      "beta": 6.0,
+      "real_plateau_fit_mass": 3.1644110090086586,
+      "real_plateau_fit_error": 0.12664537397504555,
+      "null_plateau_fit_mass": 1.6199221340199819,
+      "chi_22": [
+        0.26241901538569845,
+        0.00010004465422091073
+      ],
+      "chi_32": [
+        0.20437416933203256,
+        0.00013513707511928557
+      ],
+      "P_bar_global": 0.5944537860043299,
+      "heatbath_wall_seconds": 292.3005745999999
+    },
+    {
+      "ensemble_id": "su3_4d_L8_beta620_n80",
+      "beta": 6.2,
+      "real_plateau_fit_mass": 3.0396445296640757,
+      "real_plateau_fit_error": 0.082839917751218,
+      "null_plateau_fit_mass": 2.81606448093234,
+      "chi_22": [
+        0.23700366479531843,
+        8.636783357911991e-05
+      ],
+      "chi_32": [
+        0.1866974752047721,
+        9.811709182585162e-05
+      ],
+      "P_bar_global": 0.6127980374708597,
+      "heatbath_wall_seconds": 274.86474560000033
+    },
+    {
+      "ensemble_id": "su3_4d_L8_beta640_n80",
+      "beta": 6.4,
+      "real_plateau_fit_mass": 3.019070823794223,
+      "real_plateau_fit_error": 0.07002475833111381,
+      "null_plateau_fit_mass": 3.201762489963542,
+      "chi_22": [
+        0.21361354247604739,
+        8.584456104704588e-05
+      ],
+      "chi_32": [
+        0.16393278628524097,
+        0.00011595442410523808
+      ],
+      "P_bar_global": 0.6299834953066903,
+      "heatbath_wall_seconds": 257.9828027000003
+    }
+  ],
+  "validation_anchor": "lattice/gauge_heatbath_gpu.py::_validate() verifies <P>(beta=5.7,6.0,6.2) match published Wilson SU(3) to <1% via Cabibbo-Marinari heatbath. This sweep uses the same kernel.",
+  "scope_caveats": [
+    "L=8 is small; continuum-extrapolation needs L=12 or L=16 + scale-setting via Wilson flow or r_0.",
+    "n_configurations = 80 per ensemble; production would use 500-2000.",
+    "M2 (variational APE-smeared 0++ glueball) not yet pushed.",
+    "M1 plaquette correlator at L=8 is finite-size dominated (same as SU(2) \u2014 M3 string tension is the cleaner channel at this L)."
+  ],
+  "discipline": "Receipts before letters. Per Bee, 2026-06-28."
+}

@@ -1,0 +1,128 @@
+{
+  "schema_version": "section5_cuda_sweep_v1",
+  "generated_at": "2026-06-20T03:33:58.211937+00:00",
+  "beta": 2.5,
+  "dt": 0.01,
+  "n_steps": 16000,
+  "seed": 20260616,
+  "device": "cuda",
+  "cuda_kernel": "inertia_damping.cuda.batched_leapfrog",
+  "section_5_method_crosscheck": {
+    "available": true,
+    "P_time": 0.6633844776581809,
+    "P_time_sem": 0.0023790362288341406,
+    "n_time_samples": 16000,
+    "P_time_sem_naive": 0.00032989231381443687,
+    "P_time_sem_blocked": 0.0023790362288341406,
+    "P_time_n_eff": 125.0,
+    "P_time_plateau_block_size": 128,
+    "P_time_plateau_detected": true,
+    "P_time_blocking_curve": [
+      [
+        1,
+        0.00032989231381443687
+      ],
+      [
+        2,
+        0.0004665088326037236
+      ],
+      [
+        4,
+        0.000659535928612052
+      ],
+      [
+        8,
+        0.0009314381177626614
+      ],
+      [
+        16,
+        0.0013096952608712506
+      ],
+      [
+        32,
+        0.0018096542278304858
+      ],
+      [
+        64,
+        0.002342971040896226
+      ],
+      [
+        128,
+        0.0023790362288341406
+      ],
+      [
+        256,
+        0.0024099431892271902
+      ],
+      [
+        512,
+        0.00242667190470151
+      ],
+      [
+        1024,
+        0.0027764907805319316
+      ],
+      [
+        2048,
+        0.0031021658632899153
+      ]
+    ],
+    "P_time_blocking_regime": "plateau",
+    "P_heatbath": 0.5058981562921115,
+    "P_heatbath_sem": 0.0014328089880504137,
+    "n_heatbath_samples": 2000,
+    "P_heatbath_sem_naive": 0.0014266546698067154,
+    "P_heatbath_sem_blocked": 0.0014328089880504137,
+    "P_heatbath_n_eff": 1000.0,
+    "P_heatbath_plateau_block_size": 2,
+    "P_heatbath_plateau_detected": true,
+    "P_heatbath_blocking_curve": [
+      [
+        1,
+        0.0014266546698067154
+      ],
+      [
+        2,
+        0.0014328089880504137
+      ],
+      [
+        4,
+        0.0014446265213140437
+      ],
+      [
+        8,
+        0.0014237469411186325
+      ],
+      [
+        16,
+        0.0013912539608606825
+      ],
+      [
+        32,
+        0.0012045554921624368
+      ],
+      [
+        64,
+        0.001055608992238974
+      ],
+      [
+        128,
+        0.0009052457415275946
+      ],
+      [
+        256,
+        0.0005287986066838759
+      ]
+    ],
+    "P_heatbath_blocking_regime": "plateau",
+    "sem_convention": "flyvbjerg_petersen_blocked",
+    "gap": 0.15748632136606933,
+    "tolerance": 0.02,
+    "margin_factor": 0.12699515631907465,
+    "verdict": "FAIL"
+  },
+  "H_rel_drift_max": 2.0935218170441347e-05,
+  "G_max_max": 1.1568999397421034,
+  "H0": 32.07750290929538,
+  "H_final": 32.0779230367757
+}

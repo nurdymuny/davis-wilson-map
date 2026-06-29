@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Halcyon — Davis Geometric</title>
+<meta name="description" content="Halcyon is the first Gi-System. A geometric apparatus for engineered modification of local inertial response.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Halcyon base */
+  --bg:        #0a0f17;
+  --bg-elev:   #0f1620;
+  --bg-card:   #131a26;
+  --ink:       #e8e3d6;
+  --ink-quiet: #a39c8c;
+  --ink-mute:  #6b6657;
+  --rule:        rgba(232,227,214,.08);
+  --rule-strong: rgba(232,227,214,.18);
+
+  /* The four phase colors — taken from the cage demo legend.
+     These are the accent palette for the whole site. */
+  --phase-cyan:    #4dd0e1;  /*  Q = π/2  -- primary identity accent */
+  --phase-magenta: #e57bb0;  /*  Q = π    -- "the problem" timeline */
+  --phase-amber:   #d4a574;  /*  Q = 0    -- warmth, etymology */
+  --phase-violet:  #b39ddb;  /*  Q = 3π/2 -- "the math" + Gi-Systems */
+
+  --cyan-dim:    rgba(77,208,225,.18);
+  --cyan-soft:   rgba(77,208,225,.08);
+  --magenta-dim: rgba(229,123,176,.16);
+  --amber-dim:   rgba(212,165,116,.16);
+  --violet-dim:  rgba(179,157,219,.16);
+
+  --serif: "Source Serif 4", Georgia, serif;
+  --mono:  "IBM Plex Mono", monospace;
+  --sans:  "IBM Plex Sans", -apple-system, sans-serif;
+
+  --gutter: clamp(1.25rem, 3vw, 2.5rem);
+  --max-w-content: 1400px;
+  --max-w-prose:   62ch;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.6;
+  font-feature-settings: "kern" 1, "liga" 1, "onum" 1;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+::selection { background: var(--cyan-dim); color: var(--ink); }
+a {
+  color: var(--phase-cyan); text-decoration: none;
+  border-bottom: 1px solid transparent; transition: border-color 200ms;
+}
+a:hover { border-bottom-color: var(--phase-cyan); }
+a:focus-visible { outline: 2px solid var(--phase-cyan); outline-offset: 3px; border-radius: 2px; }
+
+/* ============================================
+   NAVIGATION  — phase-cyan accent
+   ============================================ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1rem var(--gutter);
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(10,15,23,.78);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-brand { display: flex; align-items: center; gap: .6rem; border-bottom: none !important; }
+.nav-mark { width: 14px; height: 14px; background: var(--phase-cyan); transform: rotate(45deg); position: relative; }
+.nav-mark::after { content: ""; position: absolute; inset: 3px; background: var(--bg); }
+.nav-title { font-family: var(--serif); font-weight: 400; font-size: 1.05rem; letter-spacing: .08em; color: var(--ink); }
+.nav-sub { font-family: var(--sans); font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute); margin-top: .1rem; }
+.nav-links { display: flex; gap: 1.75rem; align-items: center; }
+.nav-links a {
+  font-family: var(--sans); font-size: .75rem; font-weight: 500;
+  color: var(--ink-quiet); border-bottom: none;
+}
+.nav-links a:hover { color: var(--phase-cyan); }
+.nav-cta {
+  font-family: var(--sans); font-size: .72rem; font-weight: 500;
+  color: var(--ink) !important; padding: .5rem 1rem;
+  border: 1px solid var(--rule-strong); border-radius: 4px;
+  transition: border-color 200ms, background 200ms;
+}
+.nav-cta:hover { border-color: var(--phase-cyan); background: var(--cyan-soft); }
+@media (max-width: 760px) { .nav-links a:not(.nav-cta) { display: none; } }
+
+/* ============================================
+   SHARED — eyebrows, badges, titles
+   ============================================ */
+.eyebrow {
+  font-family: var(--sans); font-size: .7rem; font-weight: 500;
+  letter-spacing: .22em; text-transform: uppercase;
+}
+.eyebrow.cyan    { color: var(--phase-cyan); }
+.eyebrow.magenta { color: var(--phase-magenta); }
+.eyebrow.amber   { color: var(--phase-amber); }
+.eyebrow.violet  { color: var(--phase-violet); }
+
+.badge {
+  font-family: var(--sans); font-size: .58rem; font-weight: 600;
+  letter-spacing: .16em; text-transform: uppercase;
+  padding: .3rem .65rem; border-radius: 3px;
+  background: var(--amber-dim); color: var(--phase-amber);
+  border: 1px solid var(--amber-dim);
+}
+
+.section-title {
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(1.9rem, 3.8vw, 2.75rem); line-height: 1.12;
+  letter-spacing: -.018em; color: var(--ink);
+  max-width: 22ch;
+}
+.section-sub {
+  font-family: var(--serif); font-weight: 300;
+  font-size: 1.05rem; line-height: 1.55; color: var(--ink-quiet);
+  max-width: 56ch;
+}
+
+/* ============================================
+   HERO  — full width, cage as ambient SVG
+   ============================================ */
+.hero {
+  /* No viewport-relative min-height: forcing the hero to 100vh produces
+     huge empty bands above and below the content on vertical or
+     ultra-tall monitors (where the content is ~760px but the viewport
+     might be 1600-2400px). The padding below already gives a generous
+     "this is the top" feel; the grid row height is driven by the cage
+     SVG's own min-height (480px) and by the text column's natural size,
+     so the hero is exactly as tall as it needs to be on every viewport. */
+  padding: 6.5rem var(--gutter) 4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  position: relative;
+  max-width: var(--max-w-content);
+  margin: 0 auto;
+}
+.hero::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 50% 40% at 18% 32%, var(--cyan-dim) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 40% at 78% 75%, var(--amber-dim) 0%, transparent 60%);
+  opacity: .35; pointer-events: none; z-index: 0;
+}
+
+.hero-text { position: relative; z-index: 2; }
+
+.hero-eyebrow-row {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+
+.hero-headline {
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(2.4rem, 4.5vw, 3.75rem); line-height: 1.05;
+  letter-spacing: -.018em; color: var(--ink);
+  font-variation-settings: "opsz" 48;
+  margin-bottom: 1.25rem; max-width: 14ch;
+}
+.hero-headline .accent { color: var(--phase-cyan); font-style: italic; font-weight: 300; }
+
+.hero-greek {
+  font-family: var(--serif); font-style: italic;
+  color: var(--phase-amber); font-weight: 400;
+  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+  margin-bottom: 1.5rem;
+}
+.hero-greek em { color: var(--ink-quiet); font-style: italic; }
+
+.hero-sub {
+  font-family: var(--serif); font-size: 1.05rem; line-height: 1.55;
+  color: var(--ink-quiet); font-weight: 300;
+  max-width: 50ch; margin-bottom: 2.25rem;
+}
+.hero-sub strong { color: var(--ink); font-weight: 400; }
+
+.hero-ctas { display: flex; gap: .85rem; margin-bottom: 3rem; flex-wrap: wrap; }
+
+.btn {
+  font-family: var(--sans); font-size: .82rem; font-weight: 500;
+  letter-spacing: .04em; padding: .85rem 1.4rem; border-radius: 6px;
+  cursor: pointer; transition: all 200ms;
+  display: inline-flex; align-items: center; gap: .5rem;
+  border: 1px solid transparent; border-bottom: none;
+}
+.btn-primary { background: var(--phase-cyan); color: var(--bg); border-color: var(--phase-cyan); }
+.btn-primary:hover { background: #6ee0f0; border-color: #6ee0f0; transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+.btn-ghost:hover { border-color: var(--ink-quiet); background: rgba(232,227,214,.04); }
+.btn .arrow { font-family: var(--mono); font-weight: 400; }
+
+/* Hero stats — inline row, no card wrapper */
+.hero-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+.hero-stat-num {
+  font-family: var(--mono); font-weight: 500;
+  font-size: clamp(1.15rem, 1.8vw, 1.55rem); line-height: 1;
+  color: var(--ink); letter-spacing: -.02em;
+  margin-bottom: .4rem; font-feature-settings: "tnum" 1;
+}
+.hero-stat-num .unit { font-size: .55em; color: var(--ink-quiet); margin-left: .15rem; }
+.hero-stat-label {
+  font-family: var(--sans); font-size: .62rem; font-weight: 500;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--phase-cyan); margin-bottom: .25rem;
+}
+.hero-stat-desc {
+  font-family: var(--serif); font-size: .75rem;
+  color: var(--ink-mute); line-height: 1.4;
+}
+@media (max-width: 760px) { .hero-stats { grid-template-columns: repeat(2, 1fr); } }
+
+/* Hero geometry — ambient cage SVG */
+.hero-geom {
+  position: relative; z-index: 1;
+  height: 100%; min-height: 480px;
+  display: flex; align-items: center; justify-content: center;
+}
+.hero-cage {
+  width: 100%; max-width: 560px;
+  opacity: .55;
+  animation: cage-rotate 90s linear infinite;
+  transform-origin: center;
+}
+@keyframes cage-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding-top: 6rem; }
+  .hero-geom { display: none; }
+}
+
+/* ============================================
+   SECTION FRAMES (full width, dark)
+   ============================================ */
+section.panel {
+  padding: 6.5rem var(--gutter);
+  position: relative;
+}
+section.panel .container {
+  max-width: var(--max-w-content);
+  margin: 0 auto;
+}
+section.panel .header-row {
+  display: flex; flex-direction: column;
+  gap: .85rem; margin-bottom: 3rem;
+  max-width: 60ch;
+}
+
+/* ============================================
+   TIMELINE — replaces the graveyard cards
+   "A century of inertia claims" as a sweep
+   accent: phase-magenta
+   ============================================ */
+.timeline-section {
+  background:
+    linear-gradient(180deg, transparent, rgba(229,123,176,.025) 50%, transparent),
+    var(--bg);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.timeline-frame {
+  position: relative;
+  margin-top: 3rem;
+  /* Reserve enough vertical room for the above- and below-line event labels
+     so they never punch up into the section prose above or down into the
+     decade-axis row below. Each label is ~6rem tall (year + name + fail);
+     7rem of clearance each side keeps a comfortable gap. */
+  padding: 7rem 0;
+}
+
+/* the spine that runs across */
+.timeline-spine {
+  position: relative;
+  height: 2px;
+  background: linear-gradient(to right,
+    rgba(229,123,176,.08) 0%,
+    rgba(229,123,176,.22) 35%,
+    rgba(229,123,176,.45) 70%,
+    var(--phase-cyan) 95%,
+    var(--phase-cyan) 100%);
+  margin: 0 1.5rem;
+  border-radius: 1px;
+}
+
+.timeline-event {
+  position: absolute;
+  /* The spine sits at the vertical center of the frame because the frame
+     uses symmetric 7rem padding and the spine has no margin. Anchor the
+     event dots vertically to the spine via top:50% rather than to the
+     frame top, so adjusting frame padding doesn't drift the dots off the
+     spine. */
+  top: 50%;
+  width: 18px; height: 18px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--phase-magenta);
+  transform: translateX(-50%);
+  cursor: default;
+  transition: all 250ms;
+}
+.timeline-event.halcyon {
+  border-color: var(--phase-cyan);
+  background: var(--phase-cyan);
+  box-shadow: 0 0 0 6px var(--cyan-dim);
+}
+
+/* event labels — alternating above and below */
+.timeline-event .event-content {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  text-align: center;
+  pointer-events: none;
+}
+.timeline-event.above .event-content { bottom: calc(100% + 1.5rem); }
+.timeline-event.below .event-content { top: calc(100% + 1.5rem); }
+
+.event-year {
+  font-family: var(--mono); font-size: .72rem; font-weight: 500;
+  color: var(--phase-magenta); letter-spacing: .08em;
+  margin-bottom: .3rem;
+}
+.timeline-event.halcyon .event-year { color: var(--phase-cyan); }
+.event-name {
+  font-family: var(--serif); font-weight: 500;
+  font-size: .92rem; color: var(--ink); line-height: 1.25;
+  margin-bottom: .4rem;
+}
+.event-fail {
+  font-family: var(--serif); font-style: italic;
+  font-size: .78rem; color: var(--ink-mute); line-height: 1.4;
+}
+.timeline-event.halcyon .event-fail {
+  color: var(--phase-cyan); font-style: normal;
+  font-family: var(--sans); font-size: .7rem;
+  font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* connector line from spine to label */
+.timeline-event::after {
+  content: "";
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  width: 1px; background: var(--rule-strong);
+}
+.timeline-event.above::after { bottom: 100%; height: 1.25rem; }
+.timeline-event.below::after { top: 100%; height: 1.25rem; }
+.timeline-event.halcyon::after { background: var(--phase-cyan); opacity: .4; }
+
+.timeline-axis-labels {
+  /* Decade ticks sit BELOW the frame (the frame's 7rem bottom padding
+     already contains the below-line event labels). Each span is
+     absolutely positioned at its decade's spine position so the ticks
+     line up with the spine rather than evenly-spreading across whatever
+     width the container happens to be. */
+  position: relative;
+  height: 1.2rem;
+  margin: 1rem 1.5rem 0;
+  font-family: var(--mono); font-size: .68rem;
+  color: var(--ink-mute); letter-spacing: .08em;
+}
+.timeline-axis-labels span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.timeline-axis-labels span:nth-child(1) { left: 0%; }
+.timeline-axis-labels span:nth-child(2) { left: 40%; }
+.timeline-axis-labels span:nth-child(3) { left: 80%; }
+.timeline-axis-labels span:nth-child(4) { left: 100%; transform: translateX(-100%); }
+
+.timeline-takeaway {
+  margin-top: 4rem;
+  padding: 1.5rem 2rem;
+  border-left: 2px solid var(--phase-cyan);
+  background: var(--cyan-soft);
+  max-width: 60ch;
+}
+.timeline-takeaway p {
+  font-family: var(--serif); font-style: italic;
+  font-size: 1rem; line-height: 1.55; color: var(--ink);
+}
+.timeline-takeaway p strong { color: var(--phase-cyan); font-style: normal; font-weight: 500; }
+
+@media (max-width: 960px) {
+  /* On mobile, render as a stacked list rather than the spine */
+  .timeline-spine { display: none; }
+  .timeline-axis-labels { display: none; }
+  .timeline-frame {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem 0;
+  }
+  .timeline-event {
+    position: relative; top: 0;
+    width: 100%; height: auto;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--phase-magenta);
+    padding: 1.25rem 1.5rem;
+    transform: none;
+    display: block;
+  }
+  .timeline-event.halcyon {
+    border-left-color: var(--phase-cyan);
+    background: var(--cyan-soft);
+    box-shadow: none;
+  }
+  .timeline-event .event-content {
+    position: static; transform: none;
+    width: auto; text-align: left;
+  }
+  .timeline-event::after { display: none; }
+}
+
+/* ============================================
+   CAGE-STATE STRIP — replaces comparison cards
+   Three buckyball thumbnails showing Q sectors
+   accent: phase-cyan
+   ============================================ */
+.states-section { background: var(--bg); }
+
+.state-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 3rem;
+  position: relative;
+}
+@media (max-width: 900px) { .state-strip { grid-template-columns: 1fr; } }
+
+.state-card {
+  position: relative;
+  padding: 2rem 1.5rem 1.75rem;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  transition: border-color 300ms, transform 300ms;
+}
+.state-card:hover { transform: translateY(-3px); }
+.state-card.q0:hover { border-color: rgba(232,227,214,.18); }
+.state-card.q1:hover { border-color: var(--cyan-dim); }
+.state-card.q2:hover { border-color: var(--magenta-dim); }
+
+.state-q {
+  font-family: var(--mono); font-size: .85rem; font-weight: 500;
+  letter-spacing: .14em; margin-bottom: .25rem;
+}
+.state-card.q0 .state-q { color: var(--ink-quiet); }
+.state-card.q1 .state-q { color: var(--phase-cyan); }
+.state-card.q2 .state-q { color: var(--phase-magenta); }
+
+.state-name {
+  font-family: var(--serif); font-weight: 400; font-size: 1.1rem;
+  color: var(--ink); margin-bottom: 1.25rem;
+}
+.state-name em { color: var(--ink-quiet); font-style: italic; font-size: .9em; }
+
+.state-thumb {
+  width: 100%; aspect-ratio: 1 / 1;
+  max-width: 240px; margin: 0 auto 1.5rem;
+  display: block;
+}
+
+.state-readout {
+  font-family: var(--mono); font-size: 1.6rem;
+  text-align: center; letter-spacing: -.01em;
+  margin-bottom: .4rem; font-feature-settings: "tnum" 1;
+}
+.state-card.q0 .state-readout { color: var(--ink); }
+.state-card.q1 .state-readout { color: var(--phase-cyan); }
+.state-card.q2 .state-readout { color: var(--phase-magenta); }
+
+.state-readout-label {
+  font-family: var(--sans); font-size: .6rem; font-weight: 500;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--ink-mute);
+  text-align: center; margin-bottom: 1.25rem;
+}
+
+.state-meta {
+  border-top: 1px solid var(--rule);
+  padding-top: .85rem;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: .35rem 1rem;
+  font-family: var(--mono); font-size: .72rem;
+  color: var(--ink-mute);
+}
+.state-meta .k { color: var(--ink-mute); }
+.state-meta .v { color: var(--ink-quiet); }
+
+.state-takeaway {
+  margin-top: 3rem;
+  text-align: center;
+  font-family: var(--mono); font-size: .82rem;
+  color: var(--ink-quiet); max-width: 70ch; margin-left: auto; margin-right: auto;
+  line-height: 1.65;
+}
+.state-takeaway strong { color: var(--phase-cyan); font-weight: 500; }
+
+/* ============================================
+   DEMO
+   ============================================ */
+.demo-section { background: var(--bg-elev); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+
+.demo-header {
+  display: flex; justify-content: space-between; align-items: end;
+  margin-bottom: 2rem; gap: 2rem; flex-wrap: wrap;
+}
+.demo-header h2 {
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(1.9rem, 3.8vw, 2.75rem); line-height: 1.12;
+  letter-spacing: -.018em; margin-top: .5rem;
+}
+.demo-meta {
+  font-family: var(--mono); font-size: .72rem;
+  color: var(--ink-mute); text-align: right;
+  letter-spacing: .02em; line-height: 1.7;
+}
+.demo-meta strong { color: var(--ink-quiet); font-weight: 400; }
+
+.demo-intro {
+  max-width: 70ch; margin-bottom: 2.5rem;
+  color: var(--ink-quiet); font-size: 1rem; line-height: 1.6;
+}
+.demo-intro strong { color: var(--ink); font-weight: 400; }
+.demo-intro em { color: var(--ink); font-style: italic; }
+
+.demo-frame {
+  position: relative; width: 100%; aspect-ratio: 16 / 10;
+  background: #050810; border: 1px solid var(--rule-strong);
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 20px 60px -20px rgba(0,0,0,.85);
+}
+.demo-frame iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  border: none; background: #050810;
+}
+.demo-placeholder {
+  position: absolute; inset: 0; display: flex;
+  flex-direction: column; justify-content: center; align-items: center;
+  gap: 1.5rem; background: #050810;
+  pointer-events: none; transition: opacity 600ms;
+}
+.demo-placeholder.hidden { opacity: 0; }
+.placeholder-rings { width: 90px; height: 90px; position: relative; }
+.placeholder-rings::before, .placeholder-rings::after {
+  content: ""; position: absolute; inset: 0;
+  border: 1px solid var(--phase-cyan); border-radius: 50%;
+  opacity: .4; animation: ring-pulse 3s ease-in-out infinite;
+}
+.placeholder-rings::after { animation-delay: 1.5s; }
+@keyframes ring-pulse {
+  0%   { transform: scale(.5); opacity: .8; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.placeholder-label {
+  font-family: var(--sans); font-size: .68rem;
+  letter-spacing: .24em; text-transform: uppercase; color: var(--ink-mute);
+}
+.demo-caption {
+  margin-top: 1.25rem; font-family: var(--mono);
+  font-size: .73rem; color: var(--ink-mute); text-align: center;
+}
+
+.demo-audit-cta {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  display: flex; flex-direction: column; align-items: center; gap: .9rem;
+  text-align: center;
+}
+.demo-audit-btn {
+  font-family: var(--sans); font-size: .85rem; font-weight: 500;
+  padding: .75rem 1.5rem; border-radius: 4px;
+  border: 1px solid var(--cyan-dim); color: var(--phase-cyan);
+  background: var(--cyan-soft);
+  cursor: pointer;
+  letter-spacing: .04em;
+  transition: border-color 200ms, background 200ms, color 200ms;
+}
+.demo-audit-btn:hover {
+  border-color: var(--phase-cyan); background: var(--cyan-dim); color: var(--ink);
+}
+.demo-audit-btn .arrow { transition: transform 200ms; display: inline-block; }
+.demo-audit-btn:hover .arrow { transform: translateX(3px); }
+.demo-audit-note {
+  font-family: var(--serif); font-size: .85rem; line-height: 1.5;
+  color: var(--ink-quiet);
+  max-width: 56ch;
+}
+
+/* ============================================
+   HOW IT WORKS — three cards
+   accent: phase-cyan
+   ============================================ */
+.how-section { background: var(--bg); }
+
+.how-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem; margin-top: 3rem;
+}
+@media (max-width: 900px) { .how-grid { grid-template-columns: 1fr; } }
+
+.how-card {
+  background: var(--bg-card); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 1.75rem;
+  transition: border-color 300ms, transform 300ms;
+}
+.how-card:hover { border-color: var(--cyan-dim); transform: translateY(-2px); }
+
+.how-num {
+  font-family: var(--mono); font-size: .72rem; color: var(--phase-cyan);
+  letter-spacing: .18em; margin-bottom: .75rem; font-weight: 500;
+}
+.how-card h3 {
+  font-family: var(--serif); font-weight: 400; font-size: 1.2rem;
+  line-height: 1.25; margin-bottom: 1rem; color: var(--ink);
+}
+.how-card p { font-size: .9rem; color: var(--ink-quiet); line-height: 1.6; }
+.how-detail {
+  margin-top: 1.25rem; padding-top: 1.1rem;
+  border-top: 1px solid var(--rule); font-family: var(--mono);
+  font-size: .7rem; color: var(--ink-mute); line-height: 1.75;
+}
+.how-detail strong { color: var(--phase-cyan); font-weight: 400; }
+
+/* ============================================
+   MATH  — collapsible, phase-violet accent
+   ============================================ */
+.math-section {
+  background: linear-gradient(180deg, var(--bg) 0%, rgba(179,157,219,.025) 50%, var(--bg) 100%);
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+}
+.math-section .container { max-width: 900px; }
+
+details.math-details {
+  border-top: 1px solid var(--rule-strong);
+  border-bottom: 1px solid var(--rule-strong); margin-top: 2rem;
+}
+details.math-details summary {
+  cursor: pointer; list-style: none; display: flex;
+  align-items: center; justify-content: space-between;
+  padding: 1.25rem 0; font-family: var(--sans);
+  font-size: .72rem; font-weight: 500; letter-spacing: .22em;
+  text-transform: uppercase; color: var(--ink-quiet);
+  transition: color 200ms;
+}
+details.math-details summary::-webkit-details-marker { display: none; }
+details.math-details summary:hover { color: var(--phase-violet); }
+.math-toggle-icon {
+  display: inline-block; width: 1.5rem; height: 1px;
+  background: var(--ink-quiet); position: relative;
+}
+.math-toggle-icon::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: 1px; height: 1.5rem; background: var(--ink-quiet);
+  transform: translate(-50%, -50%); transition: opacity 200ms;
+}
+details[open] .math-toggle-icon::after { opacity: 0; }
+.math-content { padding: 2rem 0 1rem; }
+.eq {
+  font-family: var(--mono); font-size: .93rem; margin: 2rem 0;
+  padding-left: 1.5rem; border-left: 2px solid var(--rule);
+  display: flex; flex-direction: column; gap: .4rem;
+}
+.eq.yours { border-left-color: var(--phase-violet); }
+.eq-label {
+  font-family: var(--sans); font-size: .64rem;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--ink-mute);
+}
+.eq-line { color: var(--ink); font-size: 1.02rem; letter-spacing: .02em; line-height: 1.5; }
+.eq.yours .eq-line { color: var(--phase-violet); }
+.eq-note {
+  font-family: var(--serif); font-style: italic;
+  font-size: .87rem; color: var(--ink-quiet); margin-top: .25rem;
+}
+
+/* ============================================
+   VALIDATION  — phase-amber accent for "honesty"
+   ============================================ */
+.validation-section { background: var(--bg); }
+
+.accounting-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem; margin-top: 3rem;
+}
+@media (max-width: 900px) { .accounting-grid { grid-template-columns: 1fr; } }
+
+.acct-col {
+  background: var(--bg-card); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 1.75rem; position: relative;
+}
+.acct-col.proved    { border-top: 3px solid var(--phase-cyan); }
+.acct-col.validated { border-top: 3px solid var(--phase-amber); }
+.acct-col.open      { border-top: 3px solid var(--ink-mute); }
+
+.acct-status {
+  font-family: var(--mono); font-size: .68rem; font-weight: 500;
+  letter-spacing: .18em; text-transform: uppercase; margin-bottom: 1rem;
+}
+.acct-col.proved    .acct-status { color: var(--phase-cyan); }
+.acct-col.validated .acct-status { color: var(--phase-amber); }
+.acct-col.open      .acct-status { color: var(--ink-mute); }
+
+.acct-col h3 {
+  font-family: var(--serif); font-weight: 400; font-size: 1.02rem;
+  line-height: 1.3; margin-bottom: 1.25rem; color: var(--ink);
+}
+.acct-col ul { list-style: none; padding: 0; margin: 0; }
+.acct-col li {
+  font-family: var(--serif); font-size: .86rem;
+  color: var(--ink-quiet); padding: .65rem 0;
+  border-top: 1px solid var(--rule); line-height: 1.5;
+}
+.acct-col li:first-child { border-top: none; padding-top: .35rem; }
+.acct-col li code {
+  font-family: var(--mono); font-size: .74rem;
+  color: var(--phase-amber); letter-spacing: .02em;
+}
+.acct-col.proved li code { color: var(--phase-cyan); }
+
+/* ============================================
+   GI-SYSTEMS  — phase-violet accent
+   ============================================ */
+.gi-section { background: var(--bg-elev); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+
+.gi-quote {
+  font-family: var(--serif); font-style: italic; font-weight: 300;
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem); line-height: 1.4;
+  color: var(--ink); max-width: 36ch; margin-top: 2rem;
+}
+.gi-quote em { color: var(--phase-violet); font-style: italic; }
+
+.gi-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1rem; margin-top: 3rem;
+}
+@media (max-width: 900px) { .gi-grid { grid-template-columns: 1fr; } }
+
+.gi-card {
+  background: var(--bg); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 1.25rem 1.5rem;
+  transition: border-color 200ms;
+}
+.gi-card:hover { border-color: var(--violet-dim); }
+.gi-card.current {
+  border-color: var(--phase-amber);
+  background: rgba(212,165,116,.04);
+}
+
+.gi-card-name {
+  font-family: var(--mono); font-size: .82rem;
+  letter-spacing: .18em; color: var(--ink);
+  text-transform: uppercase; font-weight: 500;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: .4rem;
+}
+.gi-card.current .gi-card-name { color: var(--phase-amber); }
+.gi-card-status {
+  font-family: var(--sans); font-size: .55rem;
+  letter-spacing: .18em; color: var(--ink-mute); text-transform: uppercase;
+}
+.gi-card.current .gi-card-status { color: var(--phase-amber); }
+.gi-card-desc {
+  font-family: var(--serif); font-size: .83rem;
+  color: var(--ink-quiet); line-height: 1.5;
+}
+
+/* ============================================
+   RESOURCES
+   ============================================ */
+.resources-section { background: var(--bg); }
+
+.resources-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem; margin-top: 3rem;
+}
+@media (max-width: 760px) { .resources-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.resource-card {
+  background: var(--bg-card); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 1.35rem 1.5rem; transition: all 200ms;
+}
+.resource-card:hover { border-color: var(--phase-cyan); transform: translateY(-2px); }
+.resource-label {
+  font-family: var(--sans); font-size: .6rem;
+  letter-spacing: .22em; text-transform: uppercase;
+  color: var(--ink-mute); margin-bottom: .5rem;
+}
+.resource-card a {
+  font-family: var(--serif); font-size: .98rem; font-weight: 400;
+  color: var(--ink); border-bottom: none; display: inline-block;
+}
+.resource-card a:hover { color: var(--phase-cyan); }
+.resource-card .arrow { font-family: var(--mono); color: var(--phase-cyan); margin-left: .3rem; }
+
+/* ============================================
+   FOOTER
+   ============================================ */
+footer {
+  border-top: 1px solid var(--rule); padding: 2.5rem var(--gutter);
+  max-width: var(--max-w-content); margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 1.5rem;
+}
+.footer-brand { font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+.footer-tagline {
+  font-family: var(--serif); font-style: italic;
+  font-size: .9rem; color: var(--ink-quiet);
+}
+.footer-copyright {
+  font-family: var(--sans); font-size: .66rem;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink-mute);
+}
+
+/* ============================================
+   REVEAL
+   ============================================ */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s, transform .8s; }
+.reveal.revealed { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#" class="nav-brand">
+    <span class="nav-mark" aria-hidden="true"></span>
+    <span>
+      <div class="nav-title">HALCYON</div>
+      <div class="nav-sub">by Davis Geometric</div>
+    </span>
+  </a>
+  <div class="nav-links">
+    <a href="#history">History</a>
+    <a href="#states">The idea</a>
+    <a href="#demo">Demo</a>
+    <a href="#validation">Validation</a>
+    <a href="#gisystems">Gi-Systems</a>
+    <a href="#demo" class="nav-cta">Try the demo</a>
+  </div>
+</nav>
+
+<!-- ============================================
+     HERO — full width, cage as ambient SVG
+     ============================================ -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="hero-eyebrow-row">
+      <div class="eyebrow cyan">Engineered modification of local inertial response</div>
+      <span class="badge">Patent Pending</span>
+    </div>
+    <h1 class="hero-headline">Stop arguing about inertia. <span class="accent">Start measuring it.</span></h1>
+    <div class="hero-greek">&#7936;&#955;&#954;&#965;&#974;&#957; &mdash; <em>the days the wind stops blowing.</em></div>
+    <p class="hero-sub">
+      Halcyon is a small spherical cage of <strong>ninety Josephson junctions</strong>
+      arranged on the geometry of a buckyball. Drive the junctions in the right
+      pattern and the gauge field inside settles into a non-trivial topological
+      configuration. The Davis Field Equations framework predicts that this field
+      <strong>locally modifies the effective inertial mass</strong> of an object
+      suspended at its center.
+    </p>
+    <div class="hero-ctas">
+      <a href="#demo" class="btn btn-primary">Watch the simulator <span class="arrow">&rarr;</span></a>
+      <a href="#states" class="btn btn-ghost">How it works</a>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-num">0.0061</div>
+        <div class="hero-stat-label">Calibration gap</div>
+        <div class="hero-stat-desc">heatbath vs Migdal&ndash;Witten exact at &beta;=2.5, 1.63&times; under 0.01 tol</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">4.11<span class="unit">e&minus;15</span></div>
+        <div class="hero-stat-label">Constraint preserved</div>
+        <div class="hero-stat-desc">covariant Gauss at FP64 floor, 1000 steps</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">0.0449</div>
+        <div class="hero-stat-label">Method-gap diagnostic</div>
+        <div class="hero-stat-desc">microcanonical vs canonical at 0.02 tol; documented finite-size effect on 93-DOF substrate (Section 7 ergodicity)</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">7 / 8</div>
+        <div class="hero-stat-label">Hard gates passed</div>
+        <div class="hero-stat-desc">remaining is the Section 5 microcanonical-vs-canonical cross-check, a documented finite-size effect on a 93-DOF substrate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-geom" aria-hidden="true">
+    <!-- Ambient buckyball wireframe — slowly rotating, low opacity -->
+    <svg class="hero-cage" viewBox="-260 -260 520 520">
+      <defs>
+        <radialGradient id="vertGlow" cx="0" cy="0" r="50%">
+          <stop offset="0%" stop-color="var(--phase-cyan)" stop-opacity=".9"/>
+          <stop offset="100%" stop-color="var(--phase-cyan)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- A schematic truncated-icosahedron projection.
+           Generated from a stable geometry; not pixel-perfect but evocative. -->
+      <g stroke="var(--phase-cyan)" stroke-width=".8" fill="none" opacity=".55">
+        <!-- pentagon ring 1 -->
+        <polygon points="0,-220 209,-68 129,178 -129,178 -209,-68"/>
+        <!-- pentagon ring 2 (rotated, offset) -->
+        <polygon points="0,-160 152,-50 94,130 -94,130 -152,-50" opacity=".7"/>
+        <!-- hex spokes -->
+        <line x1="0" y1="-220" x2="0" y2="-160"/>
+        <line x1="209" y1="-68" x2="152" y2="-50"/>
+        <line x1="129" y1="178" x2="94" y2="130"/>
+        <line x1="-129" y1="178" x2="-94" y2="130"/>
+        <line x1="-209" y1="-68" x2="-152" y2="-50"/>
+
+        <!-- inner pentagon -->
+        <polygon points="0,-90 86,-28 53,75 -53,75 -86,-28" opacity=".5"/>
+
+        <!-- connectors to inner -->
+        <line x1="0" y1="-160" x2="0" y2="-90" opacity=".6"/>
+        <line x1="152" y1="-50" x2="86" y2="-28" opacity=".6"/>
+        <line x1="94" y1="130" x2="53" y2="75" opacity=".6"/>
+        <line x1="-94" y1="130" x2="-53" y2="75" opacity=".6"/>
+        <line x1="-152" y1="-50" x2="-86" y2="-28" opacity=".6"/>
+      </g>
+
+      <!-- accent edges in phase colors -->
+      <g stroke-width="1.2" fill="none" opacity=".7">
+        <line x1="0" y1="-220" x2="209" y2="-68" stroke="var(--phase-amber)" opacity=".4"/>
+        <line x1="129" y1="178" x2="-209" y2="-68" stroke="var(--phase-magenta)" opacity=".35"/>
+        <line x1="-129" y1="178" x2="152" y2="-50" stroke="var(--phase-violet)" opacity=".35"/>
+      </g>
+
+      <!-- vertices -->
+      <g fill="var(--phase-cyan)">
+        <circle cx="0" cy="-220" r="3"/>
+        <circle cx="209" cy="-68" r="3"/>
+        <circle cx="129" cy="178" r="3"/>
+        <circle cx="-129" cy="178" r="3"/>
+        <circle cx="-209" cy="-68" r="3"/>
+        <circle cx="0" cy="-160" r="2.5"/>
+        <circle cx="152" cy="-50" r="2.5"/>
+        <circle cx="94" cy="130" r="2.5"/>
+        <circle cx="-94" cy="130" r="2.5"/>
+        <circle cx="-152" cy="-50" r="2.5"/>
+        <circle cx="0" cy="-90" r="2"/>
+        <circle cx="86" cy="-28" r="2"/>
+        <circle cx="53" cy="75" r="2"/>
+        <circle cx="-53" cy="75" r="2"/>
+        <circle cx="-86" cy="-28" r="2"/>
+      </g>
+
+      <!-- center mass (small dot indicating test mass position) -->
+      <circle cx="0" cy="0" r="4" fill="var(--phase-amber)" opacity=".8"/>
+      <circle cx="0" cy="0" r="14" fill="none" stroke="var(--phase-amber)" stroke-width=".4" opacity=".3"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ============================================
+     HISTORY TIMELINE — replaces graveyard cards
+     ============================================ -->
+<section class="panel timeline-section reveal" id="history">
+  <div class="container">
+    <div class="header-row">
+      <div class="eyebrow magenta">A hundred years of attempts</div>
+      <h2 class="section-title">The history of trying to engineer inertia.</h2>
+      <p class="section-sub">
+        Every previous attempt either failed to predict a specific number in advance,
+        or saw the effect shrink the moment the measurement got serious. The
+        framework gets it right by doing the opposite: declare the prediction up
+        front, then let the experiment falsify it.
+      </p>
+    </div>
+
+    <div class="timeline-frame">
+      <div class="timeline-spine"></div>
+
+      <!-- Five historical events + Halcyon, positioned along the spine.
+           Percent positions are tuned so the 180px-wide labels (centered
+           on the dot) never overflow the frame on the left or right. -->
+      <div class="timeline-event above" style="left: 8%;">
+        <div class="event-content">
+          <div class="event-year">1918</div>
+          <div class="event-name">Lense&ndash;Thirring frame drag</div>
+          <div class="event-fail">Predicted, not measured for 86 years.</div>
+        </div>
+      </div>
+
+      <div class="timeline-event below" style="left: 24%;">
+        <div class="event-content">
+          <div class="event-year">1990</div>
+          <div class="event-name">Woodward Mach-effect thrusters</div>
+          <div class="event-fail">Effect shrank with measurement quality.</div>
+        </div>
+      </div>
+
+      <div class="timeline-event above" style="left: 40%;">
+        <div class="event-content">
+          <div class="event-year">1992</div>
+          <div class="event-name">Podkletnov rotating disc</div>
+          <div class="event-fail">Never reproduced by an independent lab.</div>
+        </div>
+      </div>
+
+      <div class="timeline-event below" style="left: 58%;">
+        <div class="event-content">
+          <div class="event-year">2001</div>
+          <div class="event-name">BAE Greenglow / Project Greenglow</div>
+          <div class="event-fail">Closed without producing a result.</div>
+        </div>
+      </div>
+
+      <div class="timeline-event above" style="left: 76%;">
+        <div class="event-content">
+          <div class="event-year">2016</div>
+          <div class="event-name">Eagleworks EmDrive</div>
+          <div class="event-fail">Thermal artifact, not new physics.</div>
+        </div>
+      </div>
+
+      <div class="timeline-event halcyon below" style="left: 92%;">
+        <div class="event-content">
+          <div class="event-year">2026</div>
+          <div class="event-name">Halcyon</div>
+          <div class="event-fail">Falsifiable. Predicted in advance.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-axis-labels">
+      <span>1900</span><span>1950</span><span>2000</span><span>2026</span>
+    </div>
+
+    <div class="timeline-takeaway">
+      <p>
+        The pattern repeats because the discipline is missing.
+        <strong>Halcyon's experiment is decided before it runs &mdash;</strong> a slope above the published sensitivity floor measures the coupling; a curve consistent with zero within the preregistered systematics budget falsifies the predicted Branch-XIII magnitude. Either answer is publishable. That's the difference.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     STATES — three cage thumbnails at Q = 0, 1, 2
+     ============================================ -->
+<section class="panel states-section reveal" id="states">
+  <div class="container">
+    <div class="header-row">
+      <div class="eyebrow cyan">The core idea</div>
+      <h2 class="section-title">One cage. Three topological sectors. Different inertias.</h2>
+      <p class="section-sub">
+        The same physical apparatus, holding the same test mass, produces different
+        effective inertial response depending on the topological charge sector
+        <em>Q</em> the gauge field is driven into. The experiment is the
+        <em>m</em><sub>eff</sub>/<em>m</em><sub>0</sub> curve across sectors.
+      </p>
+    </div>
+
+    <div class="state-strip">
+      <!-- Q = 0 — baseline, dim cage -->
+      <div class="state-card q0">
+        <div class="state-q">Q = 0</div>
+        <div class="state-name">Trivial vacuum <em>&middot; cage off</em></div>
+
+        <svg class="state-thumb" viewBox="-110 -110 220 220" aria-hidden="true">
+          <g stroke="var(--ink-mute)" stroke-width=".8" fill="none" opacity=".5">
+            <polygon points="0,-90 86,-28 53,75 -53,75 -86,-28"/>
+            <polygon points="0,-60 57,-19 35,50 -35,50 -57,-19"/>
+            <polygon points="0,-30 28,-9 18,25 -18,25 -28,-9"/>
+            <line x1="0" y1="-90" x2="0" y2="-60"/>
+            <line x1="86" y1="-28" x2="57" y2="-19"/>
+            <line x1="53" y1="75" x2="35" y2="50"/>
+            <line x1="-53" y1="75" x2="-35" y2="50"/>
+            <line x1="-86" y1="-28" x2="-57" y2="-19"/>
+            <line x1="0" y1="-60" x2="0" y2="-30"/>
+            <line x1="57" y1="-19" x2="28" y2="-9"/>
+            <line x1="35" y1="50" x2="18" y2="25"/>
+            <line x1="-35" y1="50" x2="-18" y2="25"/>
+            <line x1="-57" y1="-19" x2="-28" y2="-9"/>
+          </g>
+          <g fill="var(--ink-mute)" opacity=".6">
+            <circle cx="0" cy="-90" r="2"/><circle cx="86" cy="-28" r="2"/>
+            <circle cx="53" cy="75" r="2"/><circle cx="-53" cy="75" r="2"/>
+            <circle cx="-86" cy="-28" r="2"/>
+            <circle cx="0" cy="-60" r="1.8"/><circle cx="57" cy="-19" r="1.8"/>
+            <circle cx="35" cy="50" r="1.8"/><circle cx="-35" cy="50" r="1.8"/>
+            <circle cx="-57" cy="-19" r="1.8"/>
+            <circle cx="0" cy="-30" r="1.6"/><circle cx="28" cy="-9" r="1.6"/>
+            <circle cx="18" cy="25" r="1.6"/><circle cx="-18" cy="25" r="1.6"/>
+            <circle cx="-28" cy="-9" r="1.6"/>
+          </g>
+          <circle cx="0" cy="0" r="3" fill="var(--ink-quiet)" opacity=".6"/>
+        </svg>
+
+        <div class="state-readout">1.0000</div>
+        <div class="state-readout-label">m<sub>eff</sub> / m<sub>0</sub></div>
+
+        <div class="state-meta">
+          <span class="k">Junction biases</span>          <span class="v">0 / 90</span>
+          <span class="k">Wilson loop &lt;P&gt;</span>     <span class="v">&mdash;</span>
+          <span class="k">Q</span>                         <span class="v">0</span>
+        </div>
+      </div>
+
+      <!-- Q = 1 — first non-trivial sector, cyan glow -->
+      <div class="state-card q1">
+        <div class="state-q">Q = 1</div>
+        <div class="state-name">First non-trivial <em>&middot; cage on</em></div>
+
+        <svg class="state-thumb" viewBox="-110 -110 220 220" aria-hidden="true">
+          <defs>
+            <radialGradient id="q1Glow" cx="0" cy="0" r="50%">
+              <stop offset="0%" stop-color="var(--phase-cyan)" stop-opacity=".25"/>
+              <stop offset="100%" stop-color="var(--phase-cyan)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="0" cy="0" r="95" fill="url(#q1Glow)"/>
+
+          <g stroke="var(--phase-cyan)" stroke-width="1" fill="none" opacity=".8">
+            <polygon points="0,-90 86,-28 53,75 -53,75 -86,-28"/>
+            <polygon points="0,-60 57,-19 35,50 -35,50 -57,-19" opacity=".75"/>
+            <polygon points="0,-30 28,-9 18,25 -18,25 -28,-9" opacity=".5"/>
+            <line x1="0" y1="-90" x2="0" y2="-60"/>
+            <line x1="86" y1="-28" x2="57" y2="-19"/>
+            <line x1="53" y1="75" x2="35" y2="50"/>
+            <line x1="-53" y1="75" x2="-35" y2="50"/>
+            <line x1="-86" y1="-28" x2="-57" y2="-19"/>
+            <line x1="0" y1="-60" x2="0" y2="-30" opacity=".7"/>
+            <line x1="57" y1="-19" x2="28" y2="-9" opacity=".7"/>
+            <line x1="35" y1="50" x2="18" y2="25" opacity=".7"/>
+            <line x1="-35" y1="50" x2="-18" y2="25" opacity=".7"/>
+            <line x1="-57" y1="-19" x2="-28" y2="-9" opacity=".7"/>
+          </g>
+          <!-- highlighted phase edges (a few stand out in amber) -->
+          <g stroke="var(--phase-amber)" stroke-width="1.4" fill="none" opacity=".85">
+            <line x1="0" y1="-90" x2="86" y2="-28"/>
+            <line x1="53" y1="75" x2="-53" y2="75"/>
+            <line x1="-86" y1="-28" x2="0" y2="-60"/>
+          </g>
+
+          <g fill="var(--phase-cyan)">
+            <circle cx="0" cy="-90" r="2.4"/><circle cx="86" cy="-28" r="2.4"/>
+            <circle cx="53" cy="75" r="2.4"/><circle cx="-53" cy="75" r="2.4"/>
+            <circle cx="-86" cy="-28" r="2.4"/>
+            <circle cx="0" cy="-60" r="2"/><circle cx="57" cy="-19" r="2"/>
+            <circle cx="35" cy="50" r="2"/><circle cx="-35" cy="50" r="2"/>
+            <circle cx="-57" cy="-19" r="2"/>
+            <circle cx="0" cy="-30" r="1.7"/><circle cx="28" cy="-9" r="1.7"/>
+            <circle cx="18" cy="25" r="1.7"/><circle cx="-18" cy="25" r="1.7"/>
+            <circle cx="-28" cy="-9" r="1.7"/>
+          </g>
+          <circle cx="0" cy="0" r="3" fill="var(--phase-amber)"/>
+        </svg>
+
+        <div class="state-readout">0.9901</div>
+        <div class="state-readout-label">m<sub>eff</sub> / m<sub>0</sub></div>
+
+        <div class="state-meta">
+          <span class="k">Junction biases</span>          <span class="v">90 / 90</span>
+          <span class="k">Wilson loop &lt;P&gt;</span>     <span class="v">0.507</span>
+          <span class="k">Q</span>                         <span class="v">1</span>
+        </div>
+      </div>
+
+      <!-- Q = 2 — second non-trivial sector, more saturated, magenta -->
+      <div class="state-card q2">
+        <div class="state-q">Q = 2</div>
+        <div class="state-name">Second non-trivial <em>&middot; cage on</em></div>
+
+        <svg class="state-thumb" viewBox="-110 -110 220 220" aria-hidden="true">
+          <defs>
+            <radialGradient id="q2Glow" cx="0" cy="0" r="50%">
+              <stop offset="0%" stop-color="var(--phase-magenta)" stop-opacity=".3"/>
+              <stop offset="100%" stop-color="var(--phase-magenta)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="0" cy="0" r="95" fill="url(#q2Glow)"/>
+
+          <g stroke="var(--phase-cyan)" stroke-width="1" fill="none" opacity=".7">
+            <polygon points="0,-90 86,-28 53,75 -53,75 -86,-28"/>
+            <polygon points="0,-60 57,-19 35,50 -35,50 -57,-19" opacity=".75"/>
+            <polygon points="0,-30 28,-9 18,25 -18,25 -28,-9" opacity=".5"/>
+            <line x1="0" y1="-90" x2="0" y2="-60"/>
+            <line x1="86" y1="-28" x2="57" y2="-19"/>
+            <line x1="53" y1="75" x2="35" y2="50"/>
+            <line x1="-53" y1="75" x2="-35" y2="50"/>
+            <line x1="-86" y1="-28" x2="-57" y2="-19"/>
+            <line x1="0" y1="-60" x2="0" y2="-30" opacity=".7"/>
+            <line x1="57" y1="-19" x2="28" y2="-9" opacity=".7"/>
+            <line x1="35" y1="50" x2="18" y2="25" opacity=".7"/>
+            <line x1="-35" y1="50" x2="-18" y2="25" opacity=".7"/>
+            <line x1="-57" y1="-19" x2="-28" y2="-9" opacity=".7"/>
+          </g>
+          <g stroke="var(--phase-magenta)" stroke-width="1.4" fill="none" opacity=".9">
+            <line x1="0" y1="-90" x2="86" y2="-28"/>
+            <line x1="86" y1="-28" x2="53" y2="75"/>
+            <line x1="53" y1="75" x2="-53" y2="75"/>
+            <line x1="-53" y1="75" x2="-86" y2="-28"/>
+            <line x1="-86" y1="-28" x2="0" y2="-90"/>
+          </g>
+          <g stroke="var(--phase-violet)" stroke-width="1.2" fill="none" opacity=".75">
+            <line x1="0" y1="-60" x2="35" y2="50"/>
+            <line x1="-57" y1="-19" x2="57" y2="-19"/>
+          </g>
+
+          <g fill="var(--phase-magenta)">
+            <circle cx="0" cy="-90" r="2.4"/><circle cx="86" cy="-28" r="2.4"/>
+            <circle cx="53" cy="75" r="2.4"/><circle cx="-53" cy="75" r="2.4"/>
+            <circle cx="-86" cy="-28" r="2.4"/>
+          </g>
+          <g fill="var(--phase-cyan)">
+            <circle cx="0" cy="-60" r="2"/><circle cx="57" cy="-19" r="2"/>
+            <circle cx="35" cy="50" r="2"/><circle cx="-35" cy="50" r="2"/>
+            <circle cx="-57" cy="-19" r="2"/>
+            <circle cx="0" cy="-30" r="1.7"/><circle cx="28" cy="-9" r="1.7"/>
+            <circle cx="18" cy="25" r="1.7"/><circle cx="-18" cy="25" r="1.7"/>
+            <circle cx="-28" cy="-9" r="1.7"/>
+          </g>
+          <circle cx="0" cy="0" r="3" fill="var(--phase-amber)"/>
+        </svg>
+
+        <div class="state-readout">0.9803</div>
+        <div class="state-readout-label">m<sub>eff</sub> / m<sub>0</sub></div>
+
+        <div class="state-meta">
+          <span class="k">Junction biases</span>          <span class="v">90 / 90</span>
+          <span class="k">Wilson loop &lt;P&gt;</span>     <span class="v">0.514</span>
+          <span class="k">Q</span>                         <span class="v">2</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="state-takeaway">
+      The slope of m<sub>eff</sub>/m<sub>0</sub> against <em>Q</em> is the coupling
+      constant <strong>&alpha;</strong>. A flat slope falsifies the framework. A non-flat
+      slope measures &alpha;. The numbers above are <em>predicted</em>; the experiment
+      will return what it returns.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================
+     DEMO
+     ============================================ -->
+<section class="panel demo-section reveal" id="demo">
+  <div class="container">
+    <div class="demo-header">
+      <div>
+        <div class="eyebrow cyan">The simulator</div>
+        <h2>Real physics. Real-time.</h2>
+      </div>
+      <div class="demo-meta">
+        <div><strong>trajectory.json</strong> &middot; 81 frames</div>
+        <div>t = 0 &rarr; 40.00</div>
+        <div>SU(2) at &beta; = 2.5</div>
+      </div>
+    </div>
+
+    <p class="demo-intro">
+      Every colored edge is a real link variable <em>U<sub>e</sub></em> &isin; SU(2)
+      evolving under a symplectic Hamiltonian whose covariant Gauss generator is
+      conserved to floating-point precision. Toggle <strong>phase / kinetic / both</strong>
+      in the bottom-right of the demo to switch which gauge-field quantity is rendered as color.
+    </p>
+
+    <div class="demo-frame" id="demo-frame">
+      <div class="demo-placeholder" id="demo-placeholder">
+        <div class="placeholder-rings" aria-hidden="true"></div>
+        <div class="placeholder-label">Loading simulator on scroll</div>
+      </div>
+      <iframe id="cage-iframe" data-src="./cage_preview.html" title="Halcyon cage simulator" loading="lazy" style="opacity: 0; transition: opacity 1s;"></iframe>
+    </div>
+
+    <p class="demo-caption">
+      Truncated icosahedron &middot; 60 vertices &middot; 90 junctions &middot; 32 faces
+      &middot; &chi; = V &minus; E + F = 2
+    </p>
+
+    <div class="demo-audit-cta">
+      <button type="button" id="btn_open_audit_report" class="btn btn-ghost demo-audit-btn">
+        Open the validation report <span class="arrow">&rarr;</span>
+      </button>
+      <p class="demo-audit-note">
+        Substrate identities, conservation, Migdal&ndash;Witten target, gauge invariance,
+        and the beta&ndash;scan, every number read straight from the JSON the kernel produced.
+        Six of seven categories PASS; the seventh is the documented H<sub>E</sub> finite&ndash;size effect.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     HOW IT WORKS
+     ============================================ -->
+<section class="panel how-section reveal">
+  <div class="container">
+    <div class="header-row">
+      <div class="eyebrow cyan">How it works</div>
+      <h2 class="section-title">Three pieces. One cage.</h2>
+      <p class="section-sub">
+        A geometric apparatus that takes a topological charge sector as input and
+        produces a measurable inertial response as output.
+      </p>
+    </div>
+
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">01 &middot; The cage</div>
+        <h3>A buckyball of junctions.</h3>
+        <p>
+          Sixty vertices, ninety edges, thirty-two faces &mdash; Euler characteristic
+          two, the topology of a sphere. Each edge holds a Josephson junction whose
+          phase encodes a link variable in SU(2).
+        </p>
+        <div class="how-detail">
+          V = 60, E = 90, F = 32<br>
+          Pent-hex / hex-hex: 60 / 30<br>
+          Gauge group: <strong>SU(2)</strong>
+        </div>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02 &middot; The coupling</div>
+        <h3>Topology pins inertia.</h3>
+        <p>
+          Driving the junctions in a chosen pattern forces the gauge field into a
+          target topological sector <em>Q</em>. The Davis Field Equations framework
+          predicts the field locally modifies effective mass.
+        </p>
+        <div class="how-detail">
+          &delta;m&sup2;(x) = &Fscr;[&Omega;, &tau;, K]<br>
+          Wilson loop inversion via EKF<br>
+          Control: <strong>Pontryagin bang-bang</strong>
+        </div>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03 &middot; The measurement</div>
+        <h3>A torsion fiber tells you.</h3>
+        <p>
+          A milligram tungsten sphere hangs at the cage's center. A calibrated
+          electrostatic kick is applied; a sub-nanometer interferometer reads the
+          response. The ratio m<sub>eff</sub>/m<sub>0</sub> swept across <em>Q</em> is the signal.
+        </p>
+        <div class="how-detail">
+          Test mass: <strong>0.5&ndash;5 g tungsten</strong><br>
+          Fiber: 5&ndash;20 &mu;m fused silica<br>
+          Readout: <strong>sub-nm interferometry</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     MATH
+     ============================================ -->
+<section class="panel math-section reveal">
+  <div class="container">
+    <div class="header-row">
+      <div class="eyebrow violet">The math</div>
+      <h2 class="section-title">Six lines on a whiteboard.</h2>
+      <p class="section-sub">
+        The substrate is standard lattice gauge theory &mdash; Wilson, Kogut, Susskind,
+        Migdal, Witten. The lines in <span style="color:var(--phase-violet);">violet</span>
+        are framework contributions, proved or specified in published papers.
+      </p>
+    </div>
+
+    <details class="math-details">
+      <summary>
+        <span>Show the chain</span>
+        <span class="math-toggle-icon" aria-hidden="true"></span>
+      </summary>
+      <div class="math-content">
+        <div class="eq yours">
+          <div class="eq-label">01 &middot; Davis Field Equation</div>
+          <div class="eq-line">C = &tau; / &kappa;</div>
+          <div class="eq-note">Completion capacity equals tolerance budget over local curvature &kappa;. (Notation: &tau; is the framework tolerance budget, not proper time or string tension; &kappa; is the local framework curvature scalar, not kinetic energy or Ricci.)</div>
+        </div>
+        <div class="eq yours">
+          <div class="eq-label">02 &middot; Davis&ndash;Wilson Map</div>
+          <div class="eq-line">&Phi;: A/G &rarr; R<sup>d</sup>,&nbsp; &Phi;(A) = (Re Tr W<sub>&gamma;<sub>i</sub></sub>(A))<sub>i</sub></div>
+          <div class="eq-note">Gauge-invariant feature map on moduli space A/G, built from a chosen finite Wilson-loop family {&gamma;<sub>i</sub>}. Separation on the full continuum moduli space would require the complete loop algebra (Giles/Sengupta) and is not claimed here.</div>
+        </div>
+        <div class="eq yours">
+          <div class="eq-label">03 &middot; Lattice mass gap theorem &middot; proved</div>
+          <div class="eq-line">clustering(&Phi;) + curvature gap(S<sub>YM</sub>) &rArr; H<sub>lattice</sub> &ge; &kappa;</div>
+          <div class="eq-note">Discrete clustering plus curvature gap implies a finite-substrate spectral gap at strong coupling. Proved for SU(N), N&nbsp;&ge;&nbsp;2 on a finite lattice; numerical validation in this run is SU(2) on the buckyball substrate. <em>This is the lattice strong-coupling gap, not the Clay continuum Yang&ndash;Mills mass gap, which remains open.</em></div>
+        </div>
+        <div class="eq yours">
+          <div class="eq-label">04 &middot; Variable-&beta; coupling &middot; Branch XIII</div>
+          <div class="eq-line">&delta;m&sup2;(x) = &Fscr;[&Omega;(x), &tau;(x), &kappa;(x)]</div>
+          <div class="eq-note">Proposed inertia-coupling ansatz. The current interim form is gauge-invariant at FP64 (Section 4) and dimensionally correct but is <em>not</em> derived from the Davis Field Equations; Branch XIII derivation pending (see Section 7 'framework').</div>
+        </div>
+        <div class="eq">
+          <div class="eq-label">05 &middot; Hardware realization</div>
+          <div class="eq-line">U<sub>e</sub><sup>phys</sup> = exp(i T<sup>a</sup> &theta;<sub>e</sub><sup>a</sup>)</div>
+          <div class="eq-note">Each SU(2) link variable encoded across a multi-mode transmon network with one bias current per Lie-algebra component (a = 1..N&sup2;&minus;1; 3 modes per link for SU(2)). The single Josephson phase is a U(1) angle, so this encoding is open hardware work, not a drop-in identification (see Section 7 'hardware').</div>
+        </div>
+        <div class="eq">
+          <div class="eq-label">06 &middot; The observable</div>
+          <div class="eq-line">m<sub>eff</sub>(Q) / m<sub>0</sub> = f(Q; &alpha;)</div>
+          <div class="eq-note">The curve the experiment measures. A measured slope above the sensitivity floor measures &alpha;; a slope consistent with zero within a preregistered systematics budget (thermal, magnetic, vibration, cage drift) falsifies the predicted coupling at the Branch-XIII magnitude. Sensitivity floor and systematics list are published before first data.</div>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============================================
+     VALIDATION
+     ============================================ -->
+<section class="panel validation-section reveal" id="validation">
+  <div class="container">
+    <div class="header-row">
+      <div class="eyebrow amber">Honest accounting</div>
+      <h2 class="section-title">What's validated. What's open.</h2>
+      <p class="section-sub">
+        The graveyard is full of work that buried its limits. Halcyon declares them up front.
+      </p>
+    </div>
+
+    <div class="accounting-grid">
+      <div class="acct-col proved">
+        <div class="acct-status">&bull; Proved &middot; Published</div>
+        <h3>Foundational results that stand independent of Halcyon.</h3>
+        <ul>
+          <li>Yang&ndash;Mills lattice mass gap (v6, finite graph, SU(N) N&nbsp;&ge;&nbsp;2, strong coupling)</li>
+          <li>Davis&ndash;Wilson Map as gauge-invariant feature map on A/G</li>
+          <li>Matter-sector v1 (SU(3) staggered): separation score <code>S = 2.87</code>, radial gap ratio <code>G<sub>r</sub> = 85</code>; SU(2) fermions open</li>
+          <li>Halcyon Falsification Battery v3.1.3: BIVALENT AMBIGUOUS verdict at &alpha;=1 and &alpha;=1000, framework status <em>not-yet-falsified</em> per &sect;3.3 (<a href="https://doi.org/10.5281/zenodo.20785681">Zenodo DOI 10.5281/zenodo.20785681</a>)</li>
+          <li>Davis Duality of Approximation and Obstruction: error sandwiched by curvature, <code>c<sub>1</sub>&middot;&Vert;&Omega;&Vert;&middot;h&sup2; &le; &epsilon; &le; c<sub>2</sub>&middot;&Vert;&Omega;&Vert;&middot;h&sup2;</code></li>
+        </ul>
+      </div>
+      <div class="acct-col validated">
+        <div class="acct-status">&bull; Validated &middot; Simulated</div>
+        <h3>Computed against analytical targets.</h3>
+        <ul>
+          <li>Migdal&ndash;Witten gap <code>6.13 &times; 10<sup>&minus;3</sup></code> at &beta;=2.5 (1.63&times; under 0.01 tol)</li>
+          <li>Covariant Gauss residual <code>4.00 &times; 10<sup>&minus;15</sup></code> on final state (vs 1e&minus;9 tol)</li>
+          <li>Deconfinement transition caught at &beta;<sub>c</sub>&nbsp;&asymp;&nbsp;2.298 through Davis-respecting observables: ~30% capacity jump (<code>C&nbsp;=&nbsp;&tau;/K</code>) + 17&ndash;19% tracking-error drop across the phase boundary, with signed-arccos antisymmetric primary <code>h<sub>rev</sub> = &minus;h<sub>fwd</sub></code> intact across 20 substrate states (<a href="./HALCYON_SUBSTRATE_CATALOG_v0.1.md">substrate catalog v0.1</a>)</li>
+          <li>KDK integrator: time reversibility <code>|&Delta;U|<sub>&infin;</sub> = 6.72 &times; 10<sup>&minus;12</sup></code> (1e&minus;8 tol); energy drift <code>|&delta;H/H<sub>0</sub>| = 3.78 &times; 10<sup>&minus;5</sup></code> (1e&minus;3 tol, 26.5&times; under)</li>
+          <li>Method-gap diagnostic <code>4.49 &times; 10<sup>&minus;2</sup></code> (FAIL vs 0.02 tol; Section 7 ergodicity &mdash; named ambiguity, carried)</li>
+        </ul>
+      </div>
+      <div class="acct-col open">
+        <div class="acct-status">&bull; Open &middot; In progress</div>
+        <h3>The honest gaps, named in advance.</h3>
+        <ul>
+          <li>Branch XIII Davis Duality SU(2) form</li>
+          <li>Hardware fabrication (UC Davis CNM2)</li>
+          <li>Multi-mode transmon encoding</li>
+          <li>Dilution refrigerator integration</li>
+          <li>The experimental measurement itself</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     GI-SYSTEMS
+     ============================================ -->
+<section class="panel gi-section reveal" id="gisystems">
+  <div class="container">
+    <div class="header-row">
+      <div class="eyebrow violet">The pattern</div>
+      <h2 class="section-title">Halcyon is the first of many.</h2>
+      <p class="gi-quote">
+        A Gi-System is a scientific instrument whose every observable is gauge-invariant,
+        whose every operation is local, and whose every claim is gated by
+        <em>an analytical target with no tunable tolerance</em>.
+      </p>
+    </div>
+
+    <div class="gi-grid">
+      <div class="gi-card current">
+        <div class="gi-card-name">Halcyon <span class="gi-card-status">current</span></div>
+        <div class="gi-card-desc">Engineered modification of local inertial response.</div>
+      </div>
+      <div class="gi-card">
+        <div class="gi-card-name">PRISM <span class="gi-card-status">shipped</span></div>
+        <div class="gi-card-desc">Payment reconciliation via geometric anomaly detection on transaction fiber bundles.</div>
+      </div>
+      <div class="gi-card">
+        <div class="gi-card-name">Chihiro <span class="gi-card-status">live</span></div>
+        <div class="gi-card-desc">Curvature-guided wavefront execution for GPU constraint satisfaction.</div>
+      </div>
+      <div class="gi-card">
+        <div class="gi-card-name">Mirador <span class="gi-card-status">live</span></div>
+        <div class="gi-card-desc">Pharmacokinetic prediction via Davis Field Equations.</div>
+      </div>
+      <div class="gi-card">
+        <div class="gi-card-name">Demeter <span class="gi-card-status">live</span></div>
+        <div class="gi-card-desc">Unified precision agriculture via <em>C = &tau;/K</em>.</div>
+      </div>
+      <div class="gi-card">
+        <div class="gi-card-name">Geodesic <span class="gi-card-status">build</span></div>
+        <div class="gi-card-desc">Multi-cancer detection via topological signatures.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     RESOURCES
+     ============================================ -->
+<section class="panel resources-section reveal">
+  <div class="container">
+    <div class="header-row">
+      <div class="eyebrow cyan">Going deeper</div>
+      <h2 class="section-title">The receipts.</h2>
+    </div>
+
+    <div class="resources-grid">
+      <div class="resource-card">
+        <div class="resource-label">The build log</div>
+        <a href="./JOURNAL.md">JOURNAL.md <span class="arrow">&rarr;</span></a>
+      </div>
+      <div class="resource-card">
+        <div class="resource-label">Mass gap v6</div>
+        <a href="https://doi.org/10.5281/zenodo.17942784">Zenodo <span class="arrow">&rarr;</span></a>
+      </div>
+      <div class="resource-card">
+        <div class="resource-label">Halcyon v3.1.3</div>
+        <a href="https://doi.org/10.5281/zenodo.20785681">Zenodo <span class="arrow">&rarr;</span></a>
+      </div>
+      <div class="resource-card">
+        <div class="resource-label">Contact</div>
+        <a href="mailto:bee_davis@alumni.brown.edu">bee_davis@alumni.brown.edu</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>
+    <div class="footer-brand">Davis Geometric</div>
+    <div class="footer-copyright" style="margin-top: .5rem;">&copy; 2026 Davis Geometric, Inc.</div>
+  </div>
+  <p class="footer-tagline">Inertia is a coupling, not a property.</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  const revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('revealed'); revealObs.unobserve(entry.target); }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -80px 0px' });
+    revealEls.forEach((el) => revealObs.observe(el));
+  } else {
+    revealEls.forEach((el) => el.classList.add('revealed'));
+  }
+  const iframe = document.getElementById('cage-iframe');
+  const placeholder = document.getElementById('demo-placeholder');
+  const demoFrame = document.getElementById('demo-frame');
+  let loaded = false;
+  function loadDemo () {
+    if (loaded || !iframe) return;
+    loaded = true;
+    iframe.setAttribute('src', iframe.getAttribute('data-src'));
+    iframe.addEventListener('load', () => {
+      iframe.style.opacity = '1';
+      if (placeholder) placeholder.classList.add('hidden');
+    });
+    setTimeout(() => {
+      iframe.style.opacity = '1';
+      if (placeholder) placeholder.classList.add('hidden');
+    }, 4000);
+  }
+  if ('IntersectionObserver' in window && demoFrame) {
+    const demoObs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => { if (entry.isIntersecting) { loadDemo(); demoObs.unobserve(entry.target); } });
+    }, { threshold: 0.25 });
+    demoObs.observe(demoFrame);
+  } else {
+    loadDemo();
+  }
+
+  // Landing-page "Open the validation report" CTA. Bridges through to the
+  // in-iframe audit button so we don't duplicate the modal infrastructure
+  // at the parent level. Iframe and parent are same-origin (the static
+  // server serves both from inertia_damping/), so direct DOM access works.
+  const auditCtaBtn = document.getElementById('btn_open_audit_report');
+  function triggerInIframeAudit() {
+    if (!iframe) return false;
+    try {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return false;
+      const advDrawer = idoc.getElementById('advanced_drawer');
+      if (advDrawer && !advDrawer.classList.contains('open')) {
+        advDrawer.classList.add('open');
+      }
+      const btn = idoc.getElementById('btn_generate_report');
+      if (btn) {
+        btn.click();
+        return true;
+      }
+    } catch (e) {
+      // Cross-origin or not-yet-loaded; fall through.
+    }
+    return false;
+  }
+  if (auditCtaBtn) {
+    auditCtaBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      loadDemo();
+      // Scroll the demo into view so the modal opens where the user can see it.
+      if (demoFrame) {
+        demoFrame.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Try immediately; if the iframe isn't ready, retry once it loads.
+      if (triggerInIframeAudit()) return;
+      const onReady = () => {
+        // Give the iframe a beat to wire its handlers, then trigger.
+        setTimeout(() => { triggerInIframeAudit(); }, 600);
+        iframe.removeEventListener('load', onReady);
+      };
+      if (iframe) {
+        iframe.addEventListener('load', onReady);
+        // Belt-and-suspenders: also poll briefly in case 'load' already fired.
+        let tries = 0;
+        const poll = setInterval(() => {
+          if (triggerInIframeAudit() || ++tries > 15) clearInterval(poll);
+        }, 400);
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
