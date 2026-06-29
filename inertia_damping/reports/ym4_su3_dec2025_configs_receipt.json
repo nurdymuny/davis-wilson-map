@@ -1,0 +1,51 @@
+{
+  "goal": "Process Bee's Dec 2025 Modal-generated 4D SU(3) configs, push observables to gigi",
+  "source": "Modal volume davis-wilson-data/configs (50 L=8 + 50 L=16, all beta=6.0)",
+  "framing_doc": "gigi/theory/YM_MASS_GAP_CONTINUUM_HYPOTHESIS_v0.1.md",
+  "bundle": "halcyon_ym4_glueball_demo",
+  "ensembles_processed": {
+    "su3_4d_L8_beta600_dec2025": {
+      "L": 8,
+      "beta": 6.0,
+      "n_configs": 50,
+      "P_mean": 0.6419134500650661,
+      "plateau_fit_mass": 2.3337117029471286,
+      "plateau_fit_error": 0.07450900167760852,
+      "sigma_creutz_22": [
+        0.19850817830285586,
+        0.0001377551032077353
+      ],
+      "sigma_creutz_32": [
+        0.1503917977022614,
+        0.00015458981740185855
+      ],
+      "wall_seconds": 42.27975950000001,
+      "null_plateau_fit_mass": 2.610050596802538
+    },
+    "su3_4d_L16_beta600_dec2025": {
+      "L": 16,
+      "beta": 6.0,
+      "n_configs": 50,
+      "P_mean": -2.5161606486050517e-05,
+      "plateau_fit_mass": 4.3887748439543985,
+      "plateau_fit_error": 0.5663376953043926,
+      "sigma_creutz_22": [
+        NaN,
+        NaN
+      ],
+      "sigma_creutz_32": [
+        NaN,
+        NaN
+      ],
+      "wall_seconds": 311.718065,
+      "null_plateau_fit_mass": null
+    }
+  },
+  "scope_notes": [
+    "Same observables as fresh GPU SU(2) work (M1 + M3 + null control).",
+    "Two L (8, 16) at same beta=6.0 -> two-point cross-L convergence diagnostic for SU(3).",
+    "beta=6.0 is the canonical published reference point for SU(3) Wilson; <P> published ~ 0.5937.",
+    "Per the Dec 2025 separation=10 sweeps between configs, autocorrelation is presumed handled."
+  ],
+  "discipline": "Receipts before letters. Per Bee, 2026-06-28."
+}
